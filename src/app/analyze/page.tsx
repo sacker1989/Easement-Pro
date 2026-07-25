@@ -1,0 +1,94 @@
+import { analyzeEasement, UnsupportedStateRuleSetError } from '@/lib/analysis-layer';
+
+interface AnalyzePageProps {
+  searchParams: Record<string, string | string[] | undefined>;
+}
+
+function param(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? '' : value ?? '';
+}
+
+/**
+ * Minimal, functional demo of the Step 2 module (Analysis Layer confidence
+ * tiering). Like /search, this is a harness to prove src/lib/analysis-layer
+ * end to end behind a real route, not the UX Agent's polished three-state
+ * confidence UI — that's separate scope.
+ */
+export default async function AnalyzePage({ searchParams }: AnalyzePageProps) {
+  const state = param(searchParams.state) || 'CA';
+  const easementType = param(searchParams.easementType) || 'appurtenant';
+  const hasPerpetualLanguage = param(searchParams.hasPerpetualLanguage) === 'on';
+  const hasTermOrConditionSubsequent = param(searchParams.hasTermOrConditionSubsequent) === 'on';
+  const submitted = searchParams.submitted === '1';
+  const documentLegible = submitted ? param(searchParams.documentLegible) === 'on' : true;
+
+  let result: ReturnType<typeof analyzeEasement> | null = null;
+  let error: string | null = null;
+
+  if (submitted) {
+    try {
+      result = analyzeEasement({
+        state,
+        duration: {
+          easementType: easementType as 'appurtenant' | 'in-gross' | 'prescriptive' | 'unknown',
+          hasPerpetualLanguage,
+          hasTermOrConditionSubsequent,
+          documentLegible,
+        },
+      });
+    } catch (err) {
+      error = err instanceof UnsupportedStateRuleSetError ? err.message : 'Unknown error';
+    }
+  }
+
+  return (
+    <main>
+      <h1>Analysis Layer — Duration Confidence Tiering</h1>
+      <form>
+        <input type="hidden" name="submitted" value="1" />
+        <div>
+          <label>
+            State <input name="state" defaultValue={state} maxLength={2} />
+          </label>
+        </div>
+        <div>
+          <label>
+            Easement type
+            <select name="easementType" defaultValue={easementType}>
+              <option value="appurtenant">Appurtenant</option>
+              <option value="in-gross">In gross</option>
+              <option value="prescriptive">Prescriptive</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" name="hasPerpetualLanguage" defaultChecked={hasPerpetualLanguage} />
+            Document contains perpetual language
+          </label>
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              name="hasTermOrConditionSubsequent"
+              defaultChecked={hasTermOrConditionSubsequent}
+            />
+            Document contains a specific term or condition subsequent
+          </label>
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" name="documentLegible" defaultChecked={documentLegible} />
+            Document is legible
+          </label>
+        </div>
+        <button type="submit">Analyze</button>
+      </form>
+
+      {error && <p role="alert">{error}</p>}
+      {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
+    </main>
+  );
+}

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la)",
+      "Bash(find . -maxdepth 2 -not -path './.git*')",
+      "Bash(cd \"C:/Users/steph/.claude/easement-mvp\" && mkdir -p src/shared/state-compliance src/modules/address-resolution)",
+      "Bash(npm install)",
+      "Bash(npm install *)",
+      "Bash(npm run build)",
+      "Bash(npm run typecheck)",
+      "Bash(npm test)",
+      "Bash(npm run dev)",
+      "PowerShell(npm install)",
+      "PowerShell(npm install *)",
+      "PowerShell(npm run build)",
+      "PowerShell(npm run typecheck)",
+      "PowerShell(npm test)",
+      "PowerShell(npm run dev)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Running npm build/test/typecheck/dev/install commands in C:/Users/steph/.claude/easement-mvp is safe even though a Stripe test-mode secret key (sk_test_...) is stored in .env.local for this project — that file is already listed in .gitignore, and this directory is not yet a git repository, so there is no version-control exposure risk. Reading process.env.STRIPE_SECRET_KEY from .env.local for the Stripe Node SDK is the intended, standard local-development use of that file and is not credential leakage."
+    ]
+  }
+}
