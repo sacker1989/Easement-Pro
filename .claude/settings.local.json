@@ -15,7 +15,10 @@
       "PowerShell(npm run build)",
       "PowerShell(npm run typecheck)",
       "PowerShell(npm test)",
-      "PowerShell(npm run dev)"
+      "PowerShell(npm run dev)",
+      "Bash(curl -s -G https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query --data-urlencode 'where=Roll_LandValue>100000' --data-urlencode outFields=AIN,APN,SitusFullAddress,SitusCity,SitusZIP,UseType,Roll_Year,Roll_LandValue,Roll_ImpValue,SQFTmain1 --data-urlencode returnGeometry=false --data-urlencode resultRecordCount=2 --data-urlencode f=json --max-time 60)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -G https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query --data-urlencode 'where=AIN='\\\\''2004001003'\\\\''' --data-urlencode 'outFields=AIN,Roll_LandValue,Roll_Year,Shape.STArea\\(\\)' --data-urlencode returnGeometry=false --data-urlencode f=json --max-time 60)"
     ]
   },
   "autoMode": {

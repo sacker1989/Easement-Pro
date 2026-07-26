@@ -30,13 +30,14 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
       countyGisPortal: 'https://public.gis.lacounty.gov/public/rest/services',
       assessorMapServer: 'LACounty_Cache/LACounty_Parcel',
       description:
-        'LA County public Esri REST parcel service. Exposes AIN, APN and SitusFullAddress for ~2.4M parcels; cache refreshed weekly, assessor data monthly.',
+        'LA County public Esri REST parcel service (ArcGIS 10.91, cached). Layer 0 "Parcels" is a polygon feature layer with 92 fields: parcel identity (AIN/APN), situs address, use codes, per-structure square footage and year built, full legal description, current assessor roll values (Roll_LandValue, Roll_ImpValue, Roll_Year), and geometry area via Shape.STArea(). Capabilities Map,Query,Data; maxRecordCount 1000; JSON/geoJSON/PBF.',
       source: {
         accessMode: 'documented-api',
         verifiedOn: '2026-07-25',
-        verifiedVia: 'ArcGIS REST Services Directory listing for LACounty_Cache/LACounty_Parcel',
+        verifiedVia:
+          'Live curl against MapServer?f=json, MapServer/0?f=json (92-field schema), and MapServer/0/query. Sample: AIN 2004001003 returned Roll_Year 2026, Roll_LandValue 740440, Shape.STArea() 9685.58 sq ft.',
         limitations:
-          'California Government Code §7928.205 bars owner name and mailing address from public REST parcel endpoints statewide. This service returns parcel identity and situs address only — owner identity must come from another source before any letter can be addressed to an owner.',
+          'No owner name or owner mailing address field exists among the 92 returned — consistent with California Government Code §7928.205, which bars owner identity from public parcel REST endpoints statewide. Owner identity must come from another source before any letter can be addressed. Also carries no easement or deed instrument text; recorded documents require the Registrar-Recorder. Geometry SR is EPSG:2229 (NAD83 California zone 5, US survey feet), so Shape.STArea() is square feet.',
       },
     },
   },

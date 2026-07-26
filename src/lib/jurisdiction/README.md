@@ -193,9 +193,35 @@ Each letter/decision now includes:
 | Harris, TX | standard | county-built (`cclerk.hctx.net`) | human-portal |
 | Santa Clara, CA | fallback | none — in person only | in-person-only |
 
-> **Only Los Angeles County is machine-queryable**, and what it exposes is
-> parcel geometry, not deed text. Every other entry is a human-facing search
-> page. Check `agent.source.accessMode` before assuming a JSON contract.
+> **Only Los Angeles County is machine-queryable.** Every other entry is a
+> human-facing search page. Check `agent.source.accessMode` before assuming a
+> JSON contract.
+
+### What the LA County endpoint actually returns
+
+Exercised live on 2026-07-25 (`curl` against the service root, layer 0 schema,
+and `/query`). Layer 0 `Parcels` is a polygon feature layer with **92 fields**,
+including everything the valuation module needs as input:
+
+| Valuation input | Source field | Sample (AIN 2004001003) |
+|---|---|---|
+| `totalPropertyArea` | `Shape.STArea()` | 9,685.58 sq ft (0.222 ac) |
+| `unencumberedValuePerUnit` | `Roll_LandValue` ÷ area | $76.45 / sq ft |
+| assessment vintage | `Roll_Year` | 2026 |
+
+Also carries `Roll_ImpValue`, `SQFTmain1..5`, `YearBuilt1..5`, `UseType`,
+`UseCode`, and a full `LegalDescription`. Capabilities `Map,Query,Data`;
+`maxRecordCount` 1000; JSON/geoJSON/PBF. Geometry SR is **EPSG:2229** (NAD83
+California zone 5, US survey feet), so `Shape.STArea()` is already square feet.
+
+**Two things it does not carry:**
+
+1. **No owner name or mailing address** — verified by enumerating all 92
+   fields, not inferred. Consistent with §7928.205. Track 1 letters need an
+   addressee from another source.
+2. **No easement or deed instrument text.** Recorded documents still require
+   the Registrar-Recorder. This service establishes parcel geometry and value,
+   not the encumbrance itself.
 
 ### Verification history
 
