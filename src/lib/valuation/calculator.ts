@@ -1,4 +1,5 @@
 import { resolveImpactPercentage } from './valuation-matrix';
+import type { JurisdictionalValuationContext } from './jurisdiction-valuation-bridge';
 
 /**
  * Summation Method result: Value of Part Acquired + Damages to Remainder.
@@ -13,6 +14,7 @@ export interface SummationResult {
   readonly valuePartAcquired: number;
   readonly remainderDamages: number;
   readonly totalCompensation: number;
+  readonly jurisdiction?: JurisdictionalValuationContext; // Phase 2: county-tier confidence
 }
 
 /**
@@ -26,6 +28,7 @@ export interface BeforeAndAfterResult {
   readonly impliedPartAcquired: number;
   readonly impliedDamages: number;
   readonly totalCompensation: number;
+  readonly jurisdiction?: JurisdictionalValuationContext; // Phase 2: county-tier confidence
 }
 
 export type ValuationResult = SummationResult | BeforeAndAfterResult;
@@ -63,12 +66,14 @@ export class EasementValuationCalculator {
 
   /**
    * Summation Method: Total = Value of Part Acquired + Damages to Remainder
+   * Phase 2: Optionally accepts jurisdictional context for confidence tiering.
    */
   summationMethod(
     easementArea: number,
     impactTier: string,
     remainderDamages: number = 0,
     customPercentage?: number,
+    jurisdiction?: JurisdictionalValuationContext,
   ): SummationResult {
     if (easementArea <= 0 || easementArea > this.totalPropertyArea) {
       throw new RangeError(
@@ -92,18 +97,21 @@ export class EasementValuationCalculator {
       valuePartAcquired: Math.round(valuePartAcquired * 100) / 100,
       remainderDamages: Math.round(remainderDamages * 100) / 100,
       totalCompensation: Math.round(totalCompensation * 100) / 100,
+      jurisdiction,
     };
   }
 
   /**
    * Before-and-After Method: Total = Value of Whole - Value of Remainder After Acquisition
    * Remainder value reflects market depreciation due to easement burden.
+   * Phase 2: Optionally accepts jurisdictional context for confidence tiering.
    */
   beforeAndAfterMethod(
     easementArea: number,
     remainderValuePerUnit: number,
     impactTier: string,
     customPercentage?: number,
+    jurisdiction?: JurisdictionalValuationContext,
   ): BeforeAndAfterResult {
     if (easementArea <= 0 || easementArea > this.totalPropertyArea) {
       throw new RangeError(
@@ -129,6 +137,7 @@ export class EasementValuationCalculator {
       impliedPartAcquired: Math.round(impliedPartAcquired * 100) / 100,
       impliedDamages: Math.round(impliedDamages * 100) / 100,
       totalCompensation: Math.round(totalCompensation * 100) / 100,
+      jurisdiction,
     };
   }
 }

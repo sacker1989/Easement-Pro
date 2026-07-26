@@ -30,7 +30,21 @@ describe('Dispatch Orchestrator', () => {
     it('falls back to generic handler for unknown county', () => {
       const result = dispatchToAgent({ county: 'Unknown County', state: 'XX' });
       expect(result.routingTier).toBe('fallback');
+      expect(result.agent.type).toBe('generic');
       expect(result.message).toContain('not explicitly mapped');
+    });
+
+    it('does not leak another county\'s clerk address into a generic fallback', () => {
+      // Regression: an earlier implementation reused the first 'fallback'-tier
+      // database entry (Harris County, TX), handing a Houston mailing address
+      // to users in completely unrelated counties.
+      const result = dispatchToAgent({ county: 'Cuyahoga County', state: 'OH' });
+
+      expect(result.agent.type).toBe('generic');
+      expect(JSON.stringify(result.agent)).not.toContain('Caroline');
+      expect(JSON.stringify(result.agent)).not.toContain('Houston');
+      expect(result.route.county).toBe('Cuyahoga County');
+      expect(result.route.state).toBe('OH');
     });
 
     it('returns correct Esri URL for LA County', () => {
@@ -118,8 +132,11 @@ describe('Dispatch Orchestrator', () => {
 
     it('totals all counties from database', () => {
       const summary = getTierCoverageSummary();
-      // Based on COUNTY_AGENT_ROUTES: 3 immediate + 5 standard + 1 fallback = 9 total
-      expect(summary.totalCounties).toBe(9);
+      // COUNTY_AGENT_ROUTES: 3 immediate (CA) + 4 standard (GA/TX/IL/NV) + 1 fallback (TX)
+      expect(summary.totalCounties).toBe(8);
+      expect(summary.tierA.count).toBe(3);
+      expect(summary.tierB.count).toBe(4);
+      expect(summary.fallback.count).toBe(1);
     });
   });
 

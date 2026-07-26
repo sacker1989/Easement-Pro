@@ -1,4 +1,4 @@
-import type { CountyAgentRoute } from './agent-types';
+import type { AgentConfig, CountyAgentRoute } from './agent-types';
 import { getCountyAgent, getRoutesByTier } from './county-database';
 
 /**
@@ -16,7 +16,10 @@ export interface DispatchRequest {
 export interface DispatchResult {
   county: string;
   state: string;
-  agent: CountyAgentRoute;
+  /** The agent configuration to act on. Flattened from `route.agent` for ergonomics. */
+  agent: AgentConfig;
+  /** Full routing entry, including FIPS code and tier metadata. */
+  route: CountyAgentRoute;
   routingTier: 'immediate' | 'standard' | 'fallback';
   message: string; // Explanation of routing decision
 }
@@ -29,6 +32,27 @@ export class JurisdictionNotFoundError extends Error {
 }
 
 /**
+ * Build a generic fallback route for an unmapped jurisdiction.
+ *
+ * Deliberately synthesized per-request rather than borrowing an existing
+ * fallback entry from the database: those entries carry county-specific data
+ * (e.g. the Harris County clerk's Houston mailing address), and handing that
+ * to a user in an unrelated county would emit a confidently wrong address.
+ * The generic agent carries no address at all.
+ */
+function buildGenericFallbackRoute(county: string, state: string): CountyAgentRoute {
+  return {
+    county,
+    state,
+    tier: 'fallback',
+    agent: {
+      type: 'generic',
+      description: `No mapped record platform for ${county}, ${state}. Manual record lookup required.`,
+    },
+  };
+}
+
+/**
  * Main dispatch orchestrator: takes a county+state, routes to appropriate agent.
  * Follows tier-based compliance gating from Phase 1 state-tier system.
  */
@@ -36,27 +60,24 @@ export function dispatchToAgent(request: DispatchRequest): DispatchResult {
   const { county, state } = request;
 
   // Step 1: Try exact match in database
-  let route = getCountyAgent(county, state);
+  const route = getCountyAgent(county, state);
 
   if (!route) {
-    // Step 2: Fallback to generic handler (always available)
-    const fallbackRoutes = getRoutesByTier('fallback');
-    if (fallbackRoutes.length === 0) {
-      throw new Error('No fallback agent configured. Database may be incomplete.');
-    }
-    route = fallbackRoutes[0]!; // Use first fallback (generic)
+    // Step 2: Synthesize a generic fallback carrying no county-specific data.
+    const genericRoute = buildGenericFallbackRoute(county, state);
 
     return {
       county,
       state,
-      agent: route,
+      agent: genericRoute.agent,
+      route: genericRoute,
       routingTier: 'fallback',
       message: `County "${county}" not explicitly mapped. Using generic fallback handler. Consider adding county-specific route for better integration.`,
     };
   }
 
   // Step 3: Return matched route with appropriate tier message
-  const tierMessages: Record<string, string> = {
+  const tierMessages: Record<CountyAgentRoute['tier'], string> = {
     immediate: `Immediate integration available for ${county}, ${state}. Using specialized ${route.agent.type} agent.`,
     standard: `Standard integration available for ${county}, ${state}. Using ${route.agent.type} agent with standard latency.`,
     fallback: `Limited integration for ${county}, ${state}. Using fallback ${route.agent.type} agent. Manual intervention may be required.`,
@@ -65,7 +86,8 @@ export function dispatchToAgent(request: DispatchRequest): DispatchResult {
   return {
     county,
     state,
-    agent: route,
+    agent: route.agent,
+    route,
     routingTier: route.tier,
     message: tierMessages[route.tier],
   };

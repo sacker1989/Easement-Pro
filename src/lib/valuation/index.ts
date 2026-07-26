@@ -9,3 +9,10 @@ export {
   type SummationResult,
   type ValuationResult,
 } from './calculator';
+export {
+  mapJurisdictionToConfidence,
+  suggestNextStepByJurisdiction,
+  valuationConfidenceToTieredResult,
+  type JurisdictionalConfidenceLevel,
+  type JurisdictionalValuationContext,
+} from './jurisdiction-valuation-bridge';

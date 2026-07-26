@@ -9,5 +9,13 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts'],
+    // The suite is small and CPU-cheap, but the default worker pool spawns one
+    // process per core and exhausts heap on memory-constrained machines
+    // (observed: "Fatal JavaScript out of memory" during deserialization).
+    // A single fork runs the whole suite in ~2s with a flat memory profile.
+    pool: 'forks',
+    poolOptions: {
+      forks: { singleFork: true },
+    },
   },
 });

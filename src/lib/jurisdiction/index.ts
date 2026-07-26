@@ -12,9 +12,9 @@ export {
   getRoutesByTier,
   getCountiesForState,
   COUNTY_AGENT_ROUTES,
-  type CountyAgentRoute,
 } from './county-database';
 export {
+  type CountyAgentRoute,
   type CountyResolverAgentType,
   type GISExplorerConfig,
   type APIExtractorConfig,
