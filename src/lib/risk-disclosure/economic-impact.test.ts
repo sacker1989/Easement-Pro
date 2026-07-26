@@ -11,6 +11,7 @@ const ASSESSOR_RECORD: AssessorParcelValuation = {
   landValue: 740440,
   improvementValue: 313342,
   rollYear: '2026',
+  landBaseYear: '2006',
   landValuePerSqFt: 740440 / 9685.58,
 };
 
@@ -78,29 +79,64 @@ describe('buildEconomicImpactEstimate', () => {
     expect(result.methodology).toContain('supplied local price');
   });
 
-  it('carries the verified coverage label through when assessor data is present', () => {
+  it('indexes the assessed value forward to market by default', () => {
     const result = buildEconomicImpactEstimate({
       lotAreaSqFt: ASSESSOR_RECORD.lotAreaSqFt,
       easementAreaSqFt: 500,
       isLaCounty: true,
       assessorValuation: ASSESSOR_RECORD,
     });
-    expect(result.dataCoverage.tier).toBe('clear');
-    expect(result.methodology).toContain('2026 assessment roll');
+    // 2006 base year, so the raw figure reflects a 20-year-old market.
+    expect(result.marketAdjustment).toBeDefined();
+    expect(result.marketAdjustment!.indexed.baseYear).toBe(2006);
+    expect(result.marketAdjustment!.indexed.indexRatio).toBeGreaterThan(1);
+    expect(result.valueAtRiskRange.low).toBeGreaterThan(
+      Math.round(500 * ASSESSOR_RECORD.landValuePerSqFt * 0.8),
+    );
+    expect(result.methodology).toContain('market-indexed');
   });
 
-  it('prices from the assessor roll rather than the national benchmark', () => {
+  it('grades a modelled price as likely-with-caveat, never clear', () => {
+    // 'clear' gates direct assertion in a paid letter; an indexed figure is a
+    // model output and must not be asserted that way.
     const result = buildEconomicImpactEstimate({
       lotAreaSqFt: ASSESSOR_RECORD.lotAreaSqFt,
       easementAreaSqFt: 500,
       isLaCounty: true,
       assessorValuation: ASSESSOR_RECORD,
+    });
+    expect(result.dataCoverage.tier).toBe('likely-with-caveat');
+    if (result.dataCoverage.tier === 'likely-with-caveat') {
+      expect(result.dataCoverage.caveat).toContain('Proposition 13');
+    }
+  });
+
+  it('prices from the raw assessor roll when indexing is disabled', () => {
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: ASSESSOR_RECORD.lotAreaSqFt,
+      easementAreaSqFt: 500,
+      isLaCounty: true,
+      assessorValuation: ASSESSOR_RECORD,
+      applyMarketIndex: false,
     });
     // ~$76.45/sq ft from the roll, not the $220 national placeholder.
     const expectedCenter = 500 * ASSESSOR_RECORD.landValuePerSqFt;
     expect(result.valueAtRiskRange.low).toBe(Math.round(expectedCenter * 0.8));
-    expect(result.valueAtRiskRange.high).toBe(Math.round(expectedCenter * 1.2));
+    expect(result.dataCoverage.tier).toBe('clear');
     expect(result.methodology).toContain('assessed land value');
+  });
+
+  it('falls back to the raw assessed value when no base year is recorded', () => {
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: ASSESSOR_RECORD.lotAreaSqFt,
+      easementAreaSqFt: 500,
+      isLaCounty: true,
+      assessorValuation: { ...ASSESSOR_RECORD, landBaseYear: null },
+    });
+    expect(result.marketAdjustment).toBeUndefined();
+    expect(result.valueAtRiskRange.low).toBe(
+      Math.round(500 * ASSESSOR_RECORD.landValuePerSqFt * 0.8),
+    );
   });
 
   it('lets an explicit override win over assessor data', () => {

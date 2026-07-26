@@ -17,6 +17,7 @@ const ASSESSOR_RECORD: AssessorParcelValuation = {
   landValue: 740440,
   improvementValue: 313342,
   rollYear: '2026',
+  landBaseYear: '2006',
   landValuePerSqFt: 740440 / 9685.58,
 };
 
@@ -31,7 +32,11 @@ describe('buildRiskDisclosureReport', () => {
     const withoutRecord = buildRiskDisclosureReport(baseInput);
     expect(withoutRecord.economicImpact.dataCoverage.tier).toBe('likely-with-caveat');
 
-    const withRecord = buildRiskDisclosureReport({ ...baseInput, assessorValuation: ASSESSOR_RECORD });
+    const withRecord = buildRiskDisclosureReport({
+      ...baseInput,
+      assessorValuation: ASSESSOR_RECORD,
+      applyMarketIndex: false,
+    });
     expect(withRecord.economicImpact.dataCoverage.tier).toBe('clear');
     expect(withRecord.economicImpact.methodology).toContain('2026 assessment roll');
   });

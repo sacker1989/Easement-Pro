@@ -25,6 +25,18 @@ export {
   type ParcelCandidate,
 } from './la-county-assessor-provider';
 export {
+  indexAssessedValue,
+  marketAdjustParcel,
+  parseBaseYear,
+  MarketIndexError,
+  type MarketAdjustedParcel,
+  type MarketIndexedValue,
+} from './market-index';
+export {
+  LA_COUNTY_HPI_BY_YEAR,
+  LA_COUNTY_HPI_LATEST_YEAR,
+} from './la-county-hpi-data';
+export {
   buildSitusWhereClause,
   parseSitusAddress,
   UnparseableAddressError,

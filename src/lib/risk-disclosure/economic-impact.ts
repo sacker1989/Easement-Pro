@@ -1,5 +1,6 @@
 import { classifyByRules, type ConfidenceRule, type TieredResult } from '@/lib/analysis-layer/confidence-tiering';
 import type { AssessorParcelValuation } from './la-county-assessor-provider';
+import { marketAdjustParcel, type MarketAdjustedParcel } from './market-index';
 
 /**
  * Track 3 economic-impact panel: lost buildable area, value range at risk,
@@ -24,9 +25,34 @@ export interface DataCoverageFacts {
   isLaCounty: boolean;
   /** Present only when a live assessor lookup actually returned a record. */
   assessorValuation?: AssessorParcelValuation;
+  /** True when the price was modelled forward by the house-price index. */
+  marketIndexed?: boolean;
 }
 
 const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataCoverageLabel>> = [
+  {
+    id: 'la-county-market-indexed',
+    evaluate(facts) {
+      const v = facts.assessorValuation;
+      if (!v || !facts.marketIndexed) return null;
+      // The parcel identity and lot area are verified, but the price is a
+      // model output. 'clear' gates direct assertion in a paid letter, and a
+      // modelled figure must not be asserted that way.
+      return {
+        tier: 'likely-with-caveat',
+        value: {
+          label:
+            `LA County parcel ${v.ain}, assessed value indexed forward from its ` +
+            `${v.landBaseYear} base year to current market`,
+        },
+        caveat:
+          'The county assessment reflects a Proposition 13 base year rather than current ' +
+          'market value, so it has been indexed forward using the LA County house-price ' +
+          'index. The result is a modelled estimate assuming county-median appreciation, ' +
+          'not an appraisal or an observed sale price.',
+      };
+    },
+  },
   {
     id: 'la-county-assessor-verified',
     evaluate(facts) {
@@ -112,18 +138,43 @@ export interface EconomicImpactInputs {
    * per-sq-ft land value and upgrades the coverage label to verified.
    */
   assessorValuation?: AssessorParcelValuation;
+  /**
+   * Set false to price off the raw assessed value instead of indexing it
+   * forward. Defaults to indexing, since the raw figure is known to be stale.
+   */
+  applyMarketIndex?: boolean;
 }
 
 /** Which source supplied the per-sq-ft figure, in precedence order. */
-type PriceSource = 'caller-override' | 'assessor-roll' | 'national-benchmark';
+type PriceSource = 'caller-override' | 'market-indexed' | 'assessor-roll' | 'national-benchmark';
 
-function resolvePricePerSqFt(inputs: EconomicImpactInputs): { price: number; source: PriceSource } {
+interface ResolvedPrice {
+  price: number;
+  source: PriceSource;
+  adjustment?: MarketAdjustedParcel;
+}
+
+/**
+ * Market indexing is preferred over the raw assessed value because a Prop 13
+ * assessment reflects its base year, not the market — see market-index.ts.
+ * The raw figure is used only when the record carries no usable base year.
+ */
+function resolvePricePerSqFt(inputs: EconomicImpactInputs): ResolvedPrice {
   if (inputs.pricePerSqFtOverride !== undefined) {
     return { price: inputs.pricePerSqFtOverride, source: 'caller-override' };
   }
+
   if (inputs.assessorValuation) {
-    return { price: inputs.assessorValuation.landValuePerSqFt, source: 'assessor-roll' };
+    const valuation = inputs.assessorValuation;
+    if (inputs.applyMarketIndex !== false) {
+      const adjustment = marketAdjustParcel(valuation, valuation.landBaseYear);
+      if (adjustment) {
+        return { price: adjustment.marketLandValuePerSqFt, source: 'market-indexed', adjustment };
+      }
+    }
+    return { price: valuation.landValuePerSqFt, source: 'assessor-roll' };
   }
+
   return { price: NATIONAL_ECONOMIC_BENCHMARKS.medianPricePerSqFt, source: 'national-benchmark' };
 }
 
@@ -139,6 +190,8 @@ export interface EconomicImpactEstimate {
   reworkCostRange: DollarRange;
   methodology: string;
   dataCoverage: TieredResult<DataCoverageLabel>;
+  /** Present when the assessed value was indexed forward to current market. */
+  marketAdjustment?: MarketAdjustedParcel;
 }
 
 function dollarRange(center: number, variance: number): DollarRange {
@@ -150,13 +203,14 @@ function dollarRange(center: number, variance: number): DollarRange {
 }
 
 export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): EconomicImpactEstimate {
-  const { price: pricePerSqFt, source: priceSource } = resolvePricePerSqFt(inputs);
+  const { price: pricePerSqFt, source: priceSource, adjustment } = resolvePricePerSqFt(inputs);
   const lostBuildableAreaSqFt = inputs.easementAreaSqFt;
   const valueAtRiskCenter = lostBuildableAreaSqFt * pricePerSqFt;
   const reworkCostCenter = lostBuildableAreaSqFt * NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt;
   const dataCoverage = classifyDataCoverage({
     isLaCounty: inputs.isLaCounty,
     assessorValuation: inputs.assessorValuation,
+    marketIndexed: priceSource === 'market-indexed',
   });
 
   // Show cents when the source value has them, so the stated price matches the
@@ -166,6 +220,7 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     : pricePerSqFt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const priceSourceNote = {
     'caller-override': `a supplied local price of $${displayPrice}/sq ft`,
+    'market-indexed': `a market-indexed land value of $${displayPrice}/sq ft for this parcel`,
     'assessor-roll': inputs.assessorValuation
       ? `the LA County ${inputs.assessorValuation.rollYear} assessed land value of ` +
         `$${displayPrice}/sq ft for this parcel`
@@ -180,7 +235,8 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     `${priceSourceNote}, shown as a range of ±${variancePercent}% to reflect estimate uncertainty. ` +
     `Rework cost applies the national average cost to rebuild or relocate a structure, ` +
     `$${NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt}/sq ft, to the same area, with the same ` +
-    `variance band. ${dataCoverageLabelText(dataCoverage)}.`;
+    `variance band. ${dataCoverageLabelText(dataCoverage)}.` +
+    (adjustment ? ` ${adjustment.note}` : '');
 
   return {
     lostBuildableAreaSqFt,
@@ -188,5 +244,6 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     reworkCostRange: dollarRange(reworkCostCenter, NATIONAL_ECONOMIC_BENCHMARKS.varianceBand),
     methodology,
     dataCoverage,
+    ...(adjustment ? { marketAdjustment: adjustment } : {}),
   };
 }

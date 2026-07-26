@@ -24,7 +24,8 @@
       "Bash(git commit -q -m ' *)",
       "Bash(git push *)",
       "Bash(node -e 'let s='\\\\'''\\\\'';process.stdin.on\\('\\\\''data'\\\\'',d=>s+=d\\).on\\('\\\\''end'\\\\'',\\(\\)=>{const d=JSON.parse\\(s\\); *)",
-      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:NODE_OPTIONS = \"--max-old-space-size=1536\"; cd \"C:\\\\Users\\\\steph\\\\.claude\\\\easement-mvp\"; npx tsc --noEmit 2>&1 | Select-Object -First 20)"
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); $env:NODE_OPTIONS = \"--max-old-space-size=1536\"; cd \"C:\\\\Users\\\\steph\\\\.claude\\\\easement-mvp\"; npx tsc --noEmit 2>&1 | Select-Object -First 20)",
+      "Bash(perl -0pi -e \"s/\\(export \\\\{\\\\n  buildSitusWhereClause,\\)/export {\\\\n  indexAssessedValue,\\\\n  marketAdjustParcel,\\\\n  parseBaseYear,\\\\n  MarketIndexError,\\\\n  type MarketAdjustedParcel,\\\\n  type MarketIndexedValue,\\\\n} from '.\\\\/market-index';\\\\nexport {\\\\n  LA_COUNTY_HPI_BY_YEAR,\\\\n  LA_COUNTY_HPI_LATEST_YEAR,\\\\n} from '.\\\\/la-county-hpi-data';\\\\n\\\\$1/\" src/lib/risk-disclosure/index.ts)"
     ]
   },
   "autoMode": {

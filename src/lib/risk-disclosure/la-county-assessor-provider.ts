@@ -22,6 +22,9 @@ const REQUIRED_FIELDS = [
   'Roll_Year',
   'Roll_LandValue',
   'Roll_ImpValue',
+  // Prop 13 base year. Without it there is no way to tell whether an assessed
+  // value is current or decades stale — see market-index.ts.
+  'Roll_LandBaseYear',
 ] as const;
 
 export interface AssessorParcelValuation {
@@ -38,7 +41,13 @@ export interface AssessorParcelValuation {
   readonly improvementValue: number;
   /** Assessment roll year, e.g. "2026". Surfaced so estimates can cite vintage. */
   readonly rollYear: string;
-  /** Derived: landValue / lotAreaSqFt. */
+  /**
+   * Proposition 13 base year for the land assessment, e.g. "2001". The roll
+   * year says when the figure was published; this says what market it
+   * reflects. They are frequently decades apart.
+   */
+  readonly landBaseYear: string | null;
+  /** Derived: landValue / lotAreaSqFt. Reflects the base year, not the market. */
   readonly landValuePerSqFt: number;
 }
 
@@ -138,6 +147,7 @@ export function toAssessorParcelValuation(attrs: Record<string, unknown>): Asses
     landValue,
     improvementValue: Number(attrs['Roll_ImpValue']) || 0,
     rollYear: requireString(attrs, 'Roll_Year'),
+    landBaseYear: blankToNull(attrs['Roll_LandBaseYear']),
     landValuePerSqFt: landValue / lotAreaSqFt,
   };
 }

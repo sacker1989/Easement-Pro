@@ -22,6 +22,8 @@ export interface RiskDisclosureInput {
    * the estimate to national benchmarks with a coverage label that says so.
    */
   assessorValuation?: AssessorParcelValuation;
+  /** Set false to price off the raw assessed value instead of indexing it forward. */
+  applyMarketIndex?: boolean;
 }
 
 export interface RiskDisclosureReport {
@@ -53,6 +55,7 @@ export function buildRiskDisclosureReport(input: RiskDisclosureInput): RiskDiscl
       isLaCounty: input.isLaCounty,
       pricePerSqFtOverride: input.pricePerSqFtOverride,
       assessorValuation: input.assessorValuation,
+      applyMarketIndex: input.applyMarketIndex,
     }),
   };
 }
