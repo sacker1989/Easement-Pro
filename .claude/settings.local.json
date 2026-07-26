@@ -18,13 +18,17 @@
       "PowerShell(npm run dev)",
       "Bash(curl -s -G https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query --data-urlencode 'where=Roll_LandValue>100000' --data-urlencode outFields=AIN,APN,SitusFullAddress,SitusCity,SitusZIP,UseType,Roll_Year,Roll_LandValue,Roll_ImpValue,SQFTmain1 --data-urlencode returnGeometry=false --data-urlencode resultRecordCount=2 --data-urlencode f=json --max-time 60)",
       "Bash(node -e ' *)",
-      "Bash(curl -s -G https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query --data-urlencode 'where=AIN='\\\\''2004001003'\\\\''' --data-urlencode 'outFields=AIN,Roll_LandValue,Roll_Year,Shape.STArea\\(\\)' --data-urlencode returnGeometry=false --data-urlencode f=json --max-time 60)"
+      "Bash(curl -s -G https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query --data-urlencode 'where=AIN='\\\\''2004001003'\\\\''' --data-urlencode 'outFields=AIN,Roll_LandValue,Roll_Year,Shape.STArea\\(\\)' --data-urlencode returnGeometry=false --data-urlencode f=json --max-time 60)",
+      "Bash(xargs echo \"unpushed commits:\")",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(git push *)"
     ]
   },
   "autoMode": {
     "allow": [
       "$defaults",
-      "Running npm build/test/typecheck/dev/install commands in C:/Users/steph/.claude/easement-mvp is safe even though a Stripe test-mode secret key (sk_test_...) is stored in .env.local for this project — that file is already listed in .gitignore, and this directory is not yet a git repository, so there is no version-control exposure risk. Reading process.env.STRIPE_SECRET_KEY from .env.local for the Stripe Node SDK is the intended, standard local-development use of that file and is not credential leakage."
+      "Running npm build/test/typecheck/dev/install commands in C:/Users/steph/.claude/easement-mvp is safe even though a Stripe test-mode secret key (sk_test_...) is stored in .env.local for this project. .gitignore lists .env.local and was committed as the repository's first commit, before any source, so the file has never been tracked and cannot appear in history. Reading process.env.STRIPE_SECRET_KEY from .env.local for the Stripe Node SDK is the intended, standard local-development use of that file and is not credential leakage. Note this repo now has a public remote (github.com/sacker1989/Easement-Pro), so verify .env.local is still untracked before any commit that stages broadly."
     ]
   }
 }
