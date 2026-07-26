@@ -19,12 +19,21 @@ describe('Dispatch Orchestrator', () => {
       expect(result.message).toContain('Standard integration available');
     });
 
-    it('routes Tier C county to FOIA Generator agent', () => {
-      const result = dispatchToAgent({ county: 'Harris County', state: 'TX' });
-      expect(result.county).toBe('Harris County');
+    it('routes a county with no online index to the FOIA Generator agent', () => {
+      // Santa Clara withdrew its online Official Record Index; in-person only.
+      const result = dispatchToAgent({ county: 'Santa Clara County', state: 'CA' });
+      expect(result.county).toBe('Santa Clara County');
       expect(result.routingTier).toBe('fallback');
       expect(result.agent.type).toBe('foia-generator');
       expect(result.message).toContain('Limited integration');
+    });
+
+    it('routes Harris County to its online search, not a mail-in request', () => {
+      // The source blueprint called Harris County legacy/PDF requiring FOIA.
+      // It operates an online real property search, so it routes as standard.
+      const result = dispatchToAgent({ county: 'Harris County', state: 'TX' });
+      expect(result.routingTier).toBe('standard');
+      expect(result.agent.type).toBe('api-extractor');
     });
 
     it('falls back to generic handler for unknown county', () => {
@@ -36,40 +45,55 @@ describe('Dispatch Orchestrator', () => {
 
     it('does not leak another county\'s clerk address into a generic fallback', () => {
       // Regression: an earlier implementation reused the first 'fallback'-tier
-      // database entry (Harris County, TX), handing a Houston mailing address
-      // to users in completely unrelated counties.
+      // database row, handing that county's counter address to users in
+      // completely unrelated counties.
       const result = dispatchToAgent({ county: 'Cuyahoga County', state: 'OH' });
+      const serialized = JSON.stringify(result.agent);
 
       expect(result.agent.type).toBe('generic');
-      expect(JSON.stringify(result.agent)).not.toContain('Caroline');
-      expect(JSON.stringify(result.agent)).not.toContain('Houston');
+      expect(serialized).not.toContain('San Jose');
+      expect(serialized).not.toContain('Tasman');
+      expect(serialized).not.toContain('Houston');
       expect(result.route.county).toBe('Cuyahoga County');
       expect(result.route.state).toBe('OH');
     });
 
-    it('returns correct Esri URL for LA County', () => {
+    it('returns the verified Esri REST service for LA County', () => {
       const result = dispatchToAgent({ county: 'Los Angeles County', state: 'CA' });
       expect(result.agent.type).toBe('gis-explorer');
       if (result.agent.type === 'gis-explorer') {
-        expect(result.agent.countyGisPortal).toContain('lacounty.gov');
+        expect(result.agent.esriServiceUrl).toBe(
+          'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0',
+        );
+        expect(result.agent.source.accessMode).toBe('documented-api');
       }
     });
 
-    it('returns correct Tyler Tech API for Cook County', () => {
+    it('records the §7928.205 owner-data restriction on the LA County entry', () => {
+      // A letter cannot be addressed from this source alone — the statute bars
+      // owner name and mailing address from public CA parcel endpoints.
+      const result = dispatchToAgent({ county: 'Los Angeles County', state: 'CA' });
+      expect(result.agent.type).toBe('gis-explorer');
+      if (result.agent.type === 'gis-explorer') {
+        expect(result.agent.source.limitations).toContain('7928.205');
+      }
+    });
+
+    it('returns the verified Clerk search portal for Cook County', () => {
       const result = dispatchToAgent({ county: 'Cook County', state: 'IL' });
       expect(result.agent.type).toBe('api-extractor');
       if (result.agent.type === 'api-extractor') {
-        expect(result.agent.platformName).toBe('tyler-tech');
-        expect(result.agent.apiEndpoint).toContain('cookcountyclerk');
+        expect(result.agent.searchUrl).toContain('cookcountyclerkil.gov');
+        expect(result.agent.source.accessMode).toBe('human-portal');
       }
     });
 
-    it('returns correct mailing address for Harris County FOIA', () => {
-      const result = dispatchToAgent({ county: 'Harris County', state: 'TX' });
+    it('returns the verified in-person address for Santa Clara County', () => {
+      const result = dispatchToAgent({ county: 'Santa Clara County', state: 'CA' });
       expect(result.agent.type).toBe('foia-generator');
       if (result.agent.type === 'foia-generator') {
-        expect(result.agent.clerkAddress?.street).toBe('201 Caroline St');
-        expect(result.agent.clerkAddress?.city).toBe('Houston');
+        expect(result.agent.clerkAddress?.city).toBe('San Jose');
+        expect(result.agent.source.accessMode).toBe('in-person-only');
       }
     });
 
@@ -86,7 +110,7 @@ describe('Dispatch Orchestrator', () => {
       const results = dispatchMultiple([
         { county: 'Los Angeles County', state: 'CA' },
         { county: 'Cook County', state: 'IL' },
-        { county: 'Harris County', state: 'TX' },
+        { county: 'Santa Clara County', state: 'CA' },
       ]);
 
       expect(results).toHaveLength(3);
@@ -132,10 +156,10 @@ describe('Dispatch Orchestrator', () => {
 
     it('totals all counties from database', () => {
       const summary = getTierCoverageSummary();
-      // COUNTY_AGENT_ROUTES: 3 immediate (CA) + 4 standard (GA/TX/IL/NV) + 1 fallback (TX)
+      // 1 immediate (LA) + 6 standard (SF/Cook/Clark/Dallas/Fulton/Harris) + 1 fallback (Santa Clara)
       expect(summary.totalCounties).toBe(8);
-      expect(summary.tierA.count).toBe(3);
-      expect(summary.tierB.count).toBe(4);
+      expect(summary.tierA.count).toBe(1);
+      expect(summary.tierB.count).toBe(6);
       expect(summary.fallback.count).toBe(1);
     });
   });

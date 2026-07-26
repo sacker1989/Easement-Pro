@@ -180,10 +180,41 @@ Each letter/decision now includes:
 
 ## Database & Expansion
 
-### Current Coverage (Phase 2.0)
-- **Tier A**: 3 California counties (LA, SF, Santa Clara)
-- **Tier B**: 5 counties (Fulton GA, Dallas TX, Cook IL, Clark NV, + placeholder for expansion)
-- **Fallback**: Harris County TX + generic handler
+### Current Coverage (Phase 2.0) — verified 2026-07-25
+
+| County | Tier | Platform | Access mode |
+|---|---|---|---|
+| Los Angeles, CA | immediate | Esri REST (`public.gis.lacounty.gov`) | **documented-api** |
+| San Francisco, CA | standard | county-built (`sf.gov`) | human-portal |
+| Cook, IL | standard | county-built (`cookcountyclerkil.gov`) | human-portal |
+| Clark, NV | standard | Acclaim (`recorderecomm.clarkcountynv.gov`) | human-portal |
+| Dallas, TX | standard | PublicSearch (`dallas.tx.publicsearch.us`) | human-portal |
+| Fulton, GA | standard | GSCCCA (`search.gsccca.org`) | human-portal |
+| Harris, TX | standard | county-built (`cclerk.hctx.net`) | human-portal |
+| Santa Clara, CA | fallback | none — in person only | in-person-only |
+
+> **Only Los Angeles County is machine-queryable**, and what it exposes is
+> parcel geometry, not deed text. Every other entry is a human-facing search
+> page. Check `agent.source.accessMode` before assuming a JSON contract.
+
+### Verification history
+
+An earlier revision of `county-database.ts` contained invented endpoints —
+every URL was wrong, three contained a literal `...`, and two tier
+assignments were incorrect (Santa Clara listed as a real-time integration
+despite having no online index; Harris listed as FOIA-only despite operating
+an online search). Each entry now carries a `source` block recording access
+mode, verification date, and known limitations.
+
+**Two limitations worth carrying into product decisions:**
+
+- **CA Gov. Code §7928.205** bars owner name and mailing address from public
+  California parcel REST endpoints. The LA County service returns parcel
+  identity and situs address only — owner identity must come from elsewhere
+  before any letter can be addressed.
+- **Cook County's Recorder of Deeds was abolished 2020-12-07**, duties folded
+  into the Clerk. Copy referring to a "Cook County Recorder" addresses an
+  office that no longer exists.
 
 ### Adding New Counties
 1. **Research county record platform** (Esri, Tyler Tech, qPublic, or legacy)
@@ -201,14 +232,23 @@ Each letter/decision now includes:
   tier: "standard",
   agent: {
     type: "api-extractor",
-    platformName: "tyler-tech",
-    apiEndpoint: "https://recorder.cookcountyclerk.com/api",
-    apiKeyRequired: true,
-    recordIndexPath: "/recorder-search",
-    description: "Cook County Clerk recorder system"
+    platformName: "county-built",
+    searchUrl: "https://www.cookcountyclerkil.gov/recordings/search-recordings",
+    description: "Cook County Clerk Recordings Division. Free search by PIN, grantor and grantee.",
+    source: {
+      accessMode: "human-portal",
+      verifiedOn: "2026-07-25",
+      verifiedVia: "cookcountyclerkil.gov/recordings",
+      limitations: "Recorder of Deeds office abolished 2020-12-07; duties folded into the Clerk."
+    }
   }
 }
 ```
+
+The `source` block is not optional decoration. Populate `accessMode`
+honestly — `human-portal` is the correct answer for most counties, and
+recording that prevents someone downstream from building an integration
+against a search form that will never return JSON.
 
 ## Testing & Verification (Phase 2)
 
@@ -222,10 +262,15 @@ Each letter/decision now includes:
 **Expected**: Dispatch to API Extractor, standard tier, Tyler Tech endpoint  
 **Validation**: `dispatchToAgent()` returns `routingTier: "standard"`, agent type is `api-extractor`
 
-### Test Case 3: Fallback FOIA Routing
-**Input**: Harris County, TX (unmapped scenario)  
-**Expected**: Dispatch to FOIA Generator, fallback tier, mailing address + template  
+### Test Case 3: Fallback Records-Request Routing
+**Input**: Santa Clara County, CA (no online index)  
+**Expected**: Dispatch to FOIA Generator, fallback tier, in-person counter address  
 **Validation**: `dispatchToAgent()` returns `routingTier: "fallback"`, agent type is `foia-generator`
+
+> The source blueprint used Harris County, TX for this case, describing it as
+> a legacy/PDF jurisdiction requiring a mail-in request. Harris County in fact
+> operates an online real property search, so it routes as `standard`. Santa
+> Clara replaces it as the genuine no-online-index case.
 
 ### Test Case 4: Unknown County Fallback
 **Input**: Unknown County, New State  

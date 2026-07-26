@@ -8,7 +8,8 @@ import {
 
 const laCounty = dispatchToAgent({ county: 'Los Angeles County', state: 'CA' });
 const cookCounty = dispatchToAgent({ county: 'Cook County', state: 'IL' });
-const harrisCounty = dispatchToAgent({ county: 'Harris County', state: 'TX' });
+// Santa Clara offers no online index — the in-person / records-request case.
+const santaClaraCounty = dispatchToAgent({ county: 'Santa Clara County', state: 'CA' });
 const unmappedCounty = dispatchToAgent({ county: 'Cuyahoga County', state: 'OH' });
 
 describe('mapJurisdictionToConfidence', () => {
@@ -20,16 +21,16 @@ describe('mapJurisdictionToConfidence', () => {
     expect(context.dataSource).toContain('GIS');
   });
 
-  it('maps a standard-tier API county to inferred confidence with a caveat', () => {
+  it('maps a standard-tier index county to inferred confidence with a caveat', () => {
     const context = mapJurisdictionToConfidence(cookCounty);
     expect(context.confidence).toBe('inferred');
     expect(context.caveat).toBeDefined();
     expect(context.caveat).toContain('verify with the county assessor');
-    expect(context.dataSource).toContain('tyler-tech');
+    expect(context.dataSource).toContain('county-built');
   });
 
-  it('maps a fallback-tier FOIA county to flagged confidence', () => {
-    const context = mapJurisdictionToConfidence(harrisCounty);
+  it('maps a fallback-tier records-request county to flagged confidence', () => {
+    const context = mapJurisdictionToConfidence(santaClaraCounty);
     expect(context.confidence).toBe('flagged');
     expect(context.caveat).toContain('illustrative only');
     expect(context.dataSource).toContain('FOIA');
