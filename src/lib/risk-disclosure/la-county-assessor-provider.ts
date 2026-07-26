@@ -9,6 +9,8 @@
  * be speculative.
  */
 
+import { buildSitusWhereClause, parseSitusAddress } from './situs-address';
+
 const LA_COUNTY_PARCEL_QUERY_URL =
   'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query';
 
@@ -40,10 +42,37 @@ export interface AssessorParcelValuation {
   readonly landValuePerSqFt: number;
 }
 
+/** Minimal identity for one of several parcels sharing a street address. */
+export interface ParcelCandidate {
+  readonly ain: string;
+  readonly situsFullAddress: string;
+  /** Unit designator, or null when the county stores a blank. */
+  readonly unit: string | null;
+}
+
+/**
+ * Outcome of an address lookup.
+ *
+ * `ambiguous` exists because a single street address routinely maps to many
+ * parcels — a condo building yields one AIN per unit, all sharing house
+ * number and street. Collapsing that to "the first result" would price an
+ * arbitrary neighbour's unit and present it as the user's own, so the
+ * ambiguity is surfaced for the caller to resolve.
+ */
+export type AddressLookupResult =
+  | { status: 'found'; valuation: AssessorParcelValuation }
+  | { status: 'not-found' }
+  | { status: 'ambiguous'; candidates: ParcelCandidate[] };
+
 export interface LaCountyAssessorProvider {
   name: string;
   /** Returns null when the parcel is not found. Throws on transport failure. */
   fetchByAin(ain: string): Promise<AssessorParcelValuation | null>;
+  /**
+   * Resolves a street address to a parcel. Supplying `zip` narrows the match;
+   * supplying a unit in the street line disambiguates multi-unit buildings.
+   */
+  findByAddress(streetLine: string, zip?: string): Promise<AddressLookupResult>;
 }
 
 export class AssessorLookupError extends Error {
@@ -57,6 +86,15 @@ export class AssessorLookupError extends Error {
 interface EsriQueryResponse {
   error?: { code?: number; message?: string };
   features?: Array<{ attributes: Record<string, unknown> }>;
+}
+
+/**
+ * The county writes a single space rather than null or "" into unused situs
+ * fields, so a naive truthiness check treats " " as a real unit designator.
+ */
+function blankToNull(value: unknown): string | null {
+  const text = String(value ?? '').trim();
+  return text === '' ? null : text;
 }
 
 function requireString(attrs: Record<string, unknown>, key: string): string {
@@ -140,34 +178,7 @@ export function createLaCountyAssessorProvider(
         f: 'json',
       });
 
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-      let payload: EsriQueryResponse;
-      try {
-        const response = await fetchImpl(`${LA_COUNTY_PARCEL_QUERY_URL}?${params}`, {
-          signal: controller.signal,
-        });
-        if (!response.ok) {
-          throw new AssessorLookupError(
-            `LA County assessor service returned HTTP ${response.status}`,
-          );
-        }
-        payload = (await response.json()) as EsriQueryResponse;
-      } catch (err) {
-        if (err instanceof AssessorLookupError) throw err;
-        throw new AssessorLookupError('LA County assessor lookup failed', err);
-      } finally {
-        clearTimeout(timer);
-      }
-
-      // Esri reports query errors in a 200 body rather than an HTTP status.
-      if (payload.error) {
-        throw new AssessorLookupError(
-          `LA County assessor service error: ${payload.error.message ?? 'unknown'}`,
-        );
-      }
-
+      const payload = await requestJson(`${LA_COUNTY_PARCEL_QUERY_URL}?${params}`);
       const feature = payload.features?.[0];
       if (!feature) {
         return null;
@@ -175,7 +186,63 @@ export function createLaCountyAssessorProvider(
 
       return toAssessorParcelValuation(feature.attributes);
     },
+
+    async findByAddress(streetLine: string, zip?: string): Promise<AddressLookupResult> {
+      const parsed = parseSitusAddress(streetLine);
+      const where = buildSitusWhereClause(parsed, zip);
+
+      const params = new URLSearchParams({
+        where,
+        outFields: [...REQUIRED_FIELDS, 'SitusUnit', 'Shape.STArea()'].join(','),
+        returnGeometry: 'false',
+        f: 'json',
+      });
+
+      const payload = await requestJson(`${LA_COUNTY_PARCEL_QUERY_URL}?${params}`);
+      const features = payload.features ?? [];
+
+      if (features.length === 0) {
+        return { status: 'not-found' };
+      }
+
+      if (features.length > 1) {
+        return {
+          status: 'ambiguous',
+          candidates: features.map((f) => ({
+            ain: String(f.attributes['AIN'] ?? ''),
+            situsFullAddress: String(f.attributes['SitusFullAddress'] ?? ''),
+            unit: blankToNull(f.attributes['SitusUnit']),
+          })),
+        };
+      }
+
+      return { status: 'found', valuation: toAssessorParcelValuation(features[0]!.attributes) };
+    },
   };
+
+  /** Shared transport: HTTP errors, Esri's 200-with-error bodies, timeouts. */
+  async function requestJson(url: string): Promise<EsriQueryResponse> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetchImpl(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new AssessorLookupError(`LA County assessor service returned HTTP ${response.status}`);
+      }
+      const payload = (await response.json()) as EsriQueryResponse;
+      if (payload.error) {
+        throw new AssessorLookupError(
+          `LA County assessor service error: ${payload.error.message ?? 'unknown'}`,
+        );
+      }
+      return payload;
+    } catch (err) {
+      if (err instanceof AssessorLookupError) throw err;
+      throw new AssessorLookupError('LA County assessor lookup failed', err);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 /**
@@ -187,5 +254,8 @@ export const noOpAssessorProvider: LaCountyAssessorProvider = {
   name: 'none',
   async fetchByAin() {
     return null;
+  },
+  async findByAddress() {
+    return { status: 'not-found' };
   },
 };

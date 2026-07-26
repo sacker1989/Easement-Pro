@@ -25,6 +25,17 @@ function fetchReturning(body: unknown, ok = true, status = 200): typeof fetch {
   }) as unknown as typeof fetch;
 }
 
+/**
+ * Reads back the URL a mocked fetch was called with, in readable form.
+ * URLSearchParams encodes spaces as "+", which decodeURIComponent leaves
+ * alone, so those are restored before matching on SQL fragments.
+ */
+function requestedUrl(fetchImpl: typeof fetch, callIndex = 0): string {
+  const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
+  expect(calls[callIndex]).toBeDefined();
+  return decodeURIComponent(String(calls[callIndex]![0])).replace(/\+/g, ' ');
+}
+
 describe('toAssessorParcelValuation', () => {
   it('maps a live attribute bag and derives price per sq ft', () => {
     const v = toAssessorParcelValuation(LIVE_ATTRS);
@@ -103,17 +114,100 @@ describe('createLaCountyAssessorProvider', () => {
     const provider = createLaCountyAssessorProvider({ fetchImpl });
     await provider.fetchByAin('2004001003');
 
-    const firstCall = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const url = String(firstCall![0]);
+    const url = requestedUrl(fetchImpl);
     expect(url).toContain('Roll_LandValue');
     expect(url).toContain('Shape.STArea');
     expect(url).toContain('returnGeometry=false');
   });
 });
 
+describe('findByAddress', () => {
+  it('returns a valuation when exactly one parcel matches', async () => {
+    const provider = createLaCountyAssessorProvider({
+      fetchImpl: fetchReturning({ features: [{ attributes: LIVE_ATTRS }] }),
+    });
+    const result = await provider.findByAddress('8321 Faust Avenue', '91304');
+    expect(result.status).toBe('found');
+    if (result.status === 'found') {
+      expect(result.valuation.ain).toBe('2004001003');
+    }
+  });
+
+  it('reports ambiguity rather than picking a unit when several parcels share an address', async () => {
+    // A condo building yields one AIN per unit. Returning the first would
+    // price an arbitrary neighbour's unit as if it were the user's.
+    const units = ['1', '2', '3'].map((unit) => ({
+      attributes: {
+        ...LIVE_ATTRS,
+        AIN: `233801502${unit}`,
+        SitusUnit: unit,
+        SitusFullAddress: `11501 W HATTERAS ST ${unit} NORTH HOLLYWOOD CA 91601`,
+      },
+    }));
+    const provider = createLaCountyAssessorProvider({ fetchImpl: fetchReturning({ features: units }) });
+
+    const result = await provider.findByAddress('11501 W Hatteras St', '91601');
+    expect(result.status).toBe('ambiguous');
+    if (result.status === 'ambiguous') {
+      expect(result.candidates).toHaveLength(3);
+      expect(result.candidates.map((c) => c.unit)).toEqual(['1', '2', '3']);
+    }
+  });
+
+  it('resolves to one parcel when the caller supplies the unit', async () => {
+    const fetchImpl = fetchReturning({
+      features: [{ attributes: { ...LIVE_ATTRS, SitusUnit: '2' } }],
+    });
+    const provider = createLaCountyAssessorProvider({ fetchImpl });
+
+    const result = await provider.findByAddress('11501 W Hatteras St Unit 2', '91601');
+    expect(result.status).toBe('found');
+    expect(requestedUrl(fetchImpl)).toContain("SitusUnit='2'");
+  });
+
+  it('reads a blank unit as null rather than a space', async () => {
+    // The county writes " " into unused situs fields.
+    const provider = createLaCountyAssessorProvider({
+      fetchImpl: fetchReturning({
+        features: [
+          { attributes: { ...LIVE_ATTRS, SitusUnit: ' ' } },
+          { attributes: { ...LIVE_ATTRS, AIN: '2004001004', SitusUnit: ' ' } },
+        ],
+      }),
+    });
+    const result = await provider.findByAddress('8321 Faust Ave');
+    expect(result.status).toBe('ambiguous');
+    if (result.status === 'ambiguous') {
+      expect(result.candidates.every((c) => c.unit === null)).toBe(true);
+    }
+  });
+
+  it('returns not-found for an address with no matching parcel', async () => {
+    const provider = createLaCountyAssessorProvider({ fetchImpl: fetchReturning({ features: [] }) });
+    expect((await provider.findByAddress('1 Nonexistent St')).status).toBe('not-found');
+  });
+
+  it('matches ZIP by prefix so ZIP+4 storage does not defeat the lookup', async () => {
+    const fetchImpl = fetchReturning({ features: [{ attributes: LIVE_ATTRS }] });
+    const provider = createLaCountyAssessorProvider({ fetchImpl });
+    await provider.findByAddress('8321 Faust Ave', '91304');
+    expect(requestedUrl(fetchImpl)).toContain("SitusZIP LIKE '91304%'");
+  });
+
+  it('rejects an unparseable address without issuing a request', async () => {
+    const fetchImpl = fetchReturning({ features: [] });
+    const provider = createLaCountyAssessorProvider({ fetchImpl });
+    await expect(provider.findByAddress('not an address')).rejects.toThrow(/house number/);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
 describe('noOpAssessorProvider', () => {
   it('returns null so estimates degrade instead of failing', async () => {
     expect(await noOpAssessorProvider.fetchByAin('2004001003')).toBeNull();
+  });
+
+  it('reports not-found for address lookups', async () => {
+    expect((await noOpAssessorProvider.findByAddress('8321 Faust Ave')).status).toBe('not-found');
   });
 });

@@ -19,9 +19,17 @@ export {
   noOpAssessorProvider,
   toAssessorParcelValuation,
   AssessorLookupError,
+  type AddressLookupResult,
   type AssessorParcelValuation,
   type LaCountyAssessorProvider,
+  type ParcelCandidate,
 } from './la-county-assessor-provider';
+export {
+  buildSitusWhereClause,
+  parseSitusAddress,
+  UnparseableAddressError,
+  type ParsedSitusAddress,
+} from './situs-address';
 export {
   buildRiskDisclosureReport,
   InvalidRiskDisclosureInputError,
