@@ -1,4 +1,5 @@
 import { buildEconomicImpactEstimate, type EconomicImpactEstimate } from './economic-impact';
+import type { AssessorParcelValuation } from './la-county-assessor-provider';
 import { buildRestrictionChecklist, type EasementPurpose, type RestrictionChecklistItem } from './restriction-checklist';
 
 export class InvalidRiskDisclosureInputError extends Error {
@@ -15,6 +16,12 @@ export interface RiskDisclosureInput {
   /** Whether the address resolved (step 1) to LA County — drives the data-coverage label only. */
   isLaCounty: boolean;
   pricePerSqFtOverride?: number;
+  /**
+   * Live LA County assessor record when one was retrieved. Fetch it with
+   * createLaCountyAssessorProvider() and pass the result; omitting it degrades
+   * the estimate to national benchmarks with a coverage label that says so.
+   */
+  assessorValuation?: AssessorParcelValuation;
 }
 
 export interface RiskDisclosureReport {
@@ -45,6 +52,7 @@ export function buildRiskDisclosureReport(input: RiskDisclosureInput): RiskDiscl
       easementAreaSqFt: input.easementAreaSqFt,
       isLaCounty: input.isLaCounty,
       pricePerSqFtOverride: input.pricePerSqFtOverride,
+      assessorValuation: input.assessorValuation,
     }),
   };
 }

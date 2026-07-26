@@ -8,11 +8,20 @@ export {
   buildEconomicImpactEstimate,
   classifyDataCoverage,
   NATIONAL_ECONOMIC_BENCHMARKS,
+  type DataCoverageFacts,
   type DataCoverageLabel,
   type DollarRange,
   type EconomicImpactEstimate,
   type EconomicImpactInputs,
 } from './economic-impact';
+export {
+  createLaCountyAssessorProvider,
+  noOpAssessorProvider,
+  toAssessorParcelValuation,
+  AssessorLookupError,
+  type AssessorParcelValuation,
+  type LaCountyAssessorProvider,
+} from './la-county-assessor-provider';
 export {
   buildRiskDisclosureReport,
   InvalidRiskDisclosureInputError,

@@ -1,4 +1,5 @@
 import { classifyByRules, type ConfidenceRule, type TieredResult } from '@/lib/analysis-layer/confidence-tiering';
+import type { AssessorParcelValuation } from './la-county-assessor-provider';
 
 /**
  * Track 3 economic-impact panel: lost buildable area, value range at risk,
@@ -7,20 +8,55 @@ import { classifyByRules, type ConfidenceRule, type TieredResult } from '@/lib/a
  * Flagged confidence pattern rather than building separate geographic
  * gating logic" — the label is the only thing that changes by location,
  * never feature availability, so this module never blocks on state/county.
+ *
+ * The coverage label keys on whether real assessor data actually backs the
+ * figures, NOT on which county the address is in. An earlier revision graded
+ * any LA County address as "Verified against LA County reference data" even
+ * when every dollar shown came from the invented national placeholder — the
+ * label asserted verification that had not occurred.
  */
 
 export interface DataCoverageLabel {
   label: string;
 }
 
-const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<{ isLaCounty: boolean }, DataCoverageLabel>> = [
+export interface DataCoverageFacts {
+  isLaCounty: boolean;
+  /** Present only when a live assessor lookup actually returned a record. */
+  assessorValuation?: AssessorParcelValuation;
+}
+
+const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataCoverageLabel>> = [
   {
-    id: 'la-county-verified',
+    id: 'la-county-assessor-verified',
     evaluate(facts) {
-      if (facts.isLaCounty) {
-        return { tier: 'clear', value: { label: 'Verified against LA County reference data' } };
-      }
-      return null;
+      const v = facts.assessorValuation;
+      if (!v) return null;
+      return {
+        tier: 'clear',
+        value: {
+          label:
+            `Verified against the LA County ${v.rollYear} assessment roll ` +
+            `(AIN ${v.ain}, land value $${v.landValuePerSqFt.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}/sq ft)`,
+        },
+      };
+    },
+  },
+  {
+    id: 'la-county-assessor-unavailable',
+    evaluate(facts) {
+      if (!facts.isLaCounty) return null;
+      return {
+        tier: 'likely-with-caveat',
+        value: { label: 'LA County parcel, but assessor data was not retrieved' },
+        caveat:
+          'This address is in LA County, where assessor roll values are available, but no ' +
+          'parcel record was retrieved for it. The figures below fall back to national ' +
+          'benchmarks and are not verified against county data.',
+      };
     },
   },
   {
@@ -37,15 +73,15 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<{ isLaCounty: boolean },
   },
 ];
 
-// The national-estimate-default rule above always matches when LA County verification
-// doesn't apply, so classifyByRules should never actually reach this fallback.
+// The national-estimate-default rule above always matches when neither LA County
+// rule applies, so classifyByRules should never actually reach this fallback.
 const UNREACHABLE_FALLBACK = {
   tier: 'flagged-ambiguous',
   flagReason: 'No data-coverage rule matched — this should be unreachable.',
 } as const;
 
-export function classifyDataCoverage(isLaCounty: boolean): TieredResult<DataCoverageLabel> {
-  return classifyByRules({ isLaCounty }, DATA_COVERAGE_RULES, UNREACHABLE_FALLBACK);
+export function classifyDataCoverage(facts: DataCoverageFacts): TieredResult<DataCoverageLabel> {
+  return classifyByRules(facts, DATA_COVERAGE_RULES, UNREACHABLE_FALLBACK);
 }
 
 function dataCoverageLabelText(result: TieredResult<DataCoverageLabel>): string {
@@ -71,6 +107,24 @@ export interface EconomicImpactInputs {
   isLaCounty: boolean;
   /** Optional local price/sq ft, when a caller has better data than the national default. */
   pricePerSqFtOverride?: number;
+  /**
+   * Live LA County assessor record, when one was retrieved. Supplies the
+   * per-sq-ft land value and upgrades the coverage label to verified.
+   */
+  assessorValuation?: AssessorParcelValuation;
+}
+
+/** Which source supplied the per-sq-ft figure, in precedence order. */
+type PriceSource = 'caller-override' | 'assessor-roll' | 'national-benchmark';
+
+function resolvePricePerSqFt(inputs: EconomicImpactInputs): { price: number; source: PriceSource } {
+  if (inputs.pricePerSqFtOverride !== undefined) {
+    return { price: inputs.pricePerSqFtOverride, source: 'caller-override' };
+  }
+  if (inputs.assessorValuation) {
+    return { price: inputs.assessorValuation.landValuePerSqFt, source: 'assessor-roll' };
+  }
+  return { price: NATIONAL_ECONOMIC_BENCHMARKS.medianPricePerSqFt, source: 'national-benchmark' };
 }
 
 export interface DollarRange {
@@ -96,20 +150,33 @@ function dollarRange(center: number, variance: number): DollarRange {
 }
 
 export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): EconomicImpactEstimate {
-  const pricePerSqFt = inputs.pricePerSqFtOverride ?? NATIONAL_ECONOMIC_BENCHMARKS.medianPricePerSqFt;
+  const { price: pricePerSqFt, source: priceSource } = resolvePricePerSqFt(inputs);
   const lostBuildableAreaSqFt = inputs.easementAreaSqFt;
   const valueAtRiskCenter = lostBuildableAreaSqFt * pricePerSqFt;
   const reworkCostCenter = lostBuildableAreaSqFt * NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt;
-  const dataCoverage = classifyDataCoverage(inputs.isLaCounty);
+  const dataCoverage = classifyDataCoverage({
+    isLaCounty: inputs.isLaCounty,
+    assessorValuation: inputs.assessorValuation,
+  });
 
-  const priceSourceNote = inputs.pricePerSqFtOverride
-    ? `a supplied local price of $${pricePerSqFt}/sq ft`
-    : `the national median estimate of $${pricePerSqFt}/sq ft`;
+  // Show cents when the source value has them, so the stated price matches the
+  // one actually multiplied rather than a rounded approximation of it.
+  const displayPrice = Number.isInteger(pricePerSqFt)
+    ? pricePerSqFt.toLocaleString()
+    : pricePerSqFt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const priceSourceNote = {
+    'caller-override': `a supplied local price of $${displayPrice}/sq ft`,
+    'assessor-roll': inputs.assessorValuation
+      ? `the LA County ${inputs.assessorValuation.rollYear} assessed land value of ` +
+        `$${displayPrice}/sq ft for this parcel`
+      : `an assessed land value of $${displayPrice}/sq ft`,
+    'national-benchmark': `the national median estimate of $${displayPrice}/sq ft`,
+  }[priceSource];
   const variancePercent = Math.round(NATIONAL_ECONOMIC_BENCHMARKS.varianceBand * 100);
 
   const methodology =
-    `Lost buildable area is the easement's footprint: ${lostBuildableAreaSqFt.toLocaleString()} sq ft ` +
-    `out of a ${inputs.lotAreaSqFt.toLocaleString()} sq ft lot. Value at risk multiplies that area by ` +
+    `Lost buildable area is the easement's footprint: ${Math.round(lostBuildableAreaSqFt).toLocaleString()} sq ft ` +
+    `out of a ${Math.round(inputs.lotAreaSqFt).toLocaleString()} sq ft lot. Value at risk multiplies that area by ` +
     `${priceSourceNote}, shown as a range of ±${variancePercent}% to reflect estimate uncertainty. ` +
     `Rework cost applies the national average cost to rebuild or relocate a structure, ` +
     `$${NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt}/sq ft, to the same area, with the same ` +
