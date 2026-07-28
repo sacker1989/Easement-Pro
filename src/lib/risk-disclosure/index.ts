@@ -25,6 +25,14 @@ export {
   type ParcelCandidate,
 } from './la-county-assessor-provider';
 export {
+  resolveConstructionCost,
+  divisionForState,
+  CONSTRUCTION_COST_BY_DIVISION,
+  NATIONAL_CONSTRUCTION_COST_PER_SQ_FT,
+  type CensusDivision,
+  type ConstructionCostEstimate,
+} from './construction-cost';
+export {
   indexAssessedValue,
   marketAdjustParcel,
   parseBaseYear,

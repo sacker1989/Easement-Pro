@@ -91,6 +91,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             lotAreaSqFt,
             easementAreaSqFt,
             isLaCounty,
+            state,
             assessorValuation: valuation ?? undefined,
           });
         }
@@ -256,8 +257,17 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               {report.economicImpact.valueAtRiskRange.high.toLocaleString()}
             </li>
             <li>
-              Rework cost: ${report.economicImpact.reworkCostRange.low.toLocaleString()} – $
+              Rework cost (lower bound): $
+              {report.economicImpact.reworkCostRange.low.toLocaleString()} – $
               {report.economicImpact.reworkCostRange.high.toLocaleString()}
+              <br />
+              <small>
+                Based on ${report.economicImpact.constructionCost.costPerSqFt}/sq ft
+                {report.economicImpact.constructionCost.isDivisionReported
+                  ? ` (${report.economicImpact.constructionCost.division?.replace(/-/g, ' ')} region)`
+                  : ' (national median)'}
+                . Excludes demolition and site constraints, so actual rework costs more.
+              </small>
             </li>
           </ul>
           <h3>Data coverage</h3>

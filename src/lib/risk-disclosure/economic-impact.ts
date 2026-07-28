@@ -1,6 +1,7 @@
 import { classifyByRules, type ConfidenceRule, type TieredResult } from '@/lib/analysis-layer/confidence-tiering';
 import type { AssessorParcelValuation } from './la-county-assessor-provider';
 import { marketAdjustParcel, type MarketAdjustedParcel } from './market-index';
+import { resolveConstructionCost, type ConstructionCostEstimate } from './construction-cost';
 
 /**
  * Track 3 economic-impact panel: lost buildable area, value range at risk,
@@ -115,14 +116,17 @@ function dataCoverageLabelText(result: TieredResult<DataCoverageLabel>): string 
 }
 
 /**
- * Placeholder national economic benchmarks standing in for a live FHFA
- * (House Price Index) / NAHB (Cost of Constructing a Home) data feed. These
- * are illustrative placeholders, not sourced figures — Research Agent must
- * wire up a real data feed before this reaches production users.
+ * National fallbacks used when no local data is available.
+ *
+ * medianPricePerSqFt remains an unsourced placeholder — it stands in for a
+ * national land-value feed that is not wired up. Where a parcel matches, the
+ * assessor path supersedes it entirely (see resolvePricePerSqFt).
+ *
+ * reworkCostPerSqFt is no longer used. Rework pricing now resolves per region
+ * from Census Survey of Construction data — see construction-cost.ts.
  */
 export const NATIONAL_ECONOMIC_BENCHMARKS = {
   medianPricePerSqFt: 220,
-  reworkCostPerSqFt: 180,
   varianceBand: 0.2, // +/-20%, reflected in the low/high range
   needsLiveDataSourceIntegration: true as const,
 };
@@ -143,6 +147,11 @@ export interface EconomicImpactInputs {
    * forward. Defaults to indexing, since the raw figure is known to be stale.
    */
   applyMarketIndex?: boolean;
+  /**
+   * Two-letter state code, used to pick a regional construction cost for the
+   * rework estimate. Falls back to the national median when omitted.
+   */
+  state?: string;
 }
 
 /** Which source supplied the per-sq-ft figure, in precedence order. */
@@ -192,6 +201,8 @@ export interface EconomicImpactEstimate {
   dataCoverage: TieredResult<DataCoverageLabel>;
   /** Present when the assessed value was indexed forward to current market. */
   marketAdjustment?: MarketAdjustedParcel;
+  /** Which construction-cost figure backed the rework range. */
+  constructionCost: ConstructionCostEstimate;
 }
 
 function dollarRange(center: number, variance: number): DollarRange {
@@ -206,7 +217,8 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
   const { price: pricePerSqFt, source: priceSource, adjustment } = resolvePricePerSqFt(inputs);
   const lostBuildableAreaSqFt = inputs.easementAreaSqFt;
   const valueAtRiskCenter = lostBuildableAreaSqFt * pricePerSqFt;
-  const reworkCostCenter = lostBuildableAreaSqFt * NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt;
+  const constructionCost = resolveConstructionCost(inputs.state);
+  const reworkCostCenter = lostBuildableAreaSqFt * constructionCost.costPerSqFt;
   const dataCoverage = classifyDataCoverage({
     isLaCounty: inputs.isLaCounty,
     assessorValuation: inputs.assessorValuation,
@@ -233,9 +245,8 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     `Lost buildable area is the easement's footprint: ${Math.round(lostBuildableAreaSqFt).toLocaleString()} sq ft ` +
     `out of a ${Math.round(inputs.lotAreaSqFt).toLocaleString()} sq ft lot. Value at risk multiplies that area by ` +
     `${priceSourceNote}, shown as a range of ±${variancePercent}% to reflect estimate uncertainty. ` +
-    `Rework cost applies the national average cost to rebuild or relocate a structure, ` +
-    `$${NATIONAL_ECONOMIC_BENCHMARKS.reworkCostPerSqFt}/sq ft, to the same area, with the same ` +
-    `variance band. ${dataCoverageLabelText(dataCoverage)}.` +
+    `${constructionCost.note} The same variance band applies. ` +
+    `${dataCoverageLabelText(dataCoverage)}.` +
     (adjustment ? ` ${adjustment.note}` : '');
 
   return {
@@ -244,6 +255,7 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     reworkCostRange: dollarRange(reworkCostCenter, NATIONAL_ECONOMIC_BENCHMARKS.varianceBand),
     methodology,
     dataCoverage,
+    constructionCost,
     ...(adjustment ? { marketAdjustment: adjustment } : {}),
   };
 }

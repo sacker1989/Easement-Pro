@@ -24,6 +24,8 @@ export interface RiskDisclosureInput {
   assessorValuation?: AssessorParcelValuation;
   /** Set false to price off the raw assessed value instead of indexing it forward. */
   applyMarketIndex?: boolean;
+  /** Two-letter state code, used to pick a regional construction cost. */
+  state?: string;
 }
 
 export interface RiskDisclosureReport {
@@ -56,6 +58,7 @@ export function buildRiskDisclosureReport(input: RiskDisclosureInput): RiskDiscl
       pricePerSqFtOverride: input.pricePerSqFtOverride,
       assessorValuation: input.assessorValuation,
       applyMarketIndex: input.applyMarketIndex,
+      state: input.state,
     }),
   };
 }
