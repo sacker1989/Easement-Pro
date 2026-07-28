@@ -69,15 +69,25 @@ describe('Dispatch Orchestrator', () => {
       }
     });
 
-    it('records that Orange County exposes no assessed value', () => {
-      // Its parcel service returns six fields and none is a roll value, so the
-      // LA-style market-indexed valuation cannot run there.
+    it('routes Orange County to the assessment roll, not the bare parcel service', () => {
+      // The county publishes land values, but on LegalLotsAttributeOpenData —
+      // not on Map_Layers/Parcels, which carries no money at all.
       const result = dispatchToAgent({ county: 'Orange County', state: 'CA' });
       expect(result.routingTier).toBe('immediate');
       expect(result.agent.type).toBe('gis-explorer');
       if (result.agent.type === 'gis-explorer') {
         expect(result.agent.source.accessMode).toBe('documented-api');
-        expect(result.agent.source.limitations).toContain('NO assessed land value');
+        expect(result.agent.esriServiceUrl).toContain('LegalLotsAttributeOpenData');
+      }
+    });
+
+    it('records that Orange County publishes no Prop 13 base year', () => {
+      // Values are real but of unknown vintage, so they cannot be indexed
+      // forward the way LA's can.
+      const result = dispatchToAgent({ county: 'Orange County', state: 'CA' });
+      if (result.agent.type === 'gis-explorer') {
+        expect(result.agent.source.limitations).toContain('NO Proposition 13 base year');
+        expect(result.agent.source.limitations).toMatch(/LegalStartDate.*NOT be substituted/s);
       }
     });
 

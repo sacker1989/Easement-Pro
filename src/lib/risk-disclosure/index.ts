@@ -25,6 +25,18 @@ export {
   type ParcelCandidate,
 } from './la-county-assessor-provider';
 export {
+  createOrangeCountyAssessorProvider,
+  noOpOrangeCountyProvider,
+  toOrangeCountyParcelValuation,
+  parseMoneyField,
+  OrangeCountyLookupError,
+  ORANGE_COUNTY_STALENESS_CAVEAT,
+  type OrangeCountyAssessorProvider,
+  type OrangeCountyLookupResult,
+  type OrangeCountyParcelCandidate,
+  type OrangeCountyParcelValuation,
+} from './orange-county-assessor-provider';
+export {
   resolveConstructionCost,
   divisionForState,
   CONSTRUCTION_COST_BY_DIVISION,

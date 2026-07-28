@@ -49,17 +49,19 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
     tier: 'immediate',
     agent: {
       type: 'gis-explorer',
-      esriServiceUrl: 'https://www.ocgis.com/arcpub/rest/services/Map_Layers/Parcels/MapServer/0',
+      esriServiceUrl:
+        'https://www.ocgis.com/arcpub/rest/services/LegalLotsAttributeOpenData/MapServer/0',
       countyGisPortal: 'https://www.ocgis.com/arcpub/rest/services',
-      assessorMapServer: 'Map_Layers/Parcels',
+      assessorMapServer: 'LegalLotsAttributeOpenData',
       description:
-        'OC Survey public Esri REST parcel service. Layer 0 "Parcels", polygon, EPSG:2230, capabilities Map/Query/Data, maxRecordCount 1000. No API key required.',
+        'OC public Esri REST assessment roll. Layer 0 "LEGAL_LOTS_ATTRIBUTES_UPDATE", polygon, EPSG:2230, carrying AssessmentNo, SiteAddress, SiteZip5, LandVal, ImprovedVal, zoning and geometry for 912,332 parcels. No API key required. Queried by src/lib/risk-disclosure/orange-county-assessor-provider.ts.',
       source: {
         accessMode: 'documented-api',
         verifiedOn: '2026-07-27',
-        verifiedVia: 'Live curl against MapServer?f=json and MapServer/0?f=json',
+        verifiedVia:
+          'Live curl: enumerated the services root, then MapServer/0?f=json for fields and a records query returning real land values (e.g. 1251 N ALAMO ST, 92801, LandVal 531538, area 6278.81 sq ft).',
         limitations:
-          'Exposes only six fields: OBJECTID, SITE_ADDRESS, ASSESSMENT_NO, SHAPE, YEAR_BUILT, NBR_BEDROOMS. There is NO assessed land value and no roll year, so the market-indexed valuation path built for LA County cannot run here — this service supports parcel identification and geometry only. Valuation for Orange County needs a separate source.',
+          'Publishes NO Proposition 13 base year and no roll year. LA County publishes Roll_LandBaseYear, which is what lets a frozen assessment be indexed forward; without it there is no defensible way to tell whether an Orange County figure is current or decades stale. The distortion is visibly present — two comparable ~6,200 sq ft lots on W Huntington Ave carry land values of 243,414 and 531,538 — but it cannot be corrected, so values are reported raw with an explicit caveat. LegalStartDate and DocRefDate are lot and document dates and must NOT be substituted for a base year. Note also that the county’s headline parcel service (Map_Layers/Parcels) carries no money at all; an earlier pass probed only that service and wrongly recorded the county as having no assessed value.',
       },
     },
   },
