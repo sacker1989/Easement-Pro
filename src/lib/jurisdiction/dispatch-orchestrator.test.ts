@@ -69,6 +69,36 @@ describe('Dispatch Orchestrator', () => {
       }
     });
 
+    it('records that Orange County exposes no assessed value', () => {
+      // Its parcel service returns six fields and none is a roll value, so the
+      // LA-style market-indexed valuation cannot run there.
+      const result = dispatchToAgent({ county: 'Orange County', state: 'CA' });
+      expect(result.routingTier).toBe('immediate');
+      expect(result.agent.type).toBe('gis-explorer');
+      if (result.agent.type === 'gis-explorer') {
+        expect(result.agent.source.accessMode).toBe('documented-api');
+        expect(result.agent.source.limitations).toContain('NO assessed land value');
+      }
+    });
+
+    it('does not claim an API for counties whose parcel service is gated', () => {
+      // San Diego requires a token; Riverside enumerates no layers.
+      for (const county of ['San Diego County', 'Riverside County']) {
+        const result = dispatchToAgent({ county, state: 'CA' });
+        expect(result.agent.type).toBe('api-extractor');
+        if (result.agent.type === 'api-extractor') {
+          expect(result.agent.source.accessMode).toBe('human-portal');
+        }
+      }
+    });
+
+    it('records the AB 1785 address redaction on San Bernardino', () => {
+      const result = dispatchToAgent({ county: 'San Bernardino County', state: 'CA' });
+      if (result.agent.type === 'api-extractor') {
+        expect(result.agent.source.limitations).toContain('1785');
+      }
+    });
+
     it('records the §7928.205 owner-data restriction on the LA County entry', () => {
       // A letter cannot be addressed from this source alone — the statute bars
       // owner name and mailing address from public CA parcel endpoints.
@@ -156,10 +186,10 @@ describe('Dispatch Orchestrator', () => {
 
     it('totals all counties from database', () => {
       const summary = getTierCoverageSummary();
-      // 1 immediate (LA) + 6 standard (SF/Cook/Clark/Dallas/Fulton/Harris) + 1 fallback (Santa Clara)
-      expect(summary.totalCounties).toBe(8);
-      expect(summary.tierA.count).toBe(1);
-      expect(summary.tierB.count).toBe(6);
+      // 2 immediate (LA, Orange) + 9 standard + 1 fallback (Santa Clara)
+      expect(summary.totalCounties).toBe(12);
+      expect(summary.tierA.count).toBe(2);
+      expect(summary.tierB.count).toBe(9);
       expect(summary.fallback.count).toBe(1);
     });
   });

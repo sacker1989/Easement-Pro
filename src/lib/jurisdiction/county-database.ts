@@ -42,7 +42,91 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
     },
   },
 
+  {
+    county: 'Orange County',
+    state: 'CA',
+    fipsCode: '06059',
+    tier: 'immediate',
+    agent: {
+      type: 'gis-explorer',
+      esriServiceUrl: 'https://www.ocgis.com/arcpub/rest/services/Map_Layers/Parcels/MapServer/0',
+      countyGisPortal: 'https://www.ocgis.com/arcpub/rest/services',
+      assessorMapServer: 'Map_Layers/Parcels',
+      description:
+        'OC Survey public Esri REST parcel service. Layer 0 "Parcels", polygon, EPSG:2230, capabilities Map/Query/Data, maxRecordCount 1000. No API key required.',
+      source: {
+        accessMode: 'documented-api',
+        verifiedOn: '2026-07-27',
+        verifiedVia: 'Live curl against MapServer?f=json and MapServer/0?f=json',
+        limitations:
+          'Exposes only six fields: OBJECTID, SITE_ADDRESS, ASSESSMENT_NO, SHAPE, YEAR_BUILT, NBR_BEDROOMS. There is NO assessed land value and no roll year, so the market-indexed valuation path built for LA County cannot run here — this service supports parcel identification and geometry only. Valuation for Orange County needs a separate source.',
+      },
+    },
+  },
+
   // ===== TIER B: Standard — human-facing search portals =====
+  {
+    county: 'San Diego County',
+    state: 'CA',
+    fipsCode: '06073',
+    tier: 'standard',
+    agent: {
+      type: 'api-extractor',
+      platformName: 'county-built',
+      searchUrl: 'https://arcc.sdcounty.ca.gov/Pages/Recorder.aspx',
+      description:
+        'San Diego County Assessor/Recorder/County Clerk. Counter at 1600 Pacific Highway, Room 260, San Diego CA 92101.',
+      source: {
+        accessMode: 'human-portal',
+        verifiedOn: '2026-07-27',
+        verifiedVia:
+          'Probed gis-public.sandiegocounty.gov PARCELS_ALL (returned code 499 "Token Required") and enumerated the SanGIS public services folder.',
+        limitations:
+          'No public parcel REST endpoint. The county ArcGIS server requires a token, and the SanGIS public folder publishes only basemaps, imagery, jurisdictions and a geocoder — no parcel layer. The recorder search URL is taken from the county site and has not been exercised programmatically.',
+      },
+    },
+  },
+  {
+    county: 'Riverside County',
+    state: 'CA',
+    fipsCode: '06065',
+    tier: 'standard',
+    agent: {
+      type: 'api-extractor',
+      platformName: 'county-built',
+      searchUrl: 'https://www.rivcoacr.org/',
+      description:
+        'Riverside County Assessor-County Clerk-Recorder. Counter at 2724 Gateway Drive, Riverside CA 92507.',
+      source: {
+        accessMode: 'human-portal',
+        verifiedOn: '2026-07-27',
+        verifiedVia:
+          'Probed gis.countyofriverside.us arcgis_public OpenData/AssessorTables and Transportation_Survey/03_Parcels.',
+        limitations:
+          'Both public ArcGIS services respond and advertise Query capability, but enumerate zero layers and zero tables to anonymous callers, and requesting layer 0 directly returns error code 500. Treated as unavailable rather than as an API — an advertised capability that returns nothing is not usable. Worth re-probing; this may be a misconfiguration rather than a policy.',
+      },
+    },
+  },
+  {
+    county: 'San Bernardino County',
+    state: 'CA',
+    fipsCode: '06071',
+    tier: 'standard',
+    agent: {
+      type: 'api-extractor',
+      platformName: 'county-built',
+      searchUrl: 'https://arc.sbcounty.gov/official-records/',
+      description:
+        'San Bernardino County Assessor-Recorder-County Clerk. Document index 1925-present online; contents viewable in person at the Hall of Records, 222 W. Hospitality Lane, San Bernardino CA 92415, or the High Desert Government Center in Hesperia.',
+      source: {
+        accessMode: 'human-portal',
+        verifiedOn: '2026-07-27',
+        verifiedVia: 'County open data portal listing and arc.sbcounty.gov/official-records/',
+        limitations:
+          'The countywide parcel dataset is published open, but address and owner name are REDACTED under California Assembly Bill 1785, so address-to-parcel matching cannot be driven from it. Index searchable online from 1925; document images require an in-person visit.',
+      },
+    },
+  },
   {
     county: 'San Francisco County',
     state: 'CA',
