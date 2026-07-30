@@ -66,28 +66,31 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
     },
   },
 
-  // ===== TIER B: Standard — human-facing search portals =====
   {
     county: 'San Diego County',
     state: 'CA',
     fipsCode: '06073',
-    tier: 'standard',
+    tier: 'immediate',
     agent: {
-      type: 'api-extractor',
-      platformName: 'county-built',
-      searchUrl: 'https://arcc.sdcounty.ca.gov/Pages/Recorder.aspx',
+      type: 'gis-explorer',
+      esriServiceUrl:
+        'https://gis-public.sandiegocounty.gov/arcgis/rest/services/LAFCO/parcels/MapServer/0',
+      countyGisPortal: 'https://gis-public.sandiegocounty.gov/arcgis/rest/services',
+      assessorMapServer: 'LAFCO/parcels',
       description:
-        'San Diego County Assessor/Recorder/County Clerk. Counter at 1600 Pacific Highway, Room 260, San Diego CA 92101.',
+        'Public Esri REST assessor parcel layer. Layer 0 "Parcels with APNs", polygon, EPSG:2230, maxRecordCount 1000, 65 fields covering APN, ASR_LAND, ASR_IMPR, ASR_TOTAL (all integers), full SITUS_* address parts, SITUS_ZIP, ACREAGE, OWN_NAME1-3 and OWN_ADDR1-4. 987,889 parcels carry ASR_LAND > 0 of 1,089,648 total. No API key required.',
       source: {
-        accessMode: 'human-portal',
-        verifiedOn: '2026-07-27',
+        accessMode: 'documented-api',
+        verifiedOn: '2026-07-30',
         verifiedVia:
-          'Probed gis-public.sandiegocounty.gov PARCELS_ALL (returned code 499 "Token Required") and enumerated the SanGIS public services folder.',
+          'Full folder sweep of the services root (25 folders, 48 root services), then MapServer/0?f=json for the field list and record queries returning real values (e.g. APN 4982604500, ASR_LAND 266,867 / ASR_IMPR 88,944, ZIP 92020).',
         limitations:
-          'No public parcel REST endpoint. The county ArcGIS server requires a token, and the SanGIS public folder publishes only basemaps, imagery, jurisdictions and a geocoder — no parcel layer. The recorder search URL is taken from the county site and has not been exercised programmatically.',
+          'An earlier pass recorded this county as having NO public parcel endpoint, citing code 499 "Token Required" from a different server path. That was wrong — it probed one path and stopped. Two field traps: YEAR_EFFECTIVE is a two-character effective-year-BUILT (observed values include "48" and "40", i.e. pre-Proposition 13) and must NOT be read as an assessment base year. DOCDATE is MMDDYY and populated on 1,088,673 of 1,089,648 parcels; as the conveying-document date it is a promising Prop 13 reassessment-vintage proxy — median land share moves 0.404 (2015) to 0.599 (2024), a 1.48x spread in the same direction as LA base-year drift — but this is SUGGESTIVE ONLY. The samples were not randomised (Esri returns in OID order) and the middle years are not monotonic. Validate properly before using DOCDATE as a base-year substitute. Note also that unlike LA (Gov Code 7928.205) and San Bernardino (AB 1785), this layer publishes owner names and mailing addresses.',
       },
     },
   },
+
+  // ===== TIER B: Standard — human-facing search portals =====
   {
     county: 'Riverside County',
     state: 'CA',
@@ -103,9 +106,9 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
         accessMode: 'human-portal',
         verifiedOn: '2026-07-27',
         verifiedVia:
-          'Probed gis.countyofriverside.us arcgis_public OpenData/AssessorTables and Transportation_Survey/03_Parcels.',
+          'Re-probed 2026-07-30 with the full discovery procedure: swept all 13 folders of gis.countyofriverside.us/arcgis_public, then checked every candidate (OpenData/ParcelBasic, OpenData/AssessorTables, Transportation_Survey/03_Parcels, 02_LandSurveyRecords, AssessorMapBooks) on both MapServer and FeatureServer.',
         limitations:
-          'Both public ArcGIS services respond and advertise Query capability, but enumerate zero layers and zero tables to anonymous callers, and requesting layer 0 directly returns error code 500. Treated as unavailable rather than as an API — an advertised capability that returns nothing is not usable. Worth re-probing; this may be a misconfiguration rather than a policy.',
+          'CONFIRMED unavailable, on stronger evidence than the first pass. Every candidate service advertises Map,Query,Data and enumerates ZERO layers and ZERO tables to anonymous callers; every FeatureServer variant returns error code 500. The sole exception is Transportation_Survey/AssessorMapBooks, which exposes one layer — a map-book index of 14 fields carrying no APN and no values. The pattern is systematic rather than a per-service misconfiguration, so this is treated as policy. An advertised capability that returns nothing is not usable. Contrast San Diego, where the same sweep DID overturn an earlier negative — the procedure was applied identically here and the negative held.',
       },
     },
   },

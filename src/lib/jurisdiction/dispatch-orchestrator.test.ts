@@ -91,14 +91,35 @@ describe('Dispatch Orchestrator', () => {
       }
     });
 
-    it('does not claim an API for counties whose parcel service is gated', () => {
-      // San Diego requires a token; Riverside enumerates no layers.
-      for (const county of ['San Diego County', 'Riverside County']) {
-        const result = dispatchToAgent({ county, state: 'CA' });
-        expect(result.agent.type).toBe('api-extractor');
-        if (result.agent.type === 'api-extractor') {
-          expect(result.agent.source.accessMode).toBe('human-portal');
-        }
+    it('routes San Diego to its public assessor parcel layer', () => {
+      // Overturned on re-probe: an earlier pass recorded "Token Required" from
+      // one server path. The full folder sweep found a public layer carrying
+      // ASR_LAND on 987,889 parcels.
+      const result = dispatchToAgent({ county: 'San Diego County', state: 'CA' });
+      expect(result.routingTier).toBe('immediate');
+      expect(result.agent.type).toBe('gis-explorer');
+      if (result.agent.type === 'gis-explorer') {
+        expect(result.agent.esriServiceUrl).toContain('LAFCO/parcels');
+        expect(result.agent.source.accessMode).toBe('documented-api');
+      }
+    });
+
+    it('warns that San Diego YEAR_EFFECTIVE is not a Prop 13 base year', () => {
+      // It is effective year BUILT — observed values include pre-1975 years,
+      // which no base year can be.
+      const result = dispatchToAgent({ county: 'San Diego County', state: 'CA' });
+      if (result.agent.type === 'gis-explorer') {
+        expect(result.agent.source.limitations).toMatch(/YEAR_EFFECTIVE.*NOT be read/s);
+        expect(result.agent.source.limitations).toContain('SUGGESTIVE ONLY');
+      }
+    });
+
+    it('does not claim an API for Riverside, whose layers enumerate empty', () => {
+      const result = dispatchToAgent({ county: 'Riverside County', state: 'CA' });
+      expect(result.agent.type).toBe('api-extractor');
+      if (result.agent.type === 'api-extractor') {
+        expect(result.agent.source.accessMode).toBe('human-portal');
+        expect(result.agent.source.limitations).toContain('ZERO layers');
       }
     });
 
@@ -196,10 +217,10 @@ describe('Dispatch Orchestrator', () => {
 
     it('totals all counties from database', () => {
       const summary = getTierCoverageSummary();
-      // 2 immediate (LA, Orange) + 9 standard + 1 fallback (Santa Clara)
+      // 3 immediate (LA, Orange, San Diego) + 8 standard + 1 fallback (Santa Clara)
       expect(summary.totalCounties).toBe(12);
-      expect(summary.tierA.count).toBe(2);
-      expect(summary.tierB.count).toBe(9);
+      expect(summary.tierA.count).toBe(3);
+      expect(summary.tierB.count).toBe(8);
       expect(summary.fallback.count).toBe(1);
     });
   });
