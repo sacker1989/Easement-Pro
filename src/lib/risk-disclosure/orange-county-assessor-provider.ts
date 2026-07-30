@@ -6,8 +6,18 @@
  * earlier pass recorded the county as having no assessed value at all. That
  * was wrong. The assessment roll is published on the same server under
  * LegalLotsAttributeOpenData, which carries LandVal, ImprovedVal, SiteAddress,
- * SiteZip5 and geometry for 912,332 parcels. Verified against the live
+ * SiteZip5 and geometry for roughly 696,000 parcels. Verified against the live
  * endpoint on 2026-07-27.
+ *
+ * COUNT INSTABILITY: the record count is not stable. Four identical
+ * `LandVal IS NOT NULL` count queries seconds apart returned 695,595 /
+ * 695,750 / 695,918 / 696,075 — monotonically rising, ~150 per call — against
+ * 752,064 total records. The layer is evidently being written while served. An
+ * earlier pass recorded 912,332 from a single count query and treated it as a
+ * fact; it is not reproducible. Point lookups are unaffected and were stable
+ * across five consecutive identical queries, but callers must not treat any
+ * aggregate count from this layer as authoritative, and a parcel absent at one
+ * moment may appear at another.
  *
  * WHAT IT CANNOT DO: the layer publishes no Proposition 13 base year and no
  * roll year. LA's service publishes Roll_LandBaseYear, which is what lets

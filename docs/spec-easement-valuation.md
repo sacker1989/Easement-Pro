@@ -64,15 +64,65 @@ land share of value  │  LA: Roll_LandValue / (Roll_LandValue + Roll_ImpValue) 
                                  land $/sq ft  ──►  easement valuation (§6)
 ```
 
-**Why the land share works where the level does not.** Proposition 13 freezes the *level* of an
-assessment, and the freeze is severe: two comparable ~6,200 sq ft lots on W Huntington Ave in Anaheim
-carry assessed land values of 243,414 and 531,538. But land and improvements are reassessed
-*together*, on the same event, at the same time. The **ratio** between them is therefore far less
-distorted than either figure alone, and — critically — **it does not require knowing the base year.**
-That is what makes this path work in Orange County, and in any county publishing a land/improvement
-split without a base year.
+### 3.1 MEASURED: the land share is NOT base-year-invariant
 
-This is an assumption, not a theorem. It must be validated (§8) and stated in output (§7).
+The first draft of this spec asserted that because land and improvements are reassessed *together*,
+the **ratio** between them would be roughly base-year-invariant even though the *level* is severely
+frozen — and that this is what would make the method work in Orange County, which publishes no base
+year. **That assertion was tested against LA County and is wrong.**
+
+Median land share, `Roll_LandValue / (Roll_LandValue + Roll_ImpValue)`, by `Roll_LandBaseYear`,
+controlled for both location (single ZIP) and property type (`UseType='Residential'`), n≈100–450 per
+cell, measured live 2026-07-27:
+
+| base year | ZIP 91307 | ZIP 90045 | ZIP 91344 |
+|---|---|---|---|
+| 1995 | 0.474 | 0.635 | 0.427 |
+| 2000 | 0.616 | 0.704 | 0.502 |
+| 2005 | 0.754 | 0.734 | 0.681 |
+| 2010 | 0.606 | 0.751 | 0.541 |
+| 2015 | 0.687 | 0.743 | 0.665 |
+| 2020 | 0.714 | 0.758 | 0.702 |
+| 2024 | 0.730 | 0.770 | 0.689 |
+| **spread** | **1.59x** | **1.21x** | **1.64x** |
+
+The drift is systematic, monotonic in direction, and present in every ZIP tested, so it is **not**
+neighbourhood composition — the uncontrolled county-wide run showed the same 1.63x spread, and
+controlling for ZIP and use type did not remove it. Older base year means materially *lower* land
+share.
+
+**Consequence.** Applying a current market value to a long-held parcel's *own* land share understates
+land value badly — 0.44 against a current-regime 0.70 is a **~37% understatement**, which for this
+product means undercompensating exactly the owners with the strongest claims.
+
+### 3.2 Corrected method
+
+**Do not use the subject parcel's own land share.** Derive the share from *recently reassessed
+comparables* — parcels in the same ZIP and use type whose base year is within ~2 years, which are the
+only ones whose land/improvement split reflects the current market — and apply that neighbourhood
+current-regime share to the subject parcel.
+
+This is a real change in the data flow: the land share becomes a **ZIP-level statistic**, not a
+per-parcel field. Update the §3 diagram accordingly when implementing.
+
+### 3.3 This is now a blocker for Orange County, not a solution for it
+
+The original rationale for this whole approach was that ratios need no base year, so Orange County
+would work. That rationale is void. Selecting recently-reassessed comparables *requires* a base year,
+and Orange County publishes none — so it cannot identify which of its parcels are in the current
+regime, and cannot build the ZIP-level share locally.
+
+Orange County therefore needs one of:
+- a base-year or last-sale-date field from another OC source (probe per the discovery procedure in the
+  companion spec — the county's values were themselves found on an unexpected service, so a vintage
+  field may also exist somewhere unobvious);
+- a land-share curve borrowed from LA County, which is a **cross-county assumption that must itself be
+  tested** before use, not assumed; or
+- honest degradation: report the raw assessed land value as a floor per
+  `ORANGE_COUNTY_STALENESS_CAVEAT` and do not emit a market land estimate at all.
+
+Prefer the third until one of the first two is verified. Do not ship a market estimate for Orange
+County on an untested borrowed curve.
 
 ---
 
@@ -243,10 +293,11 @@ The land-share assumption in §3 is the load-bearing claim. It must be tested, n
    compare `Redfin ZIP median × land share` against the actual assessed land value. Report the error
    distribution. If the median absolute error is large, this method is not ready and the spec needs
    revision, not a caveat.
-2. **Check land-share stability across base years.** Group LA parcels by base year and compare the
-   land-share distribution. The assumption requires the ratio to be roughly base-year-invariant. If
-   land share drifts systematically with base year, quantify the drift and correct for it, or state
-   the residual bias.
+2. ~~**Check land-share stability across base years.**~~ **DONE 2026-07-27 — the assumption failed.**
+   Land share drifts 1.2–1.6x with base year, controlled for ZIP and use type. See §3.1 for the data
+   and §3.2 for the corrected method. This gate did its job: it caught a wrong assumption before any
+   code was written against it. Item 1 below must now be re-run against the *corrected* method (ZIP
+   current-regime share), not the original per-parcel one.
 3. **Extend `hand-verified-parcels.ts`** with easement cases carrying known valuations. The vendor
    scorecard harness from commit `9ccc0d8` is the right pattern to follow.
 4. **Cross-check every estimate against the raw assessed value at runtime.** A market estimate far

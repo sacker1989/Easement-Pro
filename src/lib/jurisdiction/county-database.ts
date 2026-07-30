@@ -54,7 +54,7 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
       countyGisPortal: 'https://www.ocgis.com/arcpub/rest/services',
       assessorMapServer: 'LegalLotsAttributeOpenData',
       description:
-        'OC public Esri REST assessment roll. Layer 0 "LEGAL_LOTS_ATTRIBUTES_UPDATE", polygon, EPSG:2230, carrying AssessmentNo, SiteAddress, SiteZip5, LandVal, ImprovedVal, zoning and geometry for 912,332 parcels. No API key required. Queried by src/lib/risk-disclosure/orange-county-assessor-provider.ts.',
+        'OC public Esri REST assessment roll. Layer 0 "LEGAL_LOTS_ATTRIBUTES_UPDATE", polygon, EPSG:2230, carrying AssessmentNo, SiteAddress, SiteZip5, LandVal, ImprovedVal, zoning and geometry for roughly 696,000 parcels (752,064 total records; see limitations on count instability). No API key required. Queried by src/lib/risk-disclosure/orange-county-assessor-provider.ts.',
       source: {
         accessMode: 'documented-api',
         verifiedOn: '2026-07-27',
