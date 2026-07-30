@@ -32,7 +32,27 @@
  * The two dates the layer does publish (LegalStartDate, DocRefDate) describe
  * when the legal lot was created and when its reference document was
  * recorded. Neither is an assessment base year and neither may be substituted
- * for one.
+ * for one. LegalStartDate returns 1972-02-24 for every sampled record, so it
+ * is a bulk layer-establishment date rather than a per-parcel event.
+ *
+ * NO VINTAGE EXISTS ANYWHERE IN THE COUNTY'S PUBLIC GIS. Confirmed 2026-07-27
+ * by enumerating all 41 service folders and sweeping every service name for
+ * sale/transfer/deed/owner/history/roll/assess/base/year. Comparing roll
+ * vintages to detect reassessment was also tested and does not work — the
+ * 2020-2021 roll (Treasurer_Tax_Collector/TTC) publishes blank value strings.
+ * Do not re-litigate this without new evidence; see docs/spec-easement-valuation.md §3.4.
+ *
+ * A RICHER LAYER EXISTS: Treasurer_Tax_Collector/Secured_Property_Tax_Information
+ * carries 886,542 parcels with alv > 0 (against ~696,000 here), as proper
+ * Doubles rather than strings. Migrating is worthwhile but unverified —
+ * SiteAddress population was not confirmed before the county server began
+ * returning 503. Note its `apn` field is 100% empty; join on AssessmentNo.
+ * See spec §3.5.
+ *
+ * AVAILABILITY: the whole ocgis.com server returned HTTP 503 under modest
+ * query load during this work. There is no SLA and no published rate limit.
+ * Callers need caching, backoff, and a degraded path — noOpOrangeCountyProvider
+ * is the intended fallback shape. See spec §3.6.
  */
 
 const OC_LEGAL_LOTS_QUERY_URL =

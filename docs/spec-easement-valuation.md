@@ -113,16 +113,63 @@ and Orange County publishes none — so it cannot identify which of its parcels 
 regime, and cannot build the ZIP-level share locally.
 
 Orange County therefore needs one of:
-- a base-year or last-sale-date field from another OC source (probe per the discovery procedure in the
-  companion spec — the county's values were themselves found on an unexpected service, so a vintage
-  field may also exist somewhere unobvious);
-- a land-share curve borrowed from LA County, which is a **cross-county assumption that must itself be
-  tested** before use, not assumed; or
-- honest degradation: report the raw assessed land value as a floor per
-  `ORANGE_COUNTY_STALENESS_CAVEAT` and do not emit a market land estimate at all.
 
-Prefer the third until one of the first two is verified. Do not ship a market estimate for Orange
-County on an untested borrowed curve.
+1. ~~a base-year or last-sale-date field from another OC source~~ — **PROBED 2026-07-27, DOES NOT
+   EXIST.** See §3.4.
+2. a land-share curve borrowed from LA County, which is a **cross-county assumption that must itself
+   be tested** before use, not assumed; or
+3. honest degradation: report the raw assessed land value as a floor per
+   `ORANGE_COUNTY_STALENESS_CAVEAT` and do not emit a market land estimate at all.
+
+Option 1 is closed. **Prefer option 3.** Do not ship a market estimate for Orange County on an
+untested borrowed curve.
+
+### 3.4 PROBED: Orange County publishes no assessment vintage, anywhere
+
+Full discovery procedure run against `www.ocgis.com/arcpub/rest/services` on 2026-07-27 — all 41
+folders enumerated and every service name swept for `sale|transfer|deed|owner|history|roll|assess|
+base|year`. Result: **no base year, no last-sale date, no transfer or deed service.** The only
+name-matches were basemaps, a DEM capture-year layer, an infrastructure needs assessment, and
+`ImageServices/AssessorMaps_Images` (scanned assessor maps as imagery, not queryable data).
+
+Specifically ruled out as base-year proxies:
+- `LegalStartDate` — returns **1972-02-24 for every sampled record**; a bulk lot-layer establishment
+  date, not a per-parcel event.
+- `DocRefDate`, `DocNum` — null across sampled records in the tax layer.
+
+Also tested and rejected: **inferring reassessment by comparing roll vintages.** The county publishes
+an older roll (`Treasurer_Tax_Collector/TTC`, 2020-2021, 875,699 records), and since Prop 13 caps
+drift at 2%/yr, a parcel jumping far above that between vintages would have been reassessed in the
+window — which would identify current-regime parcels without a base year. **It does not work here:**
+that layer's `alv`/`aiv` are blank or whitespace strings on essentially all sampled records, and
+assessment numbers did not join reliably to the current roll.
+
+### 3.5 Incidental: a materially better Orange County layer exists
+
+`Treasurer_Tax_Collector/Secured_Property_Tax_Information` is a stronger source than
+`LegalLotsAttributeOpenData`, which the current provider uses:
+
+| | LegalLots (in use) | Secured_Property_Tax_Information |
+|---|---|---|
+| records with land value | ~696,000 | **886,542** (`alv > 0`) |
+| total records | 752,064 | 985,926 |
+| value field type | String (`"531538"`) | **Double** |
+| identity field | `AssessmentNo` | `AssessmentNo` (981,720 populated) |
+
+**Trap:** its `apn` field is present but **0 records populated** — join on `AssessmentNo`, never `apn`.
+
+Not yet switched, because the verification was cut short (§3.6) before `SiteAddress` population could
+be confirmed, and address lookup is the product's main entry point. Confirm that, then migrate — it is
+~190k more parcels and removes the string-parsing hazard.
+
+### 3.6 Operational: the Orange County GIS server is fragile
+
+During this probing the **entire `ocgis.com` server returned HTTP 503** — services root, LegalLots and
+the tax layer alike. The load was modest by production standards (count queries over 750k–985k record
+layers), and probing plausibly contributed. Treat this as a real availability constraint: it is a
+single point of failure with no SLA and no published rate limit. Any production dependency needs
+caching, backoff, and a degraded path that does not fail the user's request when the county is down.
+The existing `noOpOrangeCountyProvider` is the right shape for that fallback.
 
 ---
 
