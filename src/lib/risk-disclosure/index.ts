@@ -37,6 +37,34 @@ export {
   type OrangeCountyParcelValuation,
 } from './orange-county-assessor-provider';
 export {
+  createSanDiegoAssessorProvider,
+  classifyVintage,
+  marketAdjustSanDiegoParcel,
+  noOpSanDiegoProvider,
+  parseDocDate,
+  parseSanDiegoAddress,
+  toSanDiegoParcelValuation,
+  FULL_TRANSFER_DOCTYPE,
+  PROP8_SUSPECT_YEARS,
+  SanDiegoLookupError,
+  type ReassessmentVintage,
+  type SanDiegoAssessorProvider,
+  type SanDiegoLookupResult,
+  type SanDiegoMarketAdjustment,
+  type SanDiegoParcelCandidate,
+  type SanDiegoParcelValuation,
+  type VintageReliability,
+} from './san-diego-assessor-provider';
+export {
+  isReliableHpiYear,
+  MIN_RELIABLE_TRACT_COUNT,
+  SAN_DIEGO_HPI_BASE_YEAR,
+  SAN_DIEGO_HPI_BY_YEAR,
+  SAN_DIEGO_HPI_FIRST_RELIABLE_YEAR,
+  SAN_DIEGO_HPI_LATEST_YEAR,
+  SAN_DIEGO_HPI_TRACT_COUNT_BY_YEAR,
+} from './san-diego-hpi-data';
+export {
   resolveConstructionCost,
   divisionForState,
   CONSTRUCTION_COST_BY_DIVISION,
