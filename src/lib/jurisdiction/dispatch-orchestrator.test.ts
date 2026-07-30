@@ -110,7 +110,20 @@ describe('Dispatch Orchestrator', () => {
       const result = dispatchToAgent({ county: 'San Diego County', state: 'CA' });
       if (result.agent.type === 'gis-explorer') {
         expect(result.agent.source.limitations).toMatch(/YEAR_EFFECTIVE.*NOT be read/s);
-        expect(result.agent.source.limitations).toContain('SUGGESTIVE ONLY');
+      }
+    });
+
+    it('records DOCDATE as validated but carries its conditions of use', () => {
+      // Validated against 97,026 parcels and the FHFA index, but it is the
+      // date of A recorded document, not a published base year — the
+      // distinction has to survive into anything that consumes it.
+      const result = dispatchToAgent({ county: 'San Diego County', state: 'CA' });
+      if (result.agent.type === 'gis-explorer') {
+        const lim = result.agent.source.limitations;
+        expect(lim).toContain('VALIDATED');
+        expect(lim).toContain('DOCTYPE=1');
+        expect(lim).toMatch(/Proposition 8/);
+        expect(lim).toMatch(/NOT be presented as equivalent to LA Roll_LandBaseYear/);
       }
     });
 
