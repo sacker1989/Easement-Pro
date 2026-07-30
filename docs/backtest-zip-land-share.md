@@ -405,10 +405,16 @@ or `Shape.STArea()` missing or zero. Variant (3) rescored on that same 9,464 giv
 
 ### Recommended revisions
 
-1. **Emit a range, not a point.** The percentiles in §4.3 are a calibration table. A parcel-level
-   output of "land value $X, 80% interval $0.6X–$1.8X" is defensible; "$X" is not. This matches the
-   existing house rule in `valuationConfidenceToTieredResult` that an unsupportable figure is not
-   surfaced as a number the user can anchor on.
+1. ~~**Emit a range, not a point.**~~ **IMPLEMENTED** in `src/lib/valuation/calibrated-range.ts`.
+   The §4.3 percentiles are the calibration table, copied verbatim as `COMBINED_APE_PERCENTILES`
+   with a test asserting they match this report.
+
+   One correction to the illustration above: the interval is **not** symmetric. Because APE is
+   measured relative to the *actual* value, inverting `|P − A| ≤ e·A` gives
+   `A ∈ [P/(1+e), P/(1−e)]`, so at the p90 error of 76% the range runs 0.57×P to **4.17×P**, not
+   0.6×–1.8×. Drawing it symmetrically would overstate precision on the high side. At 95% coverage
+   the measured error of 151% makes the upper bound genuinely **unbounded**; the module returns
+   `high: null` and `isRangeInformative()` returns false rather than hiding it.
 
 2. **Do not ship a bare ZIP median as the market level.** The spec's own §4.2 prohibition on
    per-address AVM values is what forces the ZIP median, and this back-test shows that constraint —
@@ -420,11 +426,18 @@ or `Shape.STArea()` missing or zero. Variant (3) rescored on that same 9,464 giv
    tight (§8). Both fields are already in the extract §4.1 specifies, so this costs no new data
    source. The switch threshold must be fitted and recorded, not guessed.
 
-4. **Add a per-ZIP fitness gate before any figure is emitted.** 93550 fails this method and nothing
-   in the parcel record predicts that. Compute the IQR of the ZIP's current-regime share
-   distribution; the 15 sound ZIPs run 0.071–0.185, 93550 runs 0.299. A ZIP over roughly 0.20, or
-   with a visibly bimodal share distribution, should degrade to `flagged` rather than produce a
-   number. Threshold to be fitted on more ZIPs than the 16 here before it is hard-coded.
+4. ~~**Add a per-ZIP fitness gate before any figure is emitted.**~~ **IMPLEMENTED** in
+   `src/lib/valuation/zip-fitness-gate.ts`. Computes the current-regime share IQR and returns
+   `sound` / `unfit` / `insufficient-data`; `mayEmitEstimate()` is false for the latter two.
+   `PROVISIONAL_IQR_THRESHOLD = 0.20` sits between the sound band (max 0.185) and the single
+   observed failure (0.299), with a test asserting it separates them.
+
+   **The threshold remains provisional and is labelled as such in the source.** It is fitted on
+   16 ZIPs containing exactly *one* failure, which is not enough to locate a boundary — re-fit
+   before relying on it outside LA County. The regression test reconstructs 93550's bimodal shape
+   from the §7.2 subgroup counts and asserts the gate rejects it; it asserts the decision rather
+   than reproducing the measured IQR of 0.299, since the county's actual sample is not in the repo.
+   A cohort floor of 30 also gates ZIPs too thin to median.
 
 5. **Untested idea worth testing: use the subject's rank within its own base-year cohort.** A parcel
    frozen at a 2003 base year that was worth 1.8x its 2003 cohort median is plausibly still near
