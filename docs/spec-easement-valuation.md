@@ -285,20 +285,48 @@ effectively loses the strip, far lower where they retain most use.
 a fabricated rework cost with sourced regional construction data. Do not regress that. A plausible
 table of percentages with no citation is worse than no table, because it looks authoritative.
 
-The implementer must source factors from public, checkable authorities and record the citation inline,
-in the style of `construction-cost.ts` and `la-county-hpi-data.ts`. Candidate authorities, each of
-which **must be fetched and verified before use** — do not cite from memory:
+**RESEARCHED 2026-07-27. The lookup-table design is wrong, and two independent sources say so.**
 
-- **Uniform Appraisal Standards for Federal Land Acquisitions** ("Yellow Book") — the controlling
-  federal standard for partial-acquisition appraisal.
-- **Caltrans Right of Way Manual** — California-specific, public, and directly on point for CA parcels.
-- **FHWA right-of-way acquisition guidance.**
-- **State DOT ROW manuals** for the parcel's state, where the app expands beyond CA.
+Implemented in `src/lib/valuation/encumbrance-factors.ts`, which deliberately ships **empty**.
 
-Where no sourced factor exists for a type, the correct output is a **range with an explicit
-"unsourced" flag**, or `flagged-ambiguous` with no number at all — matching the existing rule in
-`valuationConfidenceToTieredResult` that a figure with no source behind it is not surfaced as a number
-the user can anchor on.
+1. Allen, Albert N. (SR/WA), "The Appraisal of Easements", *Right of Way*, International Right of Way
+   Association, Nov/Dec 2001 — https://eweb.irwaonline.org/eweb/upload/1101c.pdf
+   - "The proper valuation methodology for easements is the 'before and after' rule."
+   - "Strictly speaking, the appraiser does not appraise an easement but rather measures the impact
+     of the easement on the burdened property."
+   - Names three flawed alternatives: "use of easement transactions as comparables, **linear rules of
+     thumb**, and incorrect use of corridor valuation theory," noting "some have serious flaws."
+   - On published rates: "the appraisal should not be based on such going rates but should be based
+     upon the usual 'before and after' appraisal method."
+   - "To use other techniques will almost invariably lead to an estimate of some value other than
+     market value."
+
+2. Texas A&M Transportation Institute, Technical Report 0-7053-R1 (TxDOT) —
+   https://static.tti.tamu.edu/tti.tamu.edu/documents/0-7053-R1.pdf
+   - "For the valuation of easements, a common methodology is the before-and-after rule ... A **usage
+     factor can then be calculated** by taking the loss to the parcel owner and dividing by the before
+     value."
+
+**The encumbrance factor is an OUTPUT of a before-and-after appraisal, not an INPUT looked up by
+type.** A percentage table inverts the causality. Per source 1 the result is not an approximation of
+market value; it is a different quantity. That is a stronger objection than imprecision and it is why
+no table ships.
+
+What was searched and did **not** yield a usable table: Caltrans ROW Manual (no percentage-of-fee
+schedule surfaced), NCHRP Research Report 1053 (concerns utilities occupying *public* ROW — wrong
+domain for private-parcel easements), TDOT Guidelines for Appraisers (repeated connection failures;
+still unretrieved). The Yellow Book remains unfetched. **Do not treat this list as exhausted** — but
+do not fill the gap with an uncited number either.
+
+Only one sourced datapoint was located, and it is recorded as a case example rather than a factor:
+TTI's worked example of a 16-inch pipeline in a 12-ft easement, weighting 85% impact over the
+64-inch pipe-plus-risk-area against 42.5% over the remaining 80 inches, giving **61.4%** across the
+easement. It is not a general pipeline factor and the module deliberately does **not** wire it into
+the lookup — there is a test asserting that.
+
+Where no sourced factor exists, the output is `flagged-ambiguous` with **no number at all**, matching
+`valuationConfidenceToTieredResult`. `lookupEncumbranceFactor` has no `defaultFactor` parameter and no
+fallback percentage, by design.
 
 ### 6.3 Temporary construction easements
 
