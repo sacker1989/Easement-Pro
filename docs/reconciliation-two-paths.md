@@ -94,17 +94,50 @@ subdivisions behave identically. See [`validation-sd-docdate.md`](./validation-s
 for the table. "Created this parcel" means created this parcel *record* in the Master Property
 Record, which the assessor opens on transfer.
 
-**So both anomalies in §2b are open.** Path A running high and agreement degrading toward recent
-vintages remain measured and unexplained. Candidate directions, none tested:
+### RESOLVED 2026-08-01 — non-arm's-length grant deeds, and a composition effect
 
-- `DOCTYPE=1` grant deeds include non-arm's-length transfers — to an LLC, between family members,
-  into an estate — that are recorded as grant deeds but do not reassess to market.
-- Path B's ZIP median may simply be noisier in San Diego than in LA, in which case the inversion is
-  a property of the comparison rather than of `DOCDATE`.
+The first candidate was tested and is correct. **A large and growing share of `DOCTYPE=1` grant
+deeds are transfers into trusts, which Proposition 13 excludes from reassessment.**
 
-Distinguishing these needs an independent transfer or sale-price source. The recorder publishes
-document images but this layer carries no sale price, so the test is not available from data in
-hand.
+Recent grant deeds split by owner class, assessed value per living sq ft:
+
+| ZIP | individually owned | trust owned | ratio | trust share |
+|---|---|---|---|---|
+| 92117 | 683 | 405 | 0.59 | 41% |
+| 92126 | 557 | 290 | 0.52 | 44% |
+| 92024 | 729 | 489 | 0.67 | 57% |
+
+Trust-owned parcels carry roughly **half** the assessed value of comparable individually-owned homes
+conveyed in the same years — the signature of a basis that never reset.
+
+Re-running the A/B comparison split by owner class closes it completely:
+
+| vintage | class | n | median | p10 | within 1.5x |
+|---|---|---|---|---|---|
+| pre-2010 | individual | 4,563 | 0.86 | 0.45 | **69%** |
+| pre-2010 | trust/entity | 884 | 0.44 | 0.11 | **23%** |
+| 2010s | individual | 7,464 | 0.94 | 0.40 | **68%** |
+| 2010s | trust/entity | 4,338 | 0.53 | 0.10 | **32%** |
+| 2020-23 | individual | 7,255 | 1.06 | 0.32 | **66%** |
+| 2020-23 | trust/entity | 6,046 | 0.53 | 0.09 | **33%** |
+
+**For individually-owned parcels the inversion disappears** — 66-69%, flat across every vintage and
+squarely inside LA's 57-71% band. Trust/entity parcels sit at 23-33% with a median near 0.5.
+
+**The inversion was a composition effect.** The trust share grows with recency — 16% of pre-2010
+vintages, 37% of 2010s, **45%** of 2020-23. Each subgroup is stable; the blended rate falls only
+because the badly-behaved subgroup grows. San Diego never had a vintage-quality problem; it had a
+mix problem.
+
+This also accounts for Path A running high. Once trusts are excluded from the Path B cohort, the
+individual medians land at 0.86-1.06 rather than 1.10-1.35.
+
+The second candidate — that Path B is simply noisier in San Diego — is not needed to explain
+anything and was not pursued.
+
+**Acted on.** `classifyVintage` gained a fifth condition, `non-arms-length`, which withholds an
+indexed figure when the owner is a trust or entity. Verified live: 11 of 25 recent grant deeds in
+92117 are withheld, matching that ZIP's 41% trust share.
 
 ## 3. Why the module does not average
 

@@ -40,6 +40,7 @@ export {
   createSanDiegoAssessorProvider,
   classifyVintage,
   DOCTYPE_MEANINGS,
+  isTrustOrEntityOwner,
   marketAdjustSanDiegoParcel,
   noOpSanDiegoProvider,
   parseDocDate,

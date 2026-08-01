@@ -4,6 +4,7 @@ import {
   createSanDiegoAssessorProvider,
   DOCTYPE_MEANINGS,
   FULL_TRANSFER_DOCTYPE,
+  isTrustOrEntityOwner,
   escapeSqlLiteral,
   marketAdjustSanDiegoParcel,
   noOpSanDiegoProvider,
@@ -112,6 +113,35 @@ describe('classifyVintage — the four measured conditions of use', () => {
     // what the instrument was rather than only that it was rejected.
     expect(classifyVintage('081713', '2').explanation).toMatch(/quit claim/i);
     expect(classifyVintage('081713', '6').explanation).toMatch(/trustees deed/i);
+  });
+
+  it('rejects a grant deed to a trust or entity as non-arm\'s-length', () => {
+    // Measured: this class agrees with the comparable path 23-33% of the time
+    // against 66-69% for individually-owned parcels, median ratio near 0.5.
+    for (const owner of ['SMITH FAMILY TRUST', 'ACME HOLDINGS LLC', 'JONES J TR', 'BAY PROPERTIES INC']) {
+      const v = classifyVintage('013122', '1', owner);
+      expect(v.reliability).toBe('non-arms-length');
+      expect(v.explanation).toMatch(/excluded from\s+reassessment/);
+    }
+  });
+
+  it('accepts a grant deed to a natural person', () => {
+    expect(classifyVintage('013122', '1', 'SMITH JOHN A').reliability).toBe('usable');
+    expect(classifyVintage('013122', '1', 'GARCIA MARIA').reliability).toBe('usable');
+  });
+
+  it('skips the owner check when no name is supplied', () => {
+    // Backward compatible, but callers should pass the name — this is the
+    // largest single source of bad vintages, 45% of recent grant deeds.
+    expect(classifyVintage('013122', '1').reliability).toBe('usable');
+  });
+
+  it('applies the owner check before the Prop 8 window', () => {
+    // A 2005 trust conveyance is non-arm's-length first; both reject, but the
+    // explanation the user sees should name the real reason.
+    expect(classifyVintage('061505', '1', 'SMITH FAMILY TRUST').reliability).toBe(
+      'non-arms-length',
+    );
   });
 
   it('rejects the 2004-2007 bubble window as Prop 8 suspect', () => {

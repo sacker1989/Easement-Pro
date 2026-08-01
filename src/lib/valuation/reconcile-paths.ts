@@ -101,11 +101,19 @@ export const MEASURED_CONCORDANCE_RATE: Readonly<Record<string, number>> = {
  * that is the correct behaviour rather than a threshold problem. Do not widen
  * CONCORDANCE_RATIO to raise the pass rate.
  *
- * WHY THIS HAPPENS IS UNRESOLVED. A proposed explanation — that DOCDATE dates
- * parcel creation rather than conveyance — was tested against subdivision
- * groupings and rejected: one subdivision carries essentially one document per
- * parcel, not one for all of them. See docs/validation-sd-docdate.md §4a. The
- * inversion is measured and stands; its cause does not.
+ * RESOLVED 2026-08-01: it was a COMPOSITION EFFECT, not a vintage-quality
+ * problem. A large share of DOCTYPE=1 grant deeds are transfers into trusts,
+ * which Proposition 13 excludes from reassessment, so the basis never resets.
+ * Split by owner class, individually-owned parcels agree 66-69% across every
+ * vintage — flat, and inside LA's 57-71% band — while trust/entity parcels sit
+ * at 23-33% with a median ratio near 0.5. The trust share grows with recency
+ * (16% pre-2010, 37% in the 2010s, 45% in 2020-23), so the blended rate falls
+ * even though each subgroup is stable.
+ *
+ * The rates above are therefore PRE-FIX. classifyVintage now withholds these
+ * parcels as `non-arms-length`, so live figures should track the individual
+ * column rather than the blend. They are kept as measured for the record.
+ * See docs/reconciliation-two-paths.md §2b.
  */
 export const MEASURED_CONCORDANCE_RATE_SAN_DIEGO: Readonly<Record<string, number>> = {
   'pre-1990': 0.55,

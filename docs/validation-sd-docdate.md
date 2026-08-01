@@ -218,6 +218,13 @@ behaves as Prop 13 exclusions predict.
 is the date of *a* recorded document, which usually but not always coincides with the reassessment
 event. Required conditions for use:
 
+0. **Exclude parcels owned by a trust or legal entity, even when `DOCTYPE=1`.** Added 2026-08-01 and
+   listed first because it is the largest single source of bad vintages. Transfers into a trust are
+   recorded as grant deeds but are excluded from reassessment under Prop 13, so the basis never
+   resets. Measured: trust-owned parcels carry ~half the assessed value per sq ft of comparable
+   individually-owned homes conveyed in the same years, and they are **41-57% of recent grant
+   deeds**. Applying this brings San Diego's cross-path agreement from 45% to 66-69%, level with LA.
+   See [`reconciliation-two-paths.md`](./reconciliation-two-paths.md) §2b.
 1. Prefer `DOCTYPE=1` (grant deed); treat all other codes as unreliable vintages.
 2. Check new-growth ZIPs (the 92130 pattern) where `DOCDATE` recency tracks new construction. §4a
    gives this a mechanism: a recent DOCDATE means a recently *created* parcel.
