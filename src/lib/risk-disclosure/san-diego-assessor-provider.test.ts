@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   classifyVintage,
   createSanDiegoAssessorProvider,
+  DOCTYPE_MEANINGS,
+  FULL_TRANSFER_DOCTYPE,
   escapeSqlLiteral,
   marketAdjustSanDiegoParcel,
   noOpSanDiegoProvider,
@@ -102,7 +104,14 @@ describe('classifyVintage — the four measured conditions of use', () => {
     const v = classifyVintage('081713', '3');
     expect(v.year).toBe(2013);
     expect(v.reliability).toBe('excluded-transfer');
-    expect(v.explanation).toMatch(/parent-child, spousal or trust/);
+    expect(v.explanation).toMatch(/parent-child transfers/);
+  });
+
+  it('names the actual document type in its explanation', () => {
+    // Confirmed against the county data dictionary, so the user can be told
+    // what the instrument was rather than only that it was rejected.
+    expect(classifyVintage('081713', '2').explanation).toMatch(/quit claim/i);
+    expect(classifyVintage('081713', '6').explanation).toMatch(/trustees deed/i);
   });
 
   it('rejects the 2004-2007 bubble window as Prop 8 suspect', () => {
@@ -130,6 +139,27 @@ describe('classifyVintage — the four measured conditions of use', () => {
   it('always explains itself', () => {
     for (const [d, t] of [['013196', '1'], ['081713', '3'], ['061505', '1'], ['010180', '1'], ['', '1']]) {
       expect(classifyVintage(d, t).explanation.length).toBeGreaterThan(40);
+    }
+  });
+});
+
+describe('DOCTYPE_MEANINGS — confirmed against the county data dictionary', () => {
+  it('records the two codes the valuation logic turns on', () => {
+    // SanGIS PARCELS metadata, from the Assessor's Master Property Record.
+    // The behavioural inference was correct on both.
+    expect(DOCTYPE_MEANINGS['1']).toBe('Grant deed');
+    expect(DOCTYPE_MEANINGS['2']).toBe('Quit claim');
+  });
+
+  it('treats only the grant deed as a full transfer', () => {
+    expect(FULL_TRANSFER_DOCTYPE).toBe('1');
+    expect(DOCTYPE_MEANINGS[FULL_TRANSFER_DOCTYPE]).toBe('Grant deed');
+  });
+
+  it('covers every code observed in the live layer', () => {
+    // Observed counts: 0,1,2,3,4,5,6,7 all present across 1,088,673 records.
+    for (const code of ['0', '1', '2', '3', '4', '5', '6', '7', '8']) {
+      expect(DOCTYPE_MEANINGS[code]).toBeDefined();
     }
   });
 });

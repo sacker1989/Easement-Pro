@@ -73,10 +73,48 @@ consistently **1.5-1.75x above `DOCTYPE=2`** at every decade:
 | 1990s | 213 | 121 | 214 | 156 |
 | 2020s | 581 | 313 | 485 | 343 |
 
-Consistent with `DOCTYPE=1` being full-value transfers that trigger complete reassessment, and
-`DOCTYPE=2` capturing Prop 13-**excluded** transfers (parent-child, spousal, trust) that preserve the
-prior basis. **Prefer `DOCTYPE=1` when using `DOCDATE` as a vintage.** This interpretation of the
-codes is inferred from behaviour, not from published county documentation, and should be confirmed.
+**CONFIRMED 2026-08-01 against the county's published data dictionary** — SanGIS PARCELS metadata,
+derived from the Assessor's Master Property Record
+(https://sdplantatlas.org/pdffiles/sangis_parcels.pdf). The behavioural inference was correct:
+
+| code | official meaning | count |
+|---|---|---|
+| 0 | Unresearched | 555 |
+| **1** | **Grant deed** | 758,658 |
+| **2** | **Quit claim** | 214,547 |
+| 3 | Unrecorded deed | 70,436 |
+| 4 | Recorded death certificate | 23 |
+| 5 | Unrecorded death certificate | 109 |
+| 6 | Other types recorded document (Trustees deed) | 37,531 |
+| 7 | Unknown | 3,043 |
+| 8 | Recorded contract | — |
+
+A grant deed is California's standard full-value transfer; a quitclaim is the ordinary instrument
+for precisely the transfers Prop 13 **excludes** — spousal, parent-child, and into or out of a
+trust. Trustee's deeds (6) are foreclosure conveyances. **Prefer `DOCTYPE=1`.** Condition 4 in §5 is
+now closed.
+
+### But the same document corrects what DOCDATE *is*
+
+The dictionary defines both fields against the document that **created this parcel**:
+
+> DOCTYPE — "Type of document that created this parcel."
+> DOCDATE — "Document recording date of document that created this parcel."
+
+**Not the most recent conveyance.** The two coincide where a parcel's record was established by its
+current owner's purchase, and diverge where the parcel has changed hands since it was created.
+
+This is the best available explanation for both measured anomalies in
+[`reconciliation-two-paths.md`](./reconciliation-two-paths.md) §2b:
+
+- Where DOCDATE predates the true last reassessment, indexing from it applies **too large a
+  multiplier** — matching Path A running systematically high, median ratio 1.35 for pre-1990
+  vintages easing to 1.10 for recent ones.
+- A *recently created* parcel is typically a **new subdivision or lot split**, not an ordinary sale,
+  and so sits oddly against a ZIP median — matching the inverted trend where agreement is *worst*
+  for recent vintages. It is the same mechanism already visible in 92130 (Carmel Valley).
+
+Both are interpretations that fit the measurements; neither has been separately tested.
 
 ## 4. Independent check against FHFA
 
@@ -165,10 +203,13 @@ behaves as Prop 13 exclusions predict.
 is the date of *a* recorded document, which usually but not always coincides with the reassessment
 event. Required conditions for use:
 
-1. Prefer `DOCTYPE=1`; treat `DOCTYPE=2` vintages as unreliable.
-2. Check new-growth ZIPs (the 92130 pattern) where `DOCDATE` recency tracks new construction.
+1. Prefer `DOCTYPE=1` (grant deed); treat all other codes as unreliable vintages.
+2. Check new-growth ZIPs (the 92130 pattern) where `DOCDATE` recency tracks new construction. §4a
+   gives this a mechanism: a recent DOCDATE means a recently *created* parcel.
 3. Expect Prop 8 distortion for 2004-2007 vintages specifically. Do not trust that cohort.
-4. Confirm the `DOCTYPE` code meanings against county documentation before shipping.
+4. ~~Confirm the `DOCTYPE` code meanings against county documentation.~~ **DONE 2026-08-01, §4a.**
+   The inference was correct — 1 is a grant deed, 2 a quitclaim. The same document also corrected
+   what DOCDATE measures: parcel *creation*, not last conveyance.
 
 ## 6. Consequence for the product
 

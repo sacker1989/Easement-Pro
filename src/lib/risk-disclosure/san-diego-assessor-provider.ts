@@ -17,11 +17,28 @@
  * parameters agrees with the FHFA index within +/-8% on six of eight buckets.
  * Full method and caveats: docs/validation-sd-docdate.md.
  *
+ * WHAT DOCDATE ACTUALLY IS. The county's own data dictionary (SanGIS PARCELS
+ * metadata, sourced from the Assessor's Master Property Record) defines it as
+ * the "Document recording date of document that CREATED THIS PARCEL" — not the
+ * date of the most recent conveyance. Those coincide for a parcel whose record
+ * was established by its current owner's purchase, and diverge for one that
+ * has changed hands since it was created.
+ *
+ * That distinction is not academic; it is the best available explanation for
+ * two measured anomalies (docs/reconciliation-two-paths.md §2b). Where DOCDATE
+ * predates the true last reassessment, indexing from it applies too large a
+ * multiplier — which matches Path A running systematically high, at a median
+ * ratio of 1.35 for pre-1990 vintages falling to 1.10 for recent ones. And a
+ * *recently* created parcel is typically a new subdivision or split rather
+ * than an ordinary sale, which is unusual against a ZIP median — matching the
+ * inverted trend where agreement is worst for recent vintages. Both remain
+ * interpretations of the measurements, not separately tested claims.
+ *
  * DOCDATE IS A PROXY, NOT A PUBLISHED BASE YEAR, and this module is built so
- * callers cannot forget that. It is the date of *a* recorded document, which
- * usually but not always coincides with the reassessment event, so every
- * valuation carries a `vintage` whose reliability must be branched on before
- * any indexed figure is shown. See VintageReliability.
+ * callers cannot forget that. Every valuation carries a `vintage` whose
+ * reliability must be branched on before any indexed figure is shown, and the
+ * measured per-parcel dispersion is wide even where it passes. See
+ * VintageReliability.
  */
 
 import {
@@ -50,13 +67,37 @@ const REQUIRED_FIELDS = [
 ] as const;
 
 /**
- * Document type that indicates a full-value transfer, which triggers complete
- * reassessment. Measured to carry assessed values 1.5-1.75x above DOCTYPE '2'
- * at every decade, consistent with '2' capturing Prop 13-EXCLUDED transfers
- * (parent-child, spousal, trust) that preserve the prior basis.
+ * DOCTYPE code meanings, CONFIRMED against the county's published data
+ * dictionary (SanGIS PARCELS metadata, derived from the Assessor's Master
+ * Property Record; https://sdplantatlas.org/pdffiles/sangis_parcels.pdf).
  *
- * The meaning is INFERRED FROM BEHAVIOUR, not from published county
- * documentation. Confirm before relying on it in a compensation negotiation.
+ * This closes the fourth condition of use in docs/validation-sd-docdate.md,
+ * which previously recorded these meanings as inferred from behaviour. The
+ * inference was correct: '1' is a grant deed and '2' is a quitclaim.
+ */
+export const DOCTYPE_MEANINGS: Readonly<Record<string, string>> = {
+  '0': 'Unresearched',
+  '1': 'Grant deed',
+  '2': 'Quit claim',
+  '3': 'Unrecorded deed',
+  '4': 'Recorded death certificate',
+  '5': 'Unrecorded death certificate',
+  '6': 'Other types recorded document (Trustees deed)',
+  '7': 'Unknown',
+  '8': 'Recorded contract',
+};
+
+/**
+ * Grant deed — California's standard full-value transfer instrument, and the
+ * only code treated as a reassessment trigger here.
+ *
+ * The behavioural evidence and the documentation agree. Grant-deed parcels
+ * carry assessed values 1.5-1.75x above quitclaim parcels at every decade
+ * measured, and a quitclaim is the ordinary instrument for exactly the
+ * transfers Proposition 13 EXCLUDES from reassessment — between spouses, from
+ * parent to child, and into or out of a trust — which preserve the prior
+ * basis. Trustee's deeds ('6') are foreclosure conveyances and are likewise
+ * not ordinary market transfers.
  */
 export const FULL_TRANSFER_DOCTYPE = '1';
 
@@ -101,7 +142,10 @@ export interface SanDiegoParcelValuation {
    * California zone 6, US survey feet), so this is already square feet.
    *
    * Shape.STArea() is used rather than the ACREAGE column because ACREAGE is
-   * frequently null — two of four parcels in an arbitrary sample.
+   * frequently null — two of four parcels in an arbitrary sample. The county's
+   * data dictionary gives the reason: ACREAGE is populated only "if over 0.25
+   * acres (blank if smaller)", so it is systematically absent for exactly the
+   * ordinary residential lots this product cares about most.
    */
   readonly lotAreaSqFt: number;
   readonly landValue: number;
@@ -181,16 +225,19 @@ export function classifyVintage(rawDocDate: unknown, rawDocType: unknown): Reass
   }
 
   if (docType !== FULL_TRANSFER_DOCTYPE) {
+    const named = docType !== null ? DOCTYPE_MEANINGS[docType] : undefined;
     return {
       year,
       docType,
       reliability: 'excluded-transfer',
       explanation:
-        `The last recorded document for this parcel (${year}) is not a full-value transfer. ` +
-        'Parcels of this document type carry assessed values well below those that were fully ' +
-        'reassessed, consistent with transfers excluded from reassessment under Proposition 13 ' +
-        'such as parent-child, spousal or trust transfers. The document date therefore may not ' +
-        'be a reassessment date, and the assessed value is not adjusted.',
+        `The document that created this parcel record (${year}) is ` +
+        `${named ? `a ${named.toLowerCase()}` : 'not a grant deed'}, not a grant deed. ` +
+        'Parcels of this document type carry assessed values well below those conveyed by grant ' +
+        'deed, consistent with instruments that do not trigger reassessment under Proposition 13 ' +
+        '— quitclaims between spouses, parent-child transfers, transfers into or out of a trust, ' +
+        'and foreclosure conveyances. The document date therefore may not be a reassessment ' +
+        'date, and the assessed value is not adjusted.',
     };
   }
 

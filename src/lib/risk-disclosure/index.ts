@@ -39,6 +39,7 @@ export {
 export {
   createSanDiegoAssessorProvider,
   classifyVintage,
+  DOCTYPE_MEANINGS,
   marketAdjustSanDiegoParcel,
   noOpSanDiegoProvider,
   parseDocDate,

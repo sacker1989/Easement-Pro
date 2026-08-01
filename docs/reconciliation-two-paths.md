@@ -79,6 +79,23 @@ The practical consequence is that more San Diego parcels fall out as `discordant
 correct behaviour, not a threshold problem.** Do not widen `CONCORDANCE_RATIO` to raise the pass
 rate — the disagreement is real and the flag is the product working.
 
+### A mechanism for both anomalies, found 2026-08-01
+
+The county's published data dictionary (SanGIS PARCELS metadata) defines `DOCDATE` as the recording
+date of the document that **created this parcel** — *not* the most recent conveyance. See
+[`validation-sd-docdate.md`](./validation-sd-docdate.md) §4a. That single correction accounts for
+both results above:
+
+- **Path A runs high** (median 1.35 pre-1990 easing to 1.10 recent). Where the creating document
+  predates the true last reassessment, indexing from it applies too large an HPI multiplier. The
+  effect should be largest for the oldest vintages, which is the observed ordering.
+- **Agreement is worst for recent vintages.** A recently *created* parcel is a new subdivision or
+  lot split, not an ordinary sale — atypical against a ZIP median built from established homes. The
+  same mechanism already showed up as the 92130 Carmel Valley confound during validation.
+
+Neither has been tested separately; both fit the measurements and no competing explanation does as
+well. Testing would need the recorder's transfer history, which this layer does not carry.
+
 ## 3. Why the module does not average
 
 Averaging is the obvious move and it is wrong here.
