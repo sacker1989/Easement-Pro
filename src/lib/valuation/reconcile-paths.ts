@@ -65,7 +65,12 @@ export const MEASURED_AB_RATIO_BY_VINTAGE: Readonly<Record<string, number>> = {
   '2020-23': 1.17,
 };
 
-/** Share of parcels observed within CONCORDANCE_RATIO, by the same buckets. */
+/**
+ * Share of LA parcels observed within CONCORDANCE_RATIO, by the same buckets.
+ * Note the trend: agreement IMPROVES for recent vintages, because indexing
+ * from a recent base year is nearly a no-op and both paths then approximate
+ * the same fresh-market quantity.
+ */
 export const MEASURED_CONCORDANCE_RATE: Readonly<Record<string, number>> = {
   'pre-1990': 0.6,
   '1990s': 0.57,
@@ -73,6 +78,53 @@ export const MEASURED_CONCORDANCE_RATE: Readonly<Record<string, number>> = {
   '2010s': 0.68,
   '2020-23': 0.71,
 };
+
+/**
+ * The same measurement repeated in San Diego: 44,456 parcels with a usable
+ * DOCDATE vintage across 6 ZIPs.
+ *
+ * San Diego agrees WORSE — 45% overall against roughly 60% in LA — and the
+ * trend is INVERTED: agreement degrades toward recent vintages (55% -> 40%)
+ * where LA's improves (57% -> 71%). p10 falls to 0.24 in the newest bucket,
+ * meaning one parcel in ten has Path A below a quarter of Path B.
+ *
+ * That inversion is diagnostic, and it qualifies the DOCDATE validation. A
+ * recent full-transfer DOCDATE should make Path A a near no-op, exactly as a
+ * recent base year does in LA, so agreement should be at its best there. It is
+ * at its worst. The reading: DOCDATE is a strong AGGREGATE signal — the 2.18x
+ * gradient across vintage buckets in docs/validation-sd-docdate.md is real and
+ * reproduced — but a WEAK PARCEL-LEVEL one. That validation compared medians
+ * by bucket, which averages away exactly the per-parcel dispersion this
+ * measurement exposes.
+ *
+ * Practical consequence: more San Diego parcels fall out as `discordant`, and
+ * that is the correct behaviour rather than a threshold problem. Do not widen
+ * CONCORDANCE_RATIO to raise the pass rate.
+ */
+export const MEASURED_CONCORDANCE_RATE_SAN_DIEGO: Readonly<Record<string, number>> = {
+  'pre-1990': 0.55,
+  '1990s': 0.6,
+  '2000s': 0.51,
+  '2010s': 0.47,
+  '2020-23': 0.4,
+};
+
+/** Median A/B ratio by vintage decade in San Diego. */
+export const MEASURED_AB_RATIO_SAN_DIEGO: Readonly<Record<string, number>> = {
+  'pre-1990': 1.35,
+  '1990s': 1.25,
+  '2000s': 1.16,
+  '2010s': 1.16,
+  '2020-23': 1.1,
+};
+
+/**
+ * Share of San Diego parcels whose DOCDATE vintage passes the four conditions
+ * in san-diego-assessor-provider.ts, so Path A is available at all: 44,456 of
+ * 74,743 sampled. The other 40% reach reconciliation as single-path or
+ * unavailable.
+ */
+export const SAN_DIEGO_USABLE_VINTAGE_RATE = 0.595;
 
 export interface PathEstimate {
   /** Land value in dollars. */

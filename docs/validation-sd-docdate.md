@@ -129,9 +129,32 @@ with no fitted parameters. Overall spread is 1.73x against the 2.18x raw variati
 Two outliers with named plausible mechanisms is not the same as two outliers explained. Stated as an
 open item, not a closed one.
 
+## 4b. QUALIFICATION added 2026-07-30: aggregate signal, weak per parcel
+
+Everything below was measured on **medians by vintage bucket**. A later measurement
+([`reconciliation-two-paths.md`](./reconciliation-two-paths.md) §2b) computed both valuation paths
+for 44,456 individual San Diego parcels and found the per-parcel dispersion is much wider than these
+bucket medians suggest.
+
+The diagnostic detail: agreement between the market-indexed path and the ZIP-comparable path
+**degrades toward recent vintages** in San Diego (55% → 40% within 1.5x), where in LA — which
+publishes a real base year — it **improves** (57% → 71%). A recent full-transfer `DOCDATE` should
+make the indexing a near no-op and agreement should peak there. It bottoms out instead, and p10 falls
+to 0.24.
+
+**So: the 2.18x gradient below is real and reproduces, but `DOCDATE` predicts a bucket's median far
+better than it predicts any single parcel.** Both findings stand; they answer different questions,
+and taking medians is exactly what hides per-parcel noise.
+
+Nothing below is retracted. But the verdict in §5 should be read as covering aggregate use — ZIP
+cohorts, land-share regimes, coverage statistics — and NOT as a warrant for treating one parcel's
+`DOCDATE` as equivalent to a published base year on that parcel.
+
 ## 5. Verdict
 
-**`DOCDATE` is usable as a Prop 13 reassessment-vintage proxy for San Diego County, with caveats.**
+**`DOCDATE` is usable as a Prop 13 reassessment-vintage proxy for San Diego County, with caveats —
+and see the §4b qualification on aggregate versus per-parcel reliability before relying on it for a
+single property.**
 
 Evidence for: monotonic land-share rise across all 7 steps; 2.18x assessed-value gradient with the
 housing-stock control flat; dips coinciding with independently measured HPI troughs; a no-free-

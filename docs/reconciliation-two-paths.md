@@ -44,6 +44,41 @@ Agreement is *better* for recent base years (68-71% against 57-60%), which is ex
 base year is recent, Path A is nearly a no-op and both paths approximate the same fresh-market
 quantity.
 
+## 2b. The same measurement in San Diego — and an inverted trend
+
+Repeated across 6 San Diego ZIPs, on the **44,456 parcels of 74,743 (59.5%)** whose `DOCDATE`
+vintage passes the four conditions in `san-diego-assessor-provider.ts`:
+
+| vintage bucket | p10 | p25 | median | p75 | p90 | within 1.5x | *(LA for comparison)* |
+|---|---|---|---|---|---|---|---|
+| pre-1990 | 0.72 | 1.05 | **1.35** | 1.71 | 2.02 | **55%** | *60%* |
+| 1990s | 0.64 | 0.94 | **1.25** | 1.56 | 1.89 | **60%** | *57%* |
+| 2000s | 0.42 | 0.77 | **1.16** | 1.56 | 1.95 | **51%** | *57%* |
+| 2010s | 0.33 | 0.69 | **1.16** | 1.56 | 1.88 | **47%** | *68%* |
+| 2020-23 | 0.24 | 0.56 | **1.10** | 1.63 | 2.07 | **40%** | *71%* |
+| **all** | | | **1.15** | | | **45%** | *~60%* |
+
+Path A still runs systematically high, as in LA. But two things differ, and the second is the
+important one.
+
+**San Diego agrees worse overall** — 45% against roughly 60%.
+
+**The trend is inverted.** LA improves toward recent vintages (57% → 71%); San Diego *degrades*
+(55% → 40%), with p10 falling to 0.24 — one parcel in ten has Path A below a quarter of Path B.
+
+That inversion is diagnostic. A recent full-transfer `DOCDATE` should make Path A a near no-op,
+exactly as a recent base year does in LA, so agreement ought to peak there. It bottoms out instead.
+
+**Reading: `DOCDATE` is a strong AGGREGATE signal and a weak PARCEL-LEVEL one.** The 2.18x gradient
+across vintage buckets in [`validation-sd-docdate.md`](./validation-sd-docdate.md) is real and
+reproduced here in the ratio medians. But that validation compared *medians by bucket*, which
+averages away precisely the per-parcel dispersion this measurement exposes. Both results are
+correct; they answer different questions.
+
+The practical consequence is that more San Diego parcels fall out as `discordant`. **That is the
+correct behaviour, not a threshold problem.** Do not widen `CONCORDANCE_RATIO` to raise the pass
+rate — the disagreement is real and the flag is the product working.
+
 ## 3. Why the module does not average
 
 Averaging is the obvious move and it is wrong here.
@@ -79,10 +114,9 @@ total — must branch on it rather than reaching for `low`, `high`, or their mid
 
 ## 5. Limits
 
-- Measured in **LA County only**. San Diego supports both paths but its Path A vintage is inferred
-  from `DOCDATE` rather than published, so its disagreement profile is likely different and has not
-  been measured.
-- Residential (`UseType='Residential'`) only, 6 ZIPs.
+- ~~Measured in LA County only.~~ **San Diego measured too (§2b), and it differs materially** — worse
+  agreement and an inverted vintage trend. Do not assume a third county resembles either.
+- Residential only, 6 ZIPs per county.
 - `CONCORDANCE_RATIO = 1.5` is the band this measurement reports against, not a tolerance fitted to a
   target pass rate. Re-derive it if the comparison is extended to more counties.
 - The ZIP-dependent bias in finding 3 is unexplained. It is plausibly the same within-ZIP position

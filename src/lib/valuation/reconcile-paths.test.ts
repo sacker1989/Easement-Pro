@@ -3,8 +3,11 @@ import {
   CONCORDANCE_RATIO,
   hasReportablePointEstimate,
   MEASURED_AB_RATIO_BY_VINTAGE,
+  MEASURED_AB_RATIO_SAN_DIEGO,
   MEASURED_CONCORDANCE_RATE,
+  MEASURED_CONCORDANCE_RATE_SAN_DIEGO,
   reconcilePaths,
+  SAN_DIEGO_USABLE_VINTAGE_RATE,
   type PathEstimate,
 } from './reconcile-paths';
 
@@ -29,12 +32,46 @@ describe('measured constants', () => {
     }
   });
 
-  it('shows agreement improving for recent vintages', () => {
+  it('shows agreement improving for recent vintages in LA', () => {
     // Where the base year is recent, Path A is nearly a no-op and both paths
     // approximate the same fresh-market quantity.
     expect(MEASURED_CONCORDANCE_RATE['2020-23']!).toBeGreaterThan(
       MEASURED_CONCORDANCE_RATE['1990s']!,
     );
+  });
+});
+
+describe('San Diego measurement — the inverted trend', () => {
+  it('agrees worse than LA in every comparable bucket', () => {
+    for (const b of ['2000s', '2010s', '2020-23']) {
+      expect(MEASURED_CONCORDANCE_RATE_SAN_DIEGO[b]!).toBeLessThan(MEASURED_CONCORDANCE_RATE[b]!);
+    }
+  });
+
+  it('DEGRADES toward recent vintages, the opposite of LA', () => {
+    // This is the diagnostic finding. A recent full-transfer DOCDATE should
+    // make Path A a near no-op and agreement should peak there, as it does in
+    // LA. It bottoms out instead, which says DOCDATE is a weak parcel-level
+    // vintage even though its aggregate gradient is real.
+    expect(MEASURED_CONCORDANCE_RATE_SAN_DIEGO['2020-23']!).toBeLessThan(
+      MEASURED_CONCORDANCE_RATE_SAN_DIEGO['pre-1990']!,
+    );
+    expect(MEASURED_CONCORDANCE_RATE['2020-23']!).toBeGreaterThan(
+      MEASURED_CONCORDANCE_RATE['pre-1990']!,
+    );
+  });
+
+  it('still shows Path A running high, as in LA', () => {
+    for (const v of Object.values(MEASURED_AB_RATIO_SAN_DIEGO)) {
+      expect(v).toBeGreaterThan(1.0);
+    }
+  });
+
+  it('records that Path A is unavailable for a large minority of parcels', () => {
+    // 40% of San Diego parcels fail the four DOCDATE conditions, so they reach
+    // reconciliation as single-path or unavailable.
+    expect(SAN_DIEGO_USABLE_VINTAGE_RATE).toBeLessThan(0.65);
+    expect(SAN_DIEGO_USABLE_VINTAGE_RATE).toBeGreaterThan(0.5);
   });
 });
 
