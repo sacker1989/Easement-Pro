@@ -47,6 +47,8 @@ export {
   BEFORE_AND_AFTER_METHODOLOGY_NOTE,
   ENCUMBRANCE_FACTORS,
   TTI_PIPELINE_CASE_EXAMPLE,
+  UNCITED_SCREENING_RANGES,
+  VALUATION_METHODS,
   type EncumbranceFactor,
   type FactorBasis,
   type FactorLookup,

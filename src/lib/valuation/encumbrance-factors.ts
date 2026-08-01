@@ -56,6 +56,39 @@ import type { EasementType } from '@/lib/easements/easement-types';
  * How a factor was arrived at. The discriminant exists so callers must branch:
  * a screening band and an appraised factor cannot be rendered identically.
  */
+/**
+ * The recognised approaches to valuing an easement, in the order the
+ * literature ranks them. Recorded so the report can name the method it is NOT
+ * performing, rather than implying it performed one.
+ *
+ * Sources: Allen (IRWA 2001) and TTI 0-7053-R1 for the primacy of
+ * before-and-after; Uniform Appraisal Standards for Federal Land Acquisitions
+ * (2016) §1.7.1 and §4.6.1 for the federal rule; the project easement analysis
+ * guide for the state-rule variant and the income approach.
+ */
+export const VALUATION_METHODS = {
+  beforeAndAfter:
+    'Before-and-After (Federal Rule). Value the whole property before the easement, then the ' +
+    'remainder after it; the difference is the easement value. Damage to the remainder is ' +
+    'automatically included. This is the controlling federal method and the one the literature ' +
+    'treats as correct.',
+  takePlusDamages:
+    'Value of Take Plus Damages (State Rule). Compensation is the value of the land taken plus ' +
+    'damages to the remainder, computed separately. A variation on before-and-after used where ' +
+    'state law requires it.',
+  salesComparison:
+    'Sales Comparison. Compare the subject against similar properties with and without the ' +
+    'easement. Note that Allen (IRWA 2001) holds that sales OF easements are not valid ' +
+    'comparables — the comparison must be between burdened and unburdened PROPERTIES.',
+  incomeCapitalisation:
+    'Income Capitalisation. Used where the easement generates ongoing revenue — pipeline rent, ' +
+    'cell-tower lease. Capitalise the income stream. Requires observed market rents, not a ' +
+    'percentage of fee value.',
+  cost:
+    'Cost Approach. Replacement cost of improvements less depreciation. Rarely applicable to ' +
+    'vacant land or conservation easements.',
+} as const;
+
 export type FactorBasis =
   /**
    * Derived from an actual before-and-after analysis of this parcel:
@@ -120,6 +153,38 @@ export const TTI_PIPELINE_CASE_EXAMPLE: EncumbranceFactor = {
       'general factor for pipeline easements and must not be applied to a different pipe ' +
       'diameter, easement width, or product without redoing the weighting.',
   },
+};
+
+/**
+ * Percentage ranges from the project easement analysis guide
+ * (.claude/agents/easement_analysis_guide.md, Part 2).
+ *
+ * RECORDED, NOT ADOPTED. These are kept so the numbers are not lost and so the
+ * next person does not re-derive them, but they are deliberately NOT wired into
+ * `lookupEncumbranceFactor` and cannot reach a user-facing figure. Two reasons,
+ * both already established in this module's header:
+ *
+ * 1. They carry no citation. The guide states them as typical ranges without a
+ *    source that can be fetched and checked.
+ * 2. Percentage-of-fee is the method the literature rejects. Allen (IRWA 2001)
+ *    names "linear rules of thumb" among three alternatives with "serious
+ *    flaws". The Uniform Appraisal Standards for Federal Land Acquisitions
+ *    (2016) is blunter still in the analogous leasehold context: the method
+ *    "can lead to 'gross over-valuation'", and federal courts have rejected it
+ *    "even if comparable lease transactions are not available" — i.e. absence
+ *    of comparables is not a licence to fall back on a percentage.
+ *
+ * They remain useful as an order-of-magnitude sanity check on a figure produced
+ * by a proper before-and-after appraisal. A number far outside these bands is
+ * worth re-examining. That is the only sanctioned use.
+ */
+export const UNCITED_SCREENING_RANGES: Readonly<
+  Record<string, { readonly low: number; readonly high: number; readonly basis: string }>
+> = {
+  utility: { low: 0.25, high: 0.75, basis: 'share of underlying land value' },
+  drainage: { low: 0.1, high: 0.4, basis: 'share of fee simple; open channel higher than buried pipe' },
+  access: { low: 0.02, high: 0.08, basis: 'share of TOTAL property value, not of the strip' },
+  conservation: { low: 0.4, high: 0.7, basis: 'share of development value' },
 };
 
 /**

@@ -5,6 +5,8 @@ import {
   ENCUMBRANCE_FACTORS,
   lookupEncumbranceFactor,
   TTI_PIPELINE_CASE_EXAMPLE,
+  UNCITED_SCREENING_RANGES,
+  VALUATION_METHODS,
 } from './encumbrance-factors';
 
 describe('encumbrance factor sourcing discipline', () => {
@@ -69,6 +71,42 @@ describe('TTI pipeline case example', () => {
     // Deliberate: a single case example must not silently become the default
     // factor for every pipeline easement.
     expect(lookupEncumbranceFactor('pipeline').status).toBe('unsourced');
+  });
+});
+
+describe('guide ranges are recorded but not adopted', () => {
+  it('keeps the uncited ranges out of the lookup', () => {
+    // The guide gives utility 25-75% of fee. That must not become a factor:
+    // it has no citation, and percentage-of-fee is the method the literature
+    // rejects. Recording it is fine; using it is not.
+    expect(UNCITED_SCREENING_RANGES['utility']!.low).toBe(0.25);
+    expect(UNCITED_SCREENING_RANGES['utility']!.high).toBe(0.75);
+    expect(lookupEncumbranceFactor('utility-overhead').status).toBe('unsourced');
+    expect(lookupEncumbranceFactor('drainage').status).toBe('unsourced');
+    expect(lookupEncumbranceFactor('access-ingress-egress').status).toBe('unsourced');
+    expect(lookupEncumbranceFactor('conservation').status).toBe('unsourced');
+  });
+
+  it('records what each range is a share OF', () => {
+    // Access is a share of TOTAL property value; utility is a share of LAND
+    // value. Mixing those up changes the answer by an order of magnitude.
+    expect(UNCITED_SCREENING_RANGES['access']!.basis).toMatch(/TOTAL property value/);
+    expect(UNCITED_SCREENING_RANGES['utility']!.basis).toMatch(/land value/);
+  });
+});
+
+describe('VALUATION_METHODS', () => {
+  it('names before-and-after as the controlling method', () => {
+    expect(VALUATION_METHODS.beforeAndAfter).toMatch(/Federal Rule/);
+    expect(VALUATION_METHODS.beforeAndAfter).toMatch(/difference is the easement value/);
+  });
+
+  it('warns that sales OF easements are not valid comparables', () => {
+    expect(VALUATION_METHODS.salesComparison).toMatch(/not valid comparables/);
+  });
+
+  it('requires observed rents for the income approach, not a percentage', () => {
+    expect(VALUATION_METHODS.incomeCapitalisation).toMatch(/not a\s+percentage of fee value/);
   });
 });
 

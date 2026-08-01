@@ -51,23 +51,52 @@ Without labelled positives, a "72% likely" score is an invented number wearing a
 clothing — the encumbrance-factor trap again, and worse, because a percentage anchors a reader far
 harder than a dollar range does.
 
-**The exception is real and worth taking.** Conservation easements *do* have ground truth:
+**CORRECTION 2026-08-01.** An earlier revision of this section cited
+`sdep_warehouse/ESMT_OPEN_SPACE` (San Diego) as conservation-easement ground truth, on the strength
+of its field list — `EASEID`, `DOCNO`, `RECDATE`, `Shape.STArea()`. **It is not usable.** The service
+advertises `supportsQueryWithDistance: true` at layer level but its capabilities are `Map` only, and
+every query returns `code 400 — "The requested capability is not supported."` It is a display layer.
+Same pattern as Riverside: advertised capability, nothing delivered. Reading a field list is not
+verification; querying is.
 
-- `sdep_warehouse/ESMT_OPEN_SPACE` (San Diego) — polygons with `Shape.STArea()`, `DOCNO`, `RECDATE`
-- **PAD-US** — includes conservation easements nationally, with a protection-mechanism split
+**But ground truth does exist — just not in the two counties this product covers.** A search of
+ArcGIS Online returns **4,590 public easement Feature Services**, including recognisably
+plat-and-deed-derived ones:
 
-So of the four types requested:
+- *Deeds and Easements* (Puyallup, WA)
+- *Recorded Floodplain Easements*
+- *Conservation Easements*
+- *Raleigh Greenway Easements*, *Airport Avigation Easements* (Boise)
 
-| type | ground truth available? | verdict |
+**PAD-US** also carries conservation easements nationally, with a protection-mechanism split.
+
+This changes the verdict from "impossible" to "a coverage question":
+
+| type | ground truth | verdict |
 |---|---|---|
-| conservation | **yes** (PAD-US, county easement layers) | scoreable, and worth doing |
-| utility | no | not scoreable — report proximity, not probability |
-| drainage | no (NHD gives water, not easements) | not scoreable |
-| access | no | not scoreable |
+| conservation | **yes** — PAD-US, nationally | scoreable now |
+| utility / drainage / access | **only where a county publishes an easement layer** | scoreable in those jurisdictions; not in LA or San Diego, which publish none between them |
 
-For the three without ground truth, ship the evidence tier from
+So the likelihood-score feature is buildable **county by county**, gated on whether that county
+publishes recorded easements — exactly the shape of `county-database.ts`. It is not a national
+feature, and it cannot be built at all in the two counties currently supported.
+
+For jurisdictions without an easement layer, ship the evidence tier from
 `.claude/agents/implied-easement-valuation.md` — A/B/C by geometric relationship — which is an
-honest ordinal statement, not a fabricated cardinal one.
+honest ordinal statement rather than a fabricated cardinal one.
+
+### The guide supplies the missing bridge
+
+`.claude/agents/easement_analysis_guide.md` Part 3 is the piece that makes this coherent as a
+product. **Plats show easements as labelled dashed lines** — *"15' Utility Easement"* — and a deed's
+**Exceptions and Reservations** clause lists them with book and page references. That is where the
+certainty lives, and it is reachable by the homeowner for $10–$50 in 1–2 days.
+
+That reframes the tool honestly, and matches the guide's own "Map First, Deed Second" workflow: this
+product is the **screening layer** that tells you *where to look and what to ask*. It is not the
+answer. The guide's own table makes the distinction correctly — the tool gives *probability of
+easement*, the deed gives *certainty of easement existence* — and that framing should be adopted
+verbatim in the UI.
 
 ### ✅ Regional cost estimates — buildable, with a caveat on "liability"
 
