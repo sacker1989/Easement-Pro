@@ -10,6 +10,16 @@ export {
   type ValuationResult,
 } from './calculator';
 export {
+  reconcilePaths,
+  hasReportablePointEstimate,
+  CONCORDANCE_RATIO,
+  MEASURED_AB_RATIO_BY_VINTAGE,
+  MEASURED_CONCORDANCE_RATE,
+  type PathEstimate,
+  type Reconciliation,
+  type ReconciliationStatus,
+} from './reconcile-paths';
+export {
   calibratedRange,
   describeCalibration,
   isRangeInformative,
