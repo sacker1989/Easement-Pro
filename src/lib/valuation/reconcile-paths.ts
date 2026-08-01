@@ -100,6 +100,12 @@ export const MEASURED_CONCORDANCE_RATE: Readonly<Record<string, number>> = {
  * Practical consequence: more San Diego parcels fall out as `discordant`, and
  * that is the correct behaviour rather than a threshold problem. Do not widen
  * CONCORDANCE_RATIO to raise the pass rate.
+ *
+ * WHY THIS HAPPENS IS UNRESOLVED. A proposed explanation — that DOCDATE dates
+ * parcel creation rather than conveyance — was tested against subdivision
+ * groupings and rejected: one subdivision carries essentially one document per
+ * parcel, not one for all of them. See docs/validation-sd-docdate.md §4a. The
+ * inversion is measured and stands; its cause does not.
  */
 export const MEASURED_CONCORDANCE_RATE_SAN_DIEGO: Readonly<Record<string, number>> = {
   'pre-1990': 0.55,

@@ -79,22 +79,32 @@ The practical consequence is that more San Diego parcels fall out as `discordant
 correct behaviour, not a threshold problem.** Do not widen `CONCORDANCE_RATIO` to raise the pass
 rate — the disagreement is real and the flag is the product working.
 
-### A mechanism for both anomalies, found 2026-08-01
+### A proposed mechanism, and its retraction
 
-The county's published data dictionary (SanGIS PARCELS metadata) defines `DOCDATE` as the recording
-date of the document that **created this parcel** — *not* the most recent conveyance. See
-[`validation-sd-docdate.md`](./validation-sd-docdate.md) §4a. That single correction accounts for
-both results above:
+**Proposed 2026-08-01, withdrawn the same day.** The county data dictionary calls `DOCDATE` the
+recording date of the document that "created this parcel", which read literally means the
+subdivision map rather than a conveyance. That would have explained both anomalies neatly: indexing
+from a too-old creating document inflates Path A, and a recently *created* parcel is a new
+subdivision rather than an ordinary sale.
 
-- **Path A runs high** (median 1.35 pre-1990 easing to 1.10 recent). Where the creating document
-  predates the true last reassessment, indexing from it applies too large an HPI multiplier. The
-  effect should be largest for the oldest vintages, which is the observed ordering.
-- **Agreement is worst for recent vintages.** A recently *created* parcel is a new subdivision or
-  lot split, not an ordinary sale — atypical against a ZIP median built from established homes. The
-  same mechanism already showed up as the 92130 Carmel Valley confound during validation.
+**It was then tested and is false.** Grouping parcels by `SUBNAME`, one subdivision shows 901
+distinct `DOCDATE` values and 1,000 distinct `DOCNMBR` values across 1,000 parcels, spanning
+1976-2026 — essentially one document per parcel, not one per subdivision. Five other large
+subdivisions behave identically. See [`validation-sd-docdate.md`](./validation-sd-docdate.md) §4a
+for the table. "Created this parcel" means created this parcel *record* in the Master Property
+Record, which the assessor opens on transfer.
 
-Neither has been tested separately; both fit the measurements and no competing explanation does as
-well. Testing would need the recorder's transfer history, which this layer does not carry.
+**So both anomalies in §2b are open.** Path A running high and agreement degrading toward recent
+vintages remain measured and unexplained. Candidate directions, none tested:
+
+- `DOCTYPE=1` grant deeds include non-arm's-length transfers — to an LLC, between family members,
+  into an estate — that are recorded as grant deeds but do not reassess to market.
+- Path B's ZIP median may simply be noisier in San Diego than in LA, in which case the inversion is
+  a property of the comparison rather than of `DOCDATE`.
+
+Distinguishing these needs an independent transfer or sale-price source. The recorder publishes
+document images but this layer carries no sale price, so the test is not available from data in
+hand.
 
 ## 3. Why the module does not average
 

@@ -17,22 +17,28 @@
  * parameters agrees with the FHFA index within +/-8% on six of eight buckets.
  * Full method and caveats: docs/validation-sd-docdate.md.
  *
- * WHAT DOCDATE ACTUALLY IS. The county's own data dictionary (SanGIS PARCELS
- * metadata, sourced from the Assessor's Master Property Record) defines it as
- * the "Document recording date of document that CREATED THIS PARCEL" — not the
- * date of the most recent conveyance. Those coincide for a parcel whose record
- * was established by its current owner's purchase, and diverge for one that
- * has changed hands since it was created.
+ * WHAT DOCDATE ACTUALLY IS. The county's data dictionary (SanGIS PARCELS
+ * metadata, from the Assessor's Master Property Record) calls it the
+ * "Document recording date of document that CREATED THIS PARCEL". Read
+ * literally that would mean the subdivision map, not a conveyance — so it was
+ * tested directly, and it does not mean that.
  *
- * That distinction is not academic; it is the best available explanation for
- * two measured anomalies (docs/reconciliation-two-paths.md §2b). Where DOCDATE
- * predates the true last reassessment, indexing from it applies too large a
- * multiplier — which matches Path A running systematically high, at a median
- * ratio of 1.35 for pre-1990 vintages falling to 1.10 for recent ones. And a
- * *recently* created parcel is typically a new subdivision or split rather
- * than an ordinary sale, which is unusual against a ZIP median — matching the
- * inverted trend where agreement is worst for recent vintages. Both remain
- * interpretations of the measurements, not separately tested claims.
+ * Grouping parcels by SUBNAME: if DOCDATE were the creating map, every parcel
+ * in one subdivision would share a single date and document number. Measured
+ * instead, EAST S D VILLA HEIGHTS has 901 distinct DOCDATEs and 1,000 distinct
+ * DOCNMBRs across 1,000 parcels, spanning 1976-2026, with the most common date
+ * held by 0.4% of them. Five other large subdivisions behave identically.
+ * Essentially every parcel carries its own document.
+ *
+ * So "created this parcel" means created this parcel RECORD in the MPR — the
+ * assessor opens a new record on transfer, which is ordinary practice. DOCDATE
+ * therefore does track conveyances, and the county-wide distribution supports
+ * that too: parcel counts rise steeply toward recent years, the shape of a
+ * holding-period distribution rather than of development eras.
+ *
+ * An earlier revision of this comment claimed the opposite and used it to
+ * explain two measured anomalies in docs/reconciliation-two-paths.md §2b.
+ * That explanation is withdrawn; those anomalies are open again.
  *
  * DOCDATE IS A PROXY, NOT A PUBLISHED BASE YEAR, and this module is built so
  * callers cannot forget that. Every valuation carries a `vintage` whose

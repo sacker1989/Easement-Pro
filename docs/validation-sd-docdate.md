@@ -94,27 +94,42 @@ for precisely the transfers Prop 13 **excludes** — spousal, parent-child, and 
 trust. Trustee's deeds (6) are foreclosure conveyances. **Prefer `DOCTYPE=1`.** Condition 4 in §5 is
 now closed.
 
-### But the same document corrects what DOCDATE *is*
+### What "created this parcel" means — TESTED 2026-08-01
 
 The dictionary defines both fields against the document that **created this parcel**:
 
 > DOCTYPE — "Type of document that created this parcel."
 > DOCDATE — "Document recording date of document that created this parcel."
 
-**Not the most recent conveyance.** The two coincide where a parcel's record was established by its
-current owner's purchase, and diverge where the parcel has changed hands since it was created.
+Read literally, that means the subdivision map rather than a conveyance. **It was tested directly
+and it does not mean that.**
 
-This is the best available explanation for both measured anomalies in
-[`reconciliation-two-paths.md`](./reconciliation-two-paths.md) §2b:
+If DOCDATE were the creating map, every parcel in one subdivision would share a single date and
+document number, since one map creates them all. Grouping residential parcels by `SUBNAME`:
 
-- Where DOCDATE predates the true last reassessment, indexing from it applies **too large a
-  multiplier** — matching Path A running systematically high, median ratio 1.35 for pre-1990
-  vintages easing to 1.10 for recent ones.
-- A *recently created* parcel is typically a **new subdivision or lot split**, not an ordinary sale,
-  and so sits oddly against a ZIP median — matching the inverted trend where agreement is *worst*
-  for recent vintages. It is the same mechanism already visible in 92130 (Carmel Valley).
+| subdivision | parcels | distinct DOCDATE | distinct DOCNMBR | year range | most common date |
+|---|---|---|---|---|---|
+| EAST S D VILLA HEIGHTS | 1,000 | 901 | 1,000 | 1976-2026 | 0.4% |
+| OCEAN BEACH | 702 | 648 | 694 | 1972-2026 | 0.6% |
+| RANCHO EL CAJON PARTITION | 557 | 515 | 557 | 1976-2026 | 0.7% |
+| MORENA AMENDED | 492 | 459 | 492 | 1972-2026 | 0.6% |
+| RANCHO RINCON DEL DIABLO | 488 | 471 | 486 | 1979-2026 | 0.4% |
+| FAIRMOUNT PK | 461 | 440 | 461 | 1977-2026 | 0.4% |
 
-Both are interpretations that fit the measurements; neither has been separately tested.
+**Essentially every parcel carries its own document number**, with dates spread across fifty years
+inside a single subdivision. Nothing clusters.
+
+So "created this parcel" means created this parcel **record** in the Master Property Record — the
+assessor opens a new record on transfer, which is ordinary practice. DOCDATE does track conveyances.
+The county-wide distribution agrees: parcel counts rise steeply toward recent years, which is the
+shape of a holding-period distribution, not of development eras.
+
+**Retraction.** A previous revision of this section read the dictionary literally, concluded DOCDATE
+was the parcel-creation date, and used that to explain two anomalies in
+[`reconciliation-two-paths.md`](./reconciliation-two-paths.md) §2b — Path A running high, and
+agreement being worst for recent vintages. That explanation is **withdrawn**. Both anomalies are
+open again, and §4b's finding that DOCDATE is aggregate-strong but parcel-weak stands on its own
+measurement regardless.
 
 ## 4. Independent check against FHFA
 
