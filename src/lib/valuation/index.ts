@@ -28,6 +28,7 @@ export {
   REPORTABLE_COVERAGE,
   type CalibratedRange,
   type CoverageLevel,
+  type EstimatePath,
 } from './calibrated-range';
 export {
   assessZipFitness,

@@ -27,6 +27,26 @@ export const COMBINED_APE_PERCENTILES = {
 
 export type CoverageLevel = keyof typeof COMBINED_APE_PERCENTILES;
 
+/**
+ * Which valuation path produced the point estimate.
+ *
+ * WHY THIS EXISTS. COMBINED_APE_PERCENTILES was measured on the ZIP-comparable
+ * path and on nothing else. The market-indexed path — assessed land value
+ * carried forward by a house-price index — has a DIFFERENT and entirely
+ * unmeasured error profile, because it cannot be back-tested the same way:
+ * indexing from a recent base year is a near no-op, so it scores ~0% against
+ * recently-reassessed ground truth by construction. That degeneracy is the
+ * same one docs/backtest-zip-land-share.md §6.1 identifies for the naive
+ * baseline.
+ *
+ * Applying this calibration to a market-indexed figure was caught in a live
+ * two-parcel check: it produced 90% ranges of $482k-$3.53M and $631k-$4.63M on
+ * two ordinary Burbank lots — spans of roughly 7x, presented with the
+ * authority of a measured interval. The numbers were arithmetically correct
+ * and meaningless. The guard exists so that mistake cannot be made silently.
+ */
+export type EstimatePath = 'zip-comparable' | 'market-indexed' | 'unknown';
+
 /** Coverage levels wide enough to be worth reporting. */
 export const REPORTABLE_COVERAGE: readonly CoverageLevel[] = [50, 75, 90, 95];
 
@@ -76,9 +96,18 @@ export class CalibrationError extends Error {
 export function calibratedRange(
   pointEstimate: number,
   coverage: CoverageLevel = 90,
+  estimatePath: EstimatePath = 'zip-comparable',
 ): CalibratedRange {
   if (!Number.isFinite(pointEstimate) || pointEstimate <= 0) {
     throw new CalibrationError('Point estimate must be a positive finite number');
+  }
+  if (estimatePath !== 'zip-comparable') {
+    throw new CalibrationError(
+      `COMBINED_APE_PERCENTILES was measured for the ZIP-comparable path only. The ` +
+        `"${estimatePath}" path has no measured error distribution, so no calibrated range can ` +
+        `be produced for it. Back-test that path first — see docs/backtest-zip-land-share.md for ` +
+        `the method — rather than borrowing this calibration.`,
+    );
   }
 
   const ape = COMBINED_APE_PERCENTILES[coverage];

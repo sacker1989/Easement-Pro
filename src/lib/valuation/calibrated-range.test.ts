@@ -79,6 +79,22 @@ describe('calibratedRange', () => {
   it('defaults to 90% coverage', () => {
     expect(calibratedRange(100_000).coverage).toBe(90);
   });
+
+  it('refuses to calibrate a path it was not measured on', () => {
+    // The percentiles come from the ZIP-comparable back-test. The
+    // market-indexed path has no measured error distribution at all, and
+    // borrowing this one produced ~7x-wide ranges on ordinary Burbank lots
+    // that looked authoritative and meant nothing.
+    expect(() => calibratedRange(100_000, 90, 'market-indexed')).toThrow(CalibrationError);
+    expect(() => calibratedRange(100_000, 90, 'market-indexed')).toThrow(
+      /no measured error distribution/,
+    );
+    expect(() => calibratedRange(100_000, 90, 'unknown')).toThrow(CalibrationError);
+  });
+
+  it('still accepts the path it was measured on', () => {
+    expect(calibratedRange(100_000, 90, 'zip-comparable').coverage).toBe(90);
+  });
 });
 
 describe('describeCalibration', () => {
