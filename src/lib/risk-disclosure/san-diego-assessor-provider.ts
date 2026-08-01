@@ -136,6 +136,15 @@ export const PROP8_SUSPECT_YEARS = { from: 2004, to: 2007 } as const;
  * a trust that buys at arm's length DOES reassess, so the class is mixed. It
  * is used only to withhold an indexed figure, never to assert one, so a false
  * positive costs coverage rather than correctness.
+ *
+ * WHY LA NEEDS NO EQUIVALENT. Trusts own property in LA just as they do here —
+ * the ownership pattern is Californian, not local. But LA publishes
+ * Roll_LandBaseYear, the reassessment year itself, so a trust transfer that
+ * does not reassess simply leaves the base year old and indexing from it stays
+ * correct. Measured: among recent-vintage parcels, LA's dispersion of assessed
+ * value per living sq ft has IQR/median 0.38 and p10/median 0.65, against 0.83
+ * and 0.31 here — LA has no depressed lower mode at all. The contamination is
+ * a property of INFERRING a vintage from documents, not of trusts.
  */
 const TRUST_OR_ENTITY =
   /\b(TRUST|TRUSTEE|TR|REVOCABLE|LLC|L L C|INC|CORP|COMPANY|LP|PARTNERSHIP|HOLDINGS|PROPERTIES)\b/i;

@@ -139,6 +139,46 @@ anything and was not pursued.
 indexed figure when the owner is a trust or entity. Verified live: 11 of 25 recent grant deeds in
 92117 are withheld, matching that ZIP's 41% trust share.
 
+### Does LA need the same fix? No — checked 2026-08-01
+
+LA publishes **no owner-name fields at all** (Gov Code §7928.205), so owners cannot be classified
+there. But the question that matters is structural and testable without names: does LA's vintage
+marker carry the same contamination?
+
+Comparing the dispersion of assessed value per living sq ft among *recent-vintage* parcels — LA by
+`Roll_LandBaseYear` = 2022, San Diego by `DOCDATE` year 2022 with `DOCTYPE=1`. The two cohorts are
+defined differently on purpose; that difference is the subject of the test.
+
+| county | ZIP | n | IQR/median | p10/median |
+|---|---|---|---|---|
+| LA | 91307 | 346 | 0.25 | 0.73 |
+| LA | 91344 | 669 | 0.31 | 0.69 |
+| LA | 90045 | 433 | 0.45 | 0.60 |
+| LA | 90042 | 538 | 0.65 | 0.60 |
+| SD | 92117 | 508 | 0.70 | 0.27 |
+| SD | 92126 | 478 | 0.91 | 0.38 |
+| SD | 92024 | 478 | 0.78 | 0.33 |
+| SD | 92114 | 641 | 0.89 | 0.29 |
+| | **median** | | **LA 0.38 / SD 0.83** | **LA 0.65 / SD 0.31** |
+
+San Diego's recent-vintage cohort is **2.2x more dispersed**, and its bottom decile sits below a
+third of the median against LA's 0.65 — an ordinary distributional tail. The depressed lower mode is
+the stale-basis subpopulation. **LA has no such mode.**
+
+**Why, and it is the general lesson.** Trusts own property in LA exactly as they do in San Diego —
+the ownership pattern is a feature of California, not of one county. But LA publishes the
+*reassessment year itself*. A trust transfer that does not reassess simply leaves `Roll_LandBaseYear`
+old, and indexing from that old year is then correct. The county answers the question the San Diego
+provider has to infer.
+
+So the trust pattern corrupts a vintage **only where the vintage is inferred from recorded
+documents**. That is an argument for preferring a published base year over any document-derived
+proxy, and for treating a county's own reassessment field as materially better evidence than
+anything reconstructible from deeds — not merely more convenient.
+
+No change to the LA path. The check was worth running because a shared fix would have been the
+wrong response.
+
 ## 3. Why the module does not average
 
 Averaging is the obvious move and it is wrong here.
