@@ -38,11 +38,27 @@ run, whether it was permissive.
 
 ## Evidence hierarchy — rank every finding
 
+**Use `src/lib/easements/evidence-tier.ts`. Do not reimplement this table by eye.**
+`assessEvidenceTier(distanceFt)` returns the tier, the geometric basis, the implication text and
+`mayValue`. `summariseTiers()` produces the user-facing line. They exist so this document and the
+product cannot drift apart.
+
 | tier | condition | what it can support |
 |---|---|---|
 | **A** | Infrastructure physically **crosses or sits on** the parcel, no easement of record | A real question: unrecorded easement, prescriptive claim, or an uncompensated occupation the owner may have a claim about. Worth valuing under stated assumptions. |
-| **B** | Infrastructure **abuts** the parcel or crosses its boundary strip; access to it plausibly requires entry | A question worth investigating. Value only as a contingent range, clearly labelled. |
+| **B** | Within `BOUNDARY_STRIP_FT` (15 ft) of the boundary but not crossing | A question worth investigating. Value only as a contingent range, clearly labelled. |
 | **C** | Infrastructure **near but off** the parcel | **No encumbrance implied. Do not value it.** Report as context only, if at all. |
+
+Two things to hold on to when using it:
+
+- **Distance is measured from the parcel BOUNDARY, not its centroid.** A centroid distance is wrong
+  for any parcel whose radius approaches the search radius.
+- **The A/C split is a geometric fact; the B/C split is a convention.** `BOUNDARY_STRIP_FT` is a
+  stated judgment, not a calibration — no measured distribution of recorded easement widths was
+  available. A real case has already landed inside that ambiguity: a Burbank parcel with a 230kV
+  line **between 15 and 25 ft from its boundary** is tier C at the default and would be tier B at a
+  25 ft strip. Where a finding is near the threshold, say so rather than presenting the tier as
+  settled.
 
 Tier C is the majority of what a 500-foot scan returns. Say so plainly rather than padding a report.
 
