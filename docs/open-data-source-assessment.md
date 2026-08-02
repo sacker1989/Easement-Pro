@@ -85,6 +85,47 @@ For jurisdictions without an easement layer, ship the evidence tier from
 `.claude/agents/implied-easement-valuation.md` — A/B/C by geometric relationship — which is an
 honest ordinal statement rather than a fabricated cardinal one.
 
+### FOUND 2026-08-02: homeowner parcels with recorded easements — but the data splits
+
+A homeowner parcel with a recorded easement **does exist in open data**, and it was reached. It is
+just not in any county this product currently covers.
+
+**Lawrence, Kansas** (`services.arcgis.com/8O9UlSTnqjKptoda`) publishes an `Easements` layer of
+14,397 polygons with `SOURCETYPE='PLAT'`, `BOOK`, `PAGE`, `RECORDED` and — decisively — **`WIDTH`**.
+The same org publishes a matching `Parcel` layer, so the two intersect directly.
+
+Intersecting them returns ordinary suburban homes: quarter- to third-acre lots on a golf-course
+subdivision, individually owned, each crossed by a **22.5 ft easement recorded at plat book 11, page
+7**. The easement polygon measures **7,927 sq ft over a 352 ft run** — note that is the whole run
+across a row of lots, so a per-parcel share needs the easement∩parcel intersection, not the polygon
+area.
+
+**Lynden, Washington** publishes the same shape of data with typed easements — `SEWER & WATER
+UTILITY EASEMENT`, `DRAINAGE EASEMENT` — a `FEET` width, and an auditor's file number.
+
+**But neither publishes assessed values.** Lawrence's `Parcel` layer carries owner, address, acreage
+and legal description and no money at all; Douglas County's `Tax_Parcel` layer has 26 fields and
+**zero value fields**.
+
+So the two halves of an end-to-end homeowner valuation sit in different places:
+
+| | assessed land value | recorded easement + width |
+|---|---|---|
+| LA County | ✅ with a published base year | ❌ none published |
+| San Diego | ✅ 987k parcels | ❌ none queryable |
+| Orange County | ✅ 696k parcels | ⚠️ 517 polygons, **institutional only** |
+| Lawrence KS / Lynden WA | ❌ none | ✅ plat-derived, with width |
+
+**No jurisdiction probed has both.** That is the single most important constraint on the product's
+coverage, and it is not a gap that more probing fixes — it reflects which office publishes what.
+Assessors publish values; city engineering and public-works departments publish plat easements. They
+are different agencies with different open-data programmes.
+
+Practical consequence: an end-to-end homeowner easement valuation needs either a county that
+publishes both (worth searching for specifically, using the two-layer test above as the criterion),
+or the value half sourced from the market path in `spec-easement-valuation.md` rather than from the
+roll.
+
 ### The guide supplies the missing bridge
 
 `.claude/agents/easement_analysis_guide.md` Part 3 is the piece that makes this coherent as a
