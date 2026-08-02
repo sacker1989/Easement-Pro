@@ -133,7 +133,21 @@ export function compareFindings(a: TierAssessment, b: TierAssessment): number {
  *
  * Deliberately says how many and how close, and nothing about likelihood.
  */
-export function summariseTiers(findings: readonly TierAssessment[]): string {
+export function summariseTiers(
+  findings: readonly TierAssessment[],
+  /**
+   * Whether these findings come from a RECORDED easement layer rather than
+   * from inferring an encumbrance out of infrastructure geometry.
+   *
+   * This matters and was got wrong once. The default text says the finding
+   * "does not establish that an easement exists", which is correct for a power
+   * line seen crossing a parcel and WRONG for Orange County's Encumbrances
+   * layer, where the county publishes the easement itself with an estate code,
+   * an acquisition date and a document reference. Understating recorded
+   * evidence is its own error, not a safe default.
+   */
+  fromRecordedEasements = false,
+): string {
   const n = (t: EvidenceTier) => findings.filter((f) => f.tier === t).length;
   const a = n('A');
   const b = n('B');
@@ -149,9 +163,15 @@ export function summariseTiers(findings: readonly TierAssessment[]): string {
   const parts: string[] = [];
   if (a > 0) parts.push(`${a} crossing the parcel`);
   if (b > 0) parts.push(`${b} within ${BOUNDARY_STRIP_FT} ft of the boundary`);
+
+  const claim = fromRecordedEasements
+    ? `These are recorded encumbrances published by the county, not inferences from nearby ` +
+      `infrastructure. Confirm the terms and dimensions against the referenced document.`
+    : `This indicates a question to investigate against the recorded documents — it does not ` +
+      `establish that an easement exists.`;
+
   return (
-    `${parts.join(' and ')}. This indicates a question to investigate against the recorded ` +
-    `documents — it does not establish that an easement exists.` +
+    `${parts.join(' and ')}. ${claim}` +
     (c > 0 ? ` A further ${c} feature${c === 1 ? '' : 's'} nearby imply nothing about this parcel.` : '')
   );
 }

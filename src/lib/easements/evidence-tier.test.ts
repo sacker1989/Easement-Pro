@@ -87,6 +87,20 @@ describe('summariseTiers — the replacement for the probability sentence', () =
     expect(summariseTiers([at(0)])).toMatch(/does not establish that an easement exists/);
   });
 
+  it('does NOT understate a recorded easement', () => {
+    // Orange County's Encumbrances layer publishes the easement itself, with
+    // an estate code, acquisition date and document reference. Saying that
+    // "does not establish an easement exists" is wrong in the other direction.
+    const s = summariseTiers([at(0)], true);
+    expect(s).toMatch(/recorded encumbrances published by the county/);
+    expect(s).not.toMatch(/does not establish/);
+    expect(s).toMatch(/Confirm the terms and dimensions/);
+  });
+
+  it('still never states a likelihood in the recorded case', () => {
+    expect(summariseTiers([at(0), at(400)], true)).not.toMatch(/%|probability|likely|chance/i);
+  });
+
   it('is explicit when nothing touches the parcel', () => {
     const s = summariseTiers([at(200), at(400)]);
     expect(s).toMatch(/No infrastructure touches this parcel/);
