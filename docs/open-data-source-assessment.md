@@ -126,6 +126,61 @@ publishes both (worth searching for specifically, using the two-layer test above
 or the value half sourced from the market path in `spec-easement-valuation.md` rather than from the
 roll.
 
+### FOUND 2026-08-02: a jurisdiction that publishes BOTH
+
+**Green Cove Springs, Clay County, Florida** — org `R0MaBWycrb80Pvlu` on `services2.arcgis.com`.
+
+| layer | service | n |
+|---|---|---|
+| easements | `Utility_and_Drainage_Easements/FeatureServer/911154` | 125 polygons, widths in `Notes` |
+| parcels | `GCS_Parcels/FeatureServer/41` | 4,756, with `MktLandVal`, `JustValue`, `BldgValue`, `UseCode` |
+
+Both queryable, same org, same spatial reference. A sweep of orgs publishing easement layers found
+**27 with both easements and valued parcels**, so this is not a one-off.
+
+**Florida removes the hardest problem entirely.** It assesses at *just value* annually, so there is
+no Proposition 13 freeze, no base-year inference, no HPI indexing, and none of the vintage machinery
+built for California. `MktLandVal` is a current market land value as published.
+
+#### Two worked results, computed end to end
+
+Intersection area via the public ArcGIS geometry service, not estimated:
+
+| | lot | `MktLandVal` | $/sq ft | easement | encumbered | land value of strip |
+|---|---|---|---|---|---|---|
+| A | 39,858 sq ft | $54,285 | $1.36 | "20' wide, from CAD" | 62 sq ft (0.2%) | **$84** |
+| B | 14,474 sq ft | $45,393 | $3.14 | "Sewer easement" | 1,204 sq ft (8.3%) | **$3,775** |
+
+**Two of the three blockers are cleared.** Encumbered area: computed. Land value: published. The
+**encumbrance factor remains unsourced** — what share of that strip's value the easement actually
+takes is an output of a before-and-after appraisal, not a lookup, so the *cost to the homeowner* is
+still not computable. What is now computable is the land value of the encumbered ground, which is
+the input that factor would be applied to.
+
+#### Caveats that belong with those numbers
+
+- **Coverage is partial.** 125 easement polygons against 4,756 parcels. Absence of an easement here
+  does **not** mean none exists — most parcels simply are not covered by the layer.
+- **The publisher flags its own accuracy.** Parcel B's easement note reads *"approximate as county
+  parcels different from survey"*. The encumbered area is approximate by the county's own admission.
+- **Parcel A's 62 sq ft is small for a 20 ft easement** — the strip clips a corner rather than
+  running the lot. Plausible, but a per-parcel share always needs the intersection, never the
+  easement polygon's own area.
+
+#### Web Mercator area trap — cost an 8x error before it was caught
+
+Both layers are EPSG:3857, where `Shape__Area` is in **square metres** *and* inflated by
+`1/cos²(latitude)`. At Green Cove Springs' latitude that is **1.333x**, verified against `GISACRES`
+on six parcels (measured 1.3380 against a theoretical 1.3331 — a 0.4% match).
+
+```
+true_sq_ft = Shape__Area × cos²(lat) × 10.7639     # = ×8.0746 here
+```
+
+Reading `Shape__Area` as square feet understated these easements by roughly **8x** and did so
+silently, producing figures that looked entirely reasonable. Any 3857 layer needs this correction, or
+areas must come from the geometry service, which returns true values.
+
 ### The guide supplies the missing bridge
 
 `.claude/agents/easement_analysis_guide.md` Part 3 is the piece that makes this coherent as a
