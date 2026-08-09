@@ -7,6 +7,7 @@ import {
   TTI_PIPELINE_CASE_EXAMPLE,
   UNCITED_SCREENING_RANGES,
   VALUATION_METHODS,
+  YELLOW_BOOK_4_6_5,
 } from './encumbrance-factors';
 
 describe('encumbrance factor sourcing discipline', () => {
@@ -107,6 +108,30 @@ describe('VALUATION_METHODS', () => {
 
   it('requires observed rents for the income approach, not a percentage', () => {
     expect(VALUATION_METHODS.incomeCapitalisation).toMatch(/not a\s+percentage of fee value/);
+  });
+});
+
+describe('Yellow Book §4.6.5 — the method itself is rejected', () => {
+  it('records that strip valuation is not the correct measure', () => {
+    // This is the finding that matters: the missing factor was never the
+    // blocker, the formula it slots into was.
+    expect(YELLOW_BOOK_4_6_5.stripValuationRejected).toBe(true);
+  });
+
+  it('records that there is no generic easement by type', () => {
+    // Forecloses a table keyed by easement type specifically.
+    expect(YELLOW_BOOK_4_6_5.noGenericEasementByType).toBe(true);
+  });
+
+  it('gives a usable method for temporary easements', () => {
+    // Market rental value for the term — no percentage required.
+    expect(YELLOW_BOOK_4_6_5.temporaryEasementMeasure).toMatch(/market rental value/i);
+  });
+
+  it('still yields no factor for any type', () => {
+    for (const t of EASEMENT_TYPES) {
+      expect(lookupEncumbranceFactor(t).status).toBe('unsourced');
+    }
   });
 });
 

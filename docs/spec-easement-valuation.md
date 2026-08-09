@@ -262,7 +262,41 @@ rather than inventing a fourth confidence scheme.
 
 ## 6. Valuing an easement
 
-### 6.1 Method
+### 6.1 Method — SUPERSEDED 2026-08-02, the formula below is the rejected one
+
+**Read this before using anything in §6.1.** The Uniform Appraisal Standards for Federal Land
+Acquisitions (2016) §4.6.5 names the approach specified below — valuing the encumbered area on its
+own — and rejects it:
+
+> "valuing only the area subject to the easement (i.e. **'strip valuation'**) fails to 'compar[e] the
+> fair market value of the entire tract affected by the taking before and after the taking . . .
+> [that is] the correct measure of value in federal court condemnation.'"
+
+And on why the strip's own value cannot stand in:
+
+> "the full fee value of the land within the easement is **not a proper measure of damages** since
+> the rights remaining in the owners of the servient estate may be substantial."
+
+So `encumbered area × land $/sq ft × encumbrance factor` is not an approximation of the right answer
+awaiting a sourced factor. It is the wrong measure, and a sourced factor would only make it look
+authoritative. **The missing factor was never the blocker; the formula was.**
+
+The correct measure is §6.1a. The formula below is retained only so the change is legible.
+
+### 6.1a The measure that actually applies
+
+`value = (market value of the whole tract BEFORE) − (market value of the remainder AFTER)`
+
+Severance damage to the remainder is included automatically, which is why §6.4's separate
+severance step largely dissolves. This requires a highest-and-best-use analysis of a specific
+property and cannot be computed from parcel geometry and a land rate — it comes from an appraiser.
+
+For **temporary** easements the standard gives a method this product could actually implement
+(§4.6.5.1.2): *"compensation is measured by the market rental value for the term of the easement,
+adjusted as may be appropriate for the rights of use, if any, reserved to the owner."* That needs
+observed market rents, not a percentage.
+
+### 6.1b The superseded formula, retained for the record
 
 Standard corridor valuation:
 

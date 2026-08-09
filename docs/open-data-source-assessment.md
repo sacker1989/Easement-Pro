@@ -151,11 +151,18 @@ Intersection area via the public ArcGIS geometry service, not estimated:
 | A | 39,858 sq ft | $54,285 | $1.36 | "20' wide, from CAD" | 62 sq ft (0.2%) | **$84** |
 | B | 14,474 sq ft | $45,393 | $3.14 | "Sewer easement" | 1,204 sq ft (8.3%) | **$3,775** |
 
-**Two of the three blockers are cleared.** Encumbered area: computed. Land value: published. The
-**encumbrance factor remains unsourced** — what share of that strip's value the easement actually
-takes is an output of a before-and-after appraisal, not a lookup, so the *cost to the homeowner* is
-still not computable. What is now computable is the land value of the encumbered ground, which is
-the input that factor would be applied to.
+**Two of the three blockers are cleared.** Encumbered area: computed. Land value: published.
+
+**But the third is not a blocker — it is a dead end, established 2026-08-02.** The Uniform Appraisal
+Standards for Federal Land Acquisitions §4.6.5 rejects "strip valuation" — valuing the encumbered
+area on its own — as not the correct measure, because "the rights remaining in the owners of the
+servient estate may be substantial". The correct measure is the whole tract before minus the
+remainder after.
+
+So the **$84** and **$3,775** above are exactly what they say and nothing more: *the land value of
+the ground under the easement*. They are **not** easement values, not a lower bound on one, and not
+an input awaiting a factor — the formula that would consume them is the rejected one. Report them as
+context for a conversation with an appraiser, never as compensation figures.
 
 #### Caveats that belong with those numbers
 

@@ -36,11 +36,48 @@
  *      then be calculated by taking the loss to the parcel owner and dividing
  *      by the before value."
  *
+ * 3. Uniform Appraisal Standards for Federal Land Acquisitions (2016) §4.6.5,
+ *    "Easement Valuation Issues" — the controlling federal standard. Retrieved
+ *    and read 2026-08-02. It is the most authoritative of the three and it
+ *    goes furthest.
+ *
+ *    - "There is no 'generic' road easement, conservation easement, or any
+ *      other type of easement." Which forecloses a table keyed BY TYPE.
+ *    - "[W]here only an easement is acquired, the full fee value of the land
+ *      within the easement is not a proper measure of damages since the rights
+ *      remaining in the owners of the servient estate may be substantial."
+ *    - And decisively: "valuing only the area subject to the easement (i.e.
+ *      'strip valuation') fails to 'compar[e] the fair market value of the
+ *      entire tract affected by the taking before and after the taking . . .
+ *      [that is] the correct measure of value in federal court condemnation.'"
+ *    - §4.6.5.1.1 on customary rates: they "cannot be used as a proxy for
+ *      market value", they "tend to reflect non-compensable considerations",
+ *      "[t]here is no basis for translating a dollar per rod settlement figure
+ *      into a market value per acre figure", and appraisals "cannot be based
+ *      upon going rates but rather must be based upon the accepted before and
+ *      after appraisal method."
+ *
  * The consequence is the load-bearing point of this module: **the encumbrance
  * factor is an OUTPUT of a proper before-and-after appraisal, not an INPUT
  * looked up in a table.** A table of percentages inverts the causality. It is
  * not merely imprecise; per source 1 it produces "some value other than market
  * value," which is the wrong quantity rather than an approximate right one.
+ *
+ * AND THE ARCHITECTURE AROUND IT IS ALSO REJECTED. Source 3 names
+ * "strip valuation" — valuing the encumbered area on its own — and rejects it
+ * as not the correct measure. That is precisely the shape of
+ * `encumbered area x land $/sq ft x factor`, which is what
+ * docs/spec-easement-valuation.md §6.1 specifies. So the missing factor is not
+ * a gap to be filled: the formula it would slot into is itself the wrong
+ * method. Sourcing a factor would not unblock that formula, it would only make
+ * a rejected method look authoritative.
+ *
+ * WHAT THE STANDARD DOES GIVE, and it is usable: for TEMPORARY easements,
+ * "compensation is measured by the market rental value for the term of the
+ * easement, adjusted as may be appropriate for the rights of use, if any,
+ * reserved to the owner" (§4.6.5.1.2). That is a concrete method requiring
+ * observed market rents — see VALUATION_METHODS.incomeCapitalisation — and it
+ * needs no percentage at all.
  *
  * So this module deliberately does NOT ship a populated factor table. It
  * encodes the methodology, records the one sourced datapoint actually found,
@@ -178,6 +215,33 @@ export const TTI_PIPELINE_CASE_EXAMPLE: EncumbranceFactor = {
  * by a proper before-and-after appraisal. A number far outside these bands is
  * worth re-examining. That is the only sanctioned use.
  */
+/**
+ * Findings from Uniform Appraisal Standards for Federal Land Acquisitions
+ * (2016) §4.6.5, recorded as flags so callers can assert against them rather
+ * than re-reading a 1.2 million character PDF.
+ */
+export const YELLOW_BOOK_4_6_5 = {
+  /** "There is no 'generic' road easement, conservation easement, or any other type of easement." */
+  noGenericEasementByType: true,
+  /**
+   * Strip valuation — valuing only the encumbered area — "fails to compare the
+   * fair market value of the entire tract affected by the taking before and
+   * after the taking", which is "the correct measure of value in federal court
+   * condemnation."
+   */
+  stripValuationRejected: true,
+  /** Customary per-pole / per-rod rates "cannot be used as a proxy for market value". */
+  goingRatesRejected: true,
+  /** §4.6.5.1.2 — the one concretely implementable measure the section gives. */
+  temporaryEasementMeasure:
+    'Compensation for a temporary easement is measured by the market rental value for the term of ' +
+    'the easement, adjusted as may be appropriate for the rights of use, if any, reserved to the ' +
+    'owner. This requires observed market rents and no percentage of fee value.',
+  citation:
+    'Uniform Appraisal Standards for Federal Land Acquisitions (Interagency Land Acquisition ' +
+    'Conference, 2016), §4.6.5 "Easement Valuation Issues", retrieved 2026-08-02.',
+} as const;
+
 export const UNCITED_SCREENING_RANGES: Readonly<
   Record<string, { readonly low: number; readonly high: number; readonly basis: string }>
 > = {
