@@ -55,6 +55,14 @@ export {
   type FactorLookup,
 } from './encumbrance-factors';
 export {
+  assertObservedRate,
+  valueTemporaryEasement,
+  TemporaryEasementError,
+  type MarketRentRate,
+  type TemporaryEasementInput,
+  type TemporaryEasementValuation,
+} from './temporary-easement';
+export {
   mapJurisdictionToConfidence,
   suggestNextStepByJurisdiction,
   valuationConfidenceToTieredResult,
