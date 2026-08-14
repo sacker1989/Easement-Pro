@@ -141,6 +141,20 @@ describe('NASS_AGRICULTURAL_RENT — the one observed source, and its limit', ()
     expect(NASS_AGRICULTURAL_RENT.countySuppression).toMatch(/Clay County FL is absent/);
   });
 
+  it('names the jurisdiction where every input coincides', () => {
+    // Berks County PA: ag easements, valued parcels and an observed NASS
+    // county rent, all in one place and all for the right land class.
+    expect(NASS_AGRICULTURAL_RENT.referenceJurisdiction).toMatch(/Berks County, Pennsylvania/);
+    expect(NASS_AGRICULTURAL_RENT.referenceJurisdiction).toMatch(/right land class/);
+  });
+
+  it('warns about the PDF extraction offset', () => {
+    // pdftotext -layout gives Berks $20.00 instead of $97.50 — a 4.9x error
+    // that reads as a perfectly plausible number.
+    expect(NASS_AGRICULTURAL_RENT.extractionTrap).toMatch(/three rows/);
+    expect(NASS_AGRICULTURAL_RENT.extractionTrap).toMatch(/\$97\.50/);
+  });
+
   it('does not expose a usable rate constant', () => {
     // Deliberate: this records a SOURCE and its scope, not a number anyone can
     // reach for. A rate still has to be observed and passed in.

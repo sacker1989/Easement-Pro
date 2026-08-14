@@ -61,6 +61,30 @@
  * Clay County is additionally **not published at all** in that release —
  * counties are suppressed "due to insufficient data or to avoid disclosure of
  * individual operations" — so even the wrong-class figure is unavailable there.
+ *
+ * WHERE IT DOES ALL COINCIDE: BERKS COUNTY, PENNSYLVANIA. One org
+ * (`services3.arcgis.com/dGYe1jDYrTw1wwpc`) publishes 1,692 agricultural
+ * conservation easements, 215 general easements with book/page, and 156,928
+ * parcels carrying `VALULNDMKT` and `LANDUSE` — and NASS publishes a cash rent
+ * for that county. Every input is observed, in one jurisdiction, for the right
+ * land class. Worked example: a 19.97-acre Bethel Township farm parcel,
+ * `VALULNDMKT` $67,300 ($3,370/acre), against NASS Berks non-irrigated
+ * cropland at $88.00/acre/yr — a 2-year temporary easement over the encumbered
+ * acreage computes to $3,515 from an observed rate rather than a placeholder.
+ *
+ * TWO CAVEATS ON THAT EXAMPLE. The NASS figure is 2013 ($97.50 in 2012);
+ * current county rents need the key-gated Quick Stats. And the easement
+ * actually recorded there is a PERMANENT agricultural conservation easement
+ * covering the whole parcel, which this temporary method does not value — the
+ * figure demonstrates that all three inputs now exist and are observed, not
+ * that this easement is worth $3,515.
+ *
+ * EXTRACTION TRAP, worth 4.9x. The NASS county PDF is multi-column and
+ * `pdftotext -layout` offsets county labels by three rows against their data,
+ * because the header consumes the first three name cells. Read naively it
+ * gives Berks $20.00 instead of $97.50. Cross-check the label-to-value mapping
+ * against the raw (non-layout) reading order before trusting any figure out of
+ * these publications.
  */
 export const NASS_AGRICULTURAL_RENT = {
   validFor: 'agricultural land only — cropland and pasture',
@@ -74,6 +98,23 @@ export const NASS_AGRICULTURAL_RENT = {
   countySuppression:
     'Counties with insufficient data are withheld. Clay County FL is absent from the 2024 ' +
     'Florida pasture release.',
+  /** Where easements, valued parcels and an observed county rent all coincide. */
+  referenceJurisdiction:
+    'Berks County, Pennsylvania. One ArcGIS org publishes 1,692 agricultural conservation ' +
+    'easements, 215 general easements with book/page, and 156,928 parcels carrying VALULNDMKT ' +
+    'and LANDUSE; NASS publishes a Berks cash rent. Every input observed, one jurisdiction, ' +
+    'right land class.',
+  /**
+   * READ THE PDF CAREFULLY. `pdftotext -layout` offsets county labels three
+   * rows against their data in the NASS county publications, because the
+   * header consumes the first three name cells. Read naively it gives Berks
+   * $20.00 instead of $97.50 — a 4.9x error. Cross-check label-to-value
+   * mapping against the raw non-layout reading order.
+   */
+  extractionTrap:
+    'NASS county PDFs are multi-column; pdftotext -layout misaligns county labels by three rows. ' +
+    'Verified Berks County non-irrigated cropland at $97.50/acre (2012) and $88.00/acre (2013) ' +
+    'by cross-checking layout output against raw reading order.',
 } as const;
 
 export interface MarketRentRate {
