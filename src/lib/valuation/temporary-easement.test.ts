@@ -3,6 +3,7 @@ import {
   assertObservedRate,
   TemporaryEasementError,
   valueTemporaryEasement,
+  NASS_AGRICULTURAL_RENT,
   type MarketRentRate,
 } from './temporary-easement';
 
@@ -119,6 +120,31 @@ describe('valueTemporaryEasement', () => {
         rate: { ...RATE, source: 'capitalized land value at 7%' },
       }),
     ).toThrow(/improper to develop/);
+  });
+});
+
+describe('NASS_AGRICULTURAL_RENT — the one observed source, and its limit', () => {
+  it('is scoped to agricultural land only', () => {
+    expect(NASS_AGRICULTURAL_RENT.validFor).toMatch(/agricultural land only/);
+  });
+
+  it('records the magnitude of the land-class error', () => {
+    // Pasture rent is ~360x below a plausible suburban ground rent. This is
+    // not a rough proxy, it is two orders of magnitude wrong.
+    expect(NASS_AGRICULTURAL_RENT.invalidFor).toMatch(/360x/);
+    expect(NASS_AGRICULTURAL_RENT.invalidFor).toMatch(/two orders of magnitude/);
+  });
+
+  it('records that counties can be suppressed entirely', () => {
+    // Clay County FL is absent from the 2024 Florida pasture release, so even
+    // the wrong-class figure is unavailable there.
+    expect(NASS_AGRICULTURAL_RENT.countySuppression).toMatch(/Clay County FL is absent/);
+  });
+
+  it('does not expose a usable rate constant', () => {
+    // Deliberate: this records a SOURCE and its scope, not a number anyone can
+    // reach for. A rate still has to be observed and passed in.
+    expect(Object.values(NASS_AGRICULTURAL_RENT).every((v) => typeof v === 'string')).toBe(true);
   });
 });
 

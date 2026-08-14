@@ -35,6 +35,47 @@
  * makes the arithmetic mean anything.
  */
 
+/**
+ * The one observed ground-rent source located in open data, and the land class
+ * it is valid for.
+ *
+ * USDA NASS publishes county-level **agricultural** cash rents annually, by
+ * survey, free — cropland and pasture, dollars per acre per year. For a
+ * temporary easement across FARMLAND this is exactly the right input: an
+ * observed market rent for that land class, in that county, from a named
+ * federal survey.
+ *
+ * THE API NEEDS A KEY (`quickstats.nass.usda.gov/api` returns 401
+ * `["unauthorized"]`), but the county estimate publications are open PDFs, e.g.
+ * `data.nass.usda.gov/Statistics_by_State/Florida/Publications/County_Estimates/2024/FLPasture2024.pdf`.
+ *
+ * WHY IT CANNOT BE USED FOR A SUBURBAN LOT. Searching for an observed ground
+ * rent for the Green Cove Springs residential market found none, and the
+ * agricultural figures show why substituting them would be indefensible rather
+ * than merely rough. Florida pasture cash rents run roughly $6.70-$51.50 per
+ * acre per year — about **$0.00069/sq ft/yr at $30/acre**. An illustrative
+ * suburban rate of $0.25/sq ft/yr is **~360x higher**. Applied to a 1,204 sq ft
+ * easement over two years, pasture rent yields about $1.66. The land class is
+ * not a detail; it is the whole magnitude.
+ *
+ * Clay County is additionally **not published at all** in that release —
+ * counties are suppressed "due to insufficient data or to avoid disclosure of
+ * individual operations" — so even the wrong-class figure is unavailable there.
+ */
+export const NASS_AGRICULTURAL_RENT = {
+  validFor: 'agricultural land only — cropland and pasture',
+  invalidFor:
+    'residential, commercial and other developed land. Florida pasture runs ~$0.00069/sq ft/yr, ' +
+    'roughly 360x below a plausible suburban ground rent, so substituting it understates ' +
+    'compensation by more than two orders of magnitude.',
+  source:
+    'USDA NASS county estimates, Annual Cash Rents (Cropland/Pasture), published annually. ' +
+    'Quick Stats API requires a free key; the county estimate PDFs are open.',
+  countySuppression:
+    'Counties with insufficient data are withheld. Clay County FL is absent from the 2024 ' +
+    'Florida pasture release.',
+} as const;
+
 export interface MarketRentRate {
   /** Observed ground rent, dollars per square foot per year. */
   readonly perSqFtPerYear: number;
