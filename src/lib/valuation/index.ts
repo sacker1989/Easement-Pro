@@ -58,6 +58,7 @@ export {
   assertObservedRate,
   valueTemporaryEasement,
   NASS_AGRICULTURAL_RENT,
+  TCE_SOURCE_NOTES,
   TemporaryEasementError,
   type MarketRentRate,
   type TemporaryEasementInput,

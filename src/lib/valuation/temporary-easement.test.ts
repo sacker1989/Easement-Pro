@@ -4,6 +4,7 @@ import {
   TemporaryEasementError,
   valueTemporaryEasement,
   NASS_AGRICULTURAL_RENT,
+  TCE_SOURCE_NOTES,
   type MarketRentRate,
 } from './temporary-easement';
 
@@ -162,7 +163,28 @@ describe('NASS_AGRICULTURAL_RENT — the one observed source, and its limit', ()
   });
 });
 
+describe('TCE_SOURCE_NOTES — where TCEs actually are', () => {
+  it('records that the reference jurisdiction has none', () => {
+    // Berks has the observed rent but no TCEs; the split seen elsewhere in
+    // this project repeats.
+    expect(TCE_SOURCE_NOTES.berksHasNone).toMatch(/no temporary construction easements/);
+  });
+
+  it('names where they do exist', () => {
+    expect(TCE_SOURCE_NOTES.whereTheyLive).toMatch(/right-of-way acquisition layers/);
+    expect(TCE_SOURCE_NOTES.whereTheyLive).toMatch(/TAKING=TCE/);
+  });
+
+  it('records that both remaining inputs are absent there', () => {
+    // Identifiable and measurable, still not valuable.
+    expect(TCE_SOURCE_NOTES.stillMissing).toMatch(/no compensation amount/);
+    expect(TCE_SOURCE_NOTES.stillMissing).toMatch(/no term/);
+    expect(TCE_SOURCE_NOTES.stillMissing).toMatch(/identified and measured but not valued/);
+  });
+});
+
 describe('hypothetical rates announce themselves', () => {
+
   it('marks an illustrative figure loudly', () => {
     // A source string alone cannot carry this — a caller can write anything
     // there and the output still reads as measured.

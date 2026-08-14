@@ -117,6 +117,56 @@ export const NASS_AGRICULTURAL_RENT = {
     'by cross-checking layout output against raw reading order.',
 } as const;
 
+/**
+ * Where actual temporary construction easements are published, and what is
+ * still missing from them.
+ *
+ * SEARCHED FOR TCEs IN BERKS COUNTY PA — the reference jurisdiction above —
+ * AND FOUND NONE. Its 215 general easements are all permanent preservation
+ * types: 147 conservation, 48 agricultural, plus trail, wetland, scenic and
+ * open space. Berks publishes a land-PRESERVATION inventory, not a public-works
+ * right-of-way inventory. So the county with the observed rent has no TCEs, and
+ * the pattern of the split seen elsewhere in this project repeats.
+ *
+ * THERE IS A STRUCTURAL REASON TO EXPECT THIS. A TCE expires when construction
+ * finishes, so it is released rather than maintained, and a preservation or
+ * assessment layer has no reason to carry it. TCEs live in the acquiring
+ * agency's right-of-way system, which is a project-tracking tool rather than a
+ * land record.
+ *
+ * WHERE THEY DO EXIST: state DOT right-of-way acquisition layers. Florida DOT
+ * (`services1.arcgis.com/O1JpcwDW8sjYuddV`) publishes ROW status layers
+ * carrying PARCEL, OWNER, TAKING, PURPOSE, ACQ_DATE and ACQUIRED, with 27
+ * records whose TAKING is `TCE` — purposes such as "TCE DRIVEWAY TIE-IN" and
+ * "TCE PRIVATE ROAD TIE-IN". Owners include private individuals, so these are
+ * genuine homeowner TCEs. Areas are computable: three sampled at 893, 581 and
+ * 1,798 sq ft, which is the right size for a driveway tie-in at a road edge.
+ *
+ * WHAT IS STILL MISSING FROM THEM, and it is both remaining inputs:
+ *   - NO COMPENSATION. The `APPRAISAL` field holds a date, not an amount. No
+ *     dollar field in the layer is populated.
+ *   - NO TERM. Nothing records how long the easement runs, and term is half
+ *     the formula.
+ * A rate for the right land class would also still be needed; these are
+ * residential frontages, and the only observed ground rent found in open data
+ * is agricultural (see NASS_AGRICULTURAL_RENT).
+ *
+ * Net: a real TCE on a real homeowner's parcel can now be identified and
+ * measured. It still cannot be valued.
+ */
+export const TCE_SOURCE_NOTES = {
+  berksHasNone:
+    'Berks County PA publishes no temporary construction easements. Its 215 easements are all ' +
+    'permanent preservation types (147 conservation, 48 agricultural, plus trail, wetland, ' +
+    'scenic, open space).',
+  whereTheyLive:
+    'State DOT right-of-way acquisition layers. Florida DOT publishes 27 records with TAKING=TCE, ' +
+    'including private homeowners, with computable areas (893, 581, 1,798 sq ft sampled).',
+  stillMissing:
+    'Those layers carry no compensation amount (APPRAISAL holds a date) and no term. Both are ' +
+    'required inputs, so a TCE can be identified and measured but not valued.',
+} as const;
+
 export interface MarketRentRate {
   /** Observed ground rent, dollars per square foot per year. */
   readonly perSqFtPerYear: number;
