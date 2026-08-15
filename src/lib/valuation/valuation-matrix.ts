@@ -1,8 +1,42 @@
 /**
  * IRWA Easement Valuation Matrix
  * Source: Donnie Sherwood, SR/WA, MAI, FRICS — "Valuation of Easements" (IRWA methodology)
- * Maps easement impact tiers to percentage-of-fee-value ranges for automated appraisal.
- * Phase 2: integration point between risk disclosure (step 3) and valuation (step 3.5).
+ * Maps easement impact tiers to percentage-of-fee-value ranges.
+ *
+ * ============================================================================
+ * CONFLICT NOTICE — read before using this matrix. Added 2026-08-02.
+ *
+ * This is a percentage-of-fee table. Later research reached the opposite
+ * conclusion about that method, and the two have not been reconciled:
+ *
+ *   - Allen, "The Appraisal of Easements", IRWA, Nov/Dec 2001, names "linear
+ *     rules of thumb" among three alternative methods with "serious flaws".
+ *     Note that BOTH this file and that source are IRWA material.
+ *   - Uniform Appraisal Standards for Federal Land Acquisitions (2016) §4.6.5
+ *     is stronger: it rejects percentage-of-fee, rejects customary going
+ *     rates, and rejects "strip valuation" — valuing only the encumbered area
+ *     — as failing to compare the whole tract before and after, which it calls
+ *     "the correct measure of value in federal court condemnation".
+ *   - Accordingly src/lib/valuation/encumbrance-factors.ts ships its factor
+ *     table DELIBERATELY EMPTY, with tests asserting it stays empty.
+ *
+ * So this module and encumbrance-factors.ts currently contradict each other,
+ * and calculator.ts computes area x unit value x percentage — the shape §4.6.5
+ * names and rejects.
+ *
+ * The conflict may be resolvable rather than fatal: the Yellow Book governs
+ * FEDERAL just-compensation appraisal, while a screening estimate for a
+ * homeowner facing a utility easement is a different context, and IRWA members
+ * do publish percentage matrices as practice tools. But that is a product and
+ * legal decision, not a code cleanup, and it has not been made.
+ *
+ * UNTIL IT IS: do not present output derived from this matrix as market value,
+ * as compensation, or as an appraisal. The Sherwood source has not been
+ * retrieved and verified in this repo — the attribution is carried forward
+ * from Phase 1, not checked.
+ *
+ * See docs/spec-easement-valuation.md §6.1 (superseded) and §6.1a.
+ * ============================================================================
  */
 
 export interface ImpactTier {
