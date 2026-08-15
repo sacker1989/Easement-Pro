@@ -12,7 +12,7 @@ appears nowhere. This document proposes boundaries so the work can be specced.
 | | built | measured limit |
 |---|---|---|
 | **Phase 1** — LA County MVP | done | — |
-| **Phase 2** — nationwide data | county matrix at 13 counties (4 immediate, 8 standard, 1 fallback); vendor harness with a 25-parcel stratified test set | **strand 3 open**: every county except LA gets generic recorder fallback, including tier-A Orange and San Diego |
+| **Phase 2** — nationwide data | county matrix at 12 counties (3 immediate, 8 standard, 1 fallback); vendor harness with a 25-parcel stratified test set | **strand 3 open**: every county except LA gets generic recorder fallback, including tier-A Orange and San Diego |
 | Analysis Layer | `ca-rule-set.ts` only | 1 state |
 | State compliance matrix | 1 entry (CA, Tier A) | 1 state |
 | Advocacy Wizard | built, gated | CA-only by construction |
