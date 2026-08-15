@@ -1,10 +1,13 @@
+import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, it, expect } from 'vitest';
 import {
   assessEvidenceTier,
   BOUNDARY_STRIP_FT,
   compareFindings,
+  evidenceTier,
   EvidenceTierError,
   summariseTiers,
+  type EvidenceTier,
   type TierAssessment,
 } from './evidence-tier';
 import { provenanceConfidence } from './easement-types';
@@ -142,5 +145,31 @@ describe('interaction with the confidence vocabulary', () => {
     expect(
       provenanceConfidence({ kind: 'proximity-inference', distanceFt: 0, layer: 'OSM power' }),
     ).toBe('flagged');
+  });
+});
+
+describe('EvidenceTier is branded against StateTier', () => {
+  it('rejects a bare literal and a StateTier at compile time', () => {
+    // Both types are literally 'A' | 'B' | 'C' and mean unrelated things —
+    // geometric evidence here, a state's UPL classification there.
+    // The suppression directives below ARE the assertion: if the brand were
+    // ever removed, those errors would disappear and tsc would fail on the
+    // now-unused directives. This test cannot silently stop protecting.
+
+    // @ts-expect-error a bare literal is not an EvidenceTier
+    const fromLiteral: EvidenceTier = 'A';
+    // @ts-expect-error a StateTier is not an EvidenceTier
+    const fromStateTier: EvidenceTier = stateTier('A');
+
+    expect(fromLiteral).toBe('A');
+    expect(fromStateTier).toBe('A');
+  });
+
+  it('still allows an EvidenceTier where a plain letter is wanted', () => {
+    // The brand is one-directional on purpose: comparison and display must
+    // keep working.
+    const t = evidenceTier('B');
+    expect(t === 'B').toBe(true);
+    expect(`tier ${t}`).toBe('tier B');
   });
 });

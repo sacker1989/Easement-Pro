@@ -1,10 +1,11 @@
+import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, expect, it } from 'vitest';
 import { evaluateAdvocacyWizardAccess } from './advocacy-wizard-access';
 import { unclassifiedState, type StateComplianceEntry } from './state-tier-config';
 
 const tierAEntry: StateComplianceEntry = {
   state: 'CA',
-  tier: 'A',
+  tier: stateTier('A'),
   track1RequiredFlow: 'licensed-pathway',
   track2Available: true,
   basis: 'test fixture',
@@ -13,7 +14,7 @@ const tierAEntry: StateComplianceEntry = {
 
 const tierBEntry: StateComplianceEntry = {
   state: 'FL',
-  tier: 'B',
+  tier: stateTier('B'),
   track1RequiredFlow: 'mandatory-review',
   track2Available: true,
   basis: 'test fixture',

@@ -1,4 +1,5 @@
 import {
+  stateTier,
   resolveStateCompliance,
   type StateComplianceEntry,
   type StateComplianceMatrix,
@@ -16,7 +17,7 @@ import {
 export const STATE_COMPLIANCE_MATRIX: StateComplianceMatrix = {
   CA: {
     state: 'CA',
-    tier: 'A',
+    tier: stateTier('A'),
     track1RequiredFlow: 'licensed-pathway',
     track2Available: true,
     basis: 'Legal Document Assistant statute, Cal. Bus. & Prof. Code §6400 et seq.',

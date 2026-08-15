@@ -13,10 +13,24 @@ import type { ConfidenceRule } from './confidence-tiering';
  * launch. Do not treat this as authoritative.
  */
 
-export type EasementType = 'appurtenant' | 'in-gross' | 'prescriptive' | 'unknown';
+/**
+ * The LEGAL CHARACTER of an easement — how it is held and how it arose.
+ *
+ * Renamed from `EasementType` 2026-08-02. That name was also exported by
+ * src/lib/easements/easement-types.ts for an unrelated axis: the PHYSICAL
+ * taxonomy of what the easement carries (utility-overhead, sewer, drainage,
+ * and so on). Two exported types with one name and two meanings is a
+ * collision waiting for the first consumer that imports both barrels, and the
+ * phase specs need both axes on the same record simultaneously.
+ *
+ * The two are orthogonal and both are needed: a sewer easement (physical) may
+ * be appurtenant or in gross (legal), and the valuation and the doctrine
+ * questions turn on different ones.
+ */
+export type EasementLegalCharacter = 'appurtenant' | 'in-gross' | 'prescriptive' | 'unknown';
 
 export interface EasementDurationFacts {
-  easementType: EasementType;
+  easementType: EasementLegalCharacter;
   /** Document contains language like "perpetual," "forever," "runs with the land." */
   hasPerpetualLanguage: boolean;
   /** Document contains a specific term (e.g. "for 20 years") or condition subsequent (e.g. "until X occurs"). */

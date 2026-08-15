@@ -1,3 +1,4 @@
+import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, expect, it } from 'vitest';
 import {
   isTrack1Available,
@@ -8,7 +9,7 @@ import {
 const testMatrix: StateComplianceMatrix = {
   CA: {
     state: 'CA',
-    tier: 'A',
+    tier: stateTier('A'),
     track1RequiredFlow: 'licensed-pathway',
     track2Available: true,
     basis: 'test fixture',

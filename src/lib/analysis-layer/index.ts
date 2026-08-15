@@ -10,7 +10,7 @@ export {
   type DurationBasis,
   type DurationDetermination,
   type EasementDurationFacts,
-  type EasementType,
+  type EasementLegalCharacter,
 } from './ca-rule-set';
 export {
   analyzeEasement,

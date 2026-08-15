@@ -16,7 +16,28 @@
  * made executable here so the UI and the agent cannot drift apart.
  */
 
-export type EvidenceTier = 'A' | 'B' | 'C';
+declare const evidenceTierBrand: unique symbol;
+
+/**
+ * Evidence tier: A on-parcel, B within the boundary strip, C nearby only.
+ *
+ * BRANDED DELIBERATELY. StateTier in src/lib/gating/state-tier-config.ts is
+ * also literally 'A' | 'B' | 'C', and means something entirely unrelated —
+ * a state's UPL/licensing classification. Without a brand, TypeScript treats
+ * the two as interchangeable, so an evidence tier could be passed wherever a
+ * state tier is expected and neither the compiler nor a reviewer would notice.
+ *
+ * The phase specs add further ordinal axes, so the overlap gets worse rather
+ * than better. The brand is one-directional: an EvidenceTier is still usable
+ * anywhere a plain 'A' | 'B' | 'C' is wanted (indexing, comparison), but a
+ * bare literal or a StateTier cannot be used as one. Construct via evidenceTier().
+ */
+export type EvidenceTier = ('A' | 'B' | 'C') & { readonly [evidenceTierBrand]: true };
+
+/** The only sanctioned way to make an EvidenceTier. */
+export function evidenceTier(t: 'A' | 'B' | 'C'): EvidenceTier {
+  return t as EvidenceTier;
+}
 
 /**
  * Width of the boundary strip within which infrastructure is treated as
@@ -81,7 +102,7 @@ export function assessEvidenceTier(
 
   if (distanceFt === 0) {
     return {
-      tier: 'A',
+      tier: evidenceTier('A'),
       distanceFt,
       basis: 'The infrastructure intersects the parcel boundary — it crosses or sits on the land.',
       implication:
@@ -96,7 +117,7 @@ export function assessEvidenceTier(
 
   if (distanceFt <= boundaryStripFt) {
     return {
-      tier: 'B',
+      tier: evidenceTier('B'),
       distanceFt,
       basis:
         `The infrastructure is within ${boundaryStripFt} ft of the parcel boundary but does not ` +
@@ -111,7 +132,7 @@ export function assessEvidenceTier(
   }
 
   return {
-    tier: 'C',
+    tier: evidenceTier('C'),
     distanceFt,
     basis: `The infrastructure is ${Math.round(distanceFt)} ft away and does not touch the parcel.`,
     implication:
@@ -124,8 +145,8 @@ export function assessEvidenceTier(
 
 /** Ordering for display: on-parcel first, then ascending distance. */
 export function compareFindings(a: TierAssessment, b: TierAssessment): number {
-  const rank = { A: 0, B: 1, C: 2 } as const;
-  return rank[a.tier] - rank[b.tier] || a.distanceFt - b.distanceFt;
+  const rank = (t: EvidenceTier): number => (t === 'A' ? 0 : t === 'B' ? 1 : 2);
+  return rank(a.tier) - rank(b.tier) || a.distanceFt - b.distanceFt;
 }
 
 /**
@@ -149,9 +170,9 @@ export function summariseTiers(
   fromRecordedEasements = false,
 ): string {
   const n = (t: EvidenceTier) => findings.filter((f) => f.tier === t).length;
-  const a = n('A');
-  const b = n('B');
-  const c = n('C');
+  const a = n(evidenceTier('A'));
+  const b = n(evidenceTier('B'));
+  const c = n(evidenceTier('C'));
 
   if (a === 0 && b === 0) {
     return c === 0

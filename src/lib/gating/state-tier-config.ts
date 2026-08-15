@@ -9,7 +9,25 @@
  * not a code change here.
  */
 
-export type StateTier = 'A' | 'B' | 'C' | 'UNCLASSIFIED';
+declare const stateTierBrand: unique symbol;
+
+/**
+ * A state's UPL / licensing classification for Track 1 availability.
+ *
+ * BRANDED DELIBERATELY. EvidenceTier in src/lib/easements/evidence-tier.ts is
+ * also literally 'A' | 'B' | 'C' and means something entirely unrelated — how
+ * close infrastructure sits to a parcel boundary. Unbranded, the two are
+ * mutually assignable and confusing them would silently mis-gate a regulated,
+ * paid feature. Construct via stateTier().
+ */
+export type StateTier = ('A' | 'B' | 'C' | 'UNCLASSIFIED') & {
+  readonly [stateTierBrand]: true;
+};
+
+/** The only sanctioned way to make a StateTier. */
+export function stateTier(t: 'A' | 'B' | 'C' | 'UNCLASSIFIED'): StateTier {
+  return t as StateTier;
+}
 
 export type Track1RequiredFlow =
   | 'licensed-pathway' // Tier A: must run through a licensed/certified relationship
@@ -42,7 +60,7 @@ export type StateComplianceMatrix = Readonly<Record<string, StateComplianceEntry
 export function unclassifiedState(stateCode: string): StateComplianceEntry {
   return {
     state: stateCode,
-    tier: 'UNCLASSIFIED',
+    tier: stateTier('UNCLASSIFIED'),
     track1RequiredFlow: 'unavailable',
     track2Available: true,
     basis: null,

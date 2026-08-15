@@ -1,3 +1,4 @@
+import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, expect, it } from 'vitest';
 import type { StateComplianceEntry } from '@/lib/gating/state-tier-config';
 import { buildSendAuditRecord } from './audit-record';
@@ -6,7 +7,7 @@ import { CURRENT_DISCLAIMER } from './disclaimer-copy';
 
 const caCompliance: StateComplianceEntry = {
   state: 'CA',
-  tier: 'A',
+  tier: stateTier('A'),
   track1RequiredFlow: 'licensed-pathway',
   track2Available: true,
   basis: 'Legal Document Assistant statute',
