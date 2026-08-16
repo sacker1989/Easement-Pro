@@ -1,6 +1,7 @@
 # DRAFT — Public records request, FDOT District 7
 
-**Status: NOT SENT.** A draft for you to review and send. I have no ability to file it, and sending
+**Status: NOT SENT — but complete.** Name, contact and a $50 fee ceiling are filled in, so nothing
+is outstanding except sending it. I have no ability to file it, and sending
 correspondence to an agency on your behalf is your decision, not mine.
 
 ---
@@ -83,7 +84,7 @@ denial does not sink the whole request.
 > instrument rather than an appraisal, a report relating to value, an offer, or a counteroffer, so I
 > do not believe Sec. 119.0711 reaches it.
 >
-> **Fees.** Please advise of any charge before incurring it if the total would exceed [$AMOUNT]. A
+> **Fees.** Please advise of any charge before incurring it if the total would exceed $50. A
 > spreadsheet listing term and amount per parcel is preferable to copies of the underlying
 > instruments if that is cheaper or faster.
 >
@@ -94,8 +95,8 @@ denial does not sink the whole request.
 > derivable from the Department's published GIS data.
 >
 > Thank you,
-> [NAME]
-> [CONTACT]
+> Stephen Acker
+> stephen.ae.acker@gmail.com
 
 ---
 
