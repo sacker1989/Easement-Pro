@@ -24,7 +24,10 @@ export const STATE_COMPLIANCE_MATRIX: StateComplianceMatrix = {
     lastReviewedDate: null,
     notes:
       "Phase 1 MVP's only Tier A entry. lastReviewedDate must be set once counsel " +
-      'sign-off is actually recorded — do not treat this entry as reviewed until then.',
+      'sign-off is actually recorded — do not treat this entry as reviewed until then. ' +
+      'OPEN COMPLIANCE GAP CA-TRACK1-UNREVIEWED: Track 1 is offered here anyway. No ' +
+      'grandfather clause exists to borrow — searched 2026-08-16. See ' +
+      'src/lib/gating/compliance-gaps.ts.',
   },
 };
 
