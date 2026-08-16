@@ -7,8 +7,8 @@ export {
 export {
   CA_DURATION_FALLBACK,
   CA_DURATION_RULE_SET,
-  type DurationBasis,
-  type DurationDetermination,
+  type CaDurationBasis,
+  type CaDurationDetermination,
   type EasementDurationFacts,
   type EasementLegalCharacter,
 } from './ca-rule-set';
@@ -18,3 +18,7 @@ export {
   type EasementAnalysisInput,
   type EasementAnalysisResult,
 } from './analyze-easement';
+export {
+  type DurationDetermination,
+  type ExpressDurationBasis,
+} from './duration-basis';

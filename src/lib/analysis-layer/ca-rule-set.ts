@@ -1,4 +1,5 @@
 import type { ConfidenceRule } from './confidence-tiering';
+import type { DurationDetermination, ExpressDurationBasis } from './duration-basis';
 
 /**
  * California-specific easement duration rule set. Per docs/development-strategy-v2.md,
@@ -39,20 +40,28 @@ export interface EasementDurationFacts {
   documentLegible: boolean;
 }
 
-export type DurationBasis =
-  | 'perpetual-express'
+/**
+ * California duration bases: the shared instrument-derived ones, plus the
+ * three that are CA legal PRESUMPTIONS rather than facts about a document.
+ *
+ * The three below are doctrine and belong to this state file. Another state
+ * may presume the opposite, or have no presumption at all — see
+ * duration-basis.ts for why the split exists.
+ */
+export type CaDurationBasis =
+  | ExpressDurationBasis
+  /** CA presumes an appurtenant easement runs with the land absent contrary language. */
   | 'perpetual-appurtenant-default'
+  /** CA treats an established prescriptive easement as perpetual absent a terminating event. */
   | 'perpetual-prescriptive-default'
-  | 'term-limited'
+  /** CA does not presume an easement in gross survives the grantee. */
   | 'life-of-grantee';
 
-export interface DurationDetermination {
-  basis: DurationBasis;
-  summary: string;
-}
+/** A CA duration finding, narrowed to the bases this state's rules can produce. */
+export type CaDurationDetermination = DurationDetermination<CaDurationBasis>;
 
 export const CA_DURATION_RULE_SET: ReadonlyArray<
-  ConfidenceRule<EasementDurationFacts, DurationDetermination>
+  ConfidenceRule<EasementDurationFacts, CaDurationDetermination>
 > = [
   {
     id: 'ca-illegible-document',

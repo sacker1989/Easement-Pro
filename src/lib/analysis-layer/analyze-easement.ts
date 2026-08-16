@@ -2,9 +2,11 @@ import { classifyByRules, type TieredResult } from './confidence-tiering';
 import {
   CA_DURATION_FALLBACK,
   CA_DURATION_RULE_SET,
-  type DurationDetermination,
   type EasementDurationFacts,
 } from './ca-rule-set';
+// State-agnostic on purpose: this is the multi-state entry point, so its
+// result type must not be narrowed to one state's doctrine.
+import type { DurationDetermination } from './duration-basis';
 
 export class UnsupportedStateRuleSetError extends Error {
   constructor(message: string) {
