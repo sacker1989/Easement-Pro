@@ -10,7 +10,18 @@ import type { AttorneyReviewDecision } from './attorney-review';
  * directly once one is added, without reshaping the data.
  */
 export interface SendAuditRecord {
-  letterType: 'request-for-clarification' | 'maintenance-request';
+  /**
+   * Widened beyond the two Track 1/2 letters for Phase 5. A referral package
+   * and a records request are both generated artefacts that carry the
+   * disclaimer version and the compliance basis active at generation time,
+   * which is the whole reason this record exists — the audit trail should not
+   * have a hole shaped like the two artefacts a professional actually receives.
+   */
+  letterType:
+    | 'request-for-clarification'
+    | 'maintenance-request'
+    | 'referral-package'
+    | 'records-request';
   state: string;
   stateTier: StateComplianceEntry['tier'];
   complianceBasis: string | null;
