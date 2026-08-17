@@ -5,6 +5,7 @@ import {
   buildLandValueSection,
   buildReferralPackage,
   parseReferralPackage,
+  PACKAGE_VERSION,
   ReferralPackageError,
   STANDING_HEADER,
   type ParcelIdentity,
@@ -42,6 +43,41 @@ function pkg(overrides: Partial<Parameters<typeof buildReferralPackage>[0]> = {}
     ...overrides,
   });
 }
+
+describe('the empty section does not typecheck', () => {
+  /**
+   * The FIRST of the five mechanisms, and the only one the test runner cannot
+   * check. NotDeterminedSection is a non-empty tuple, so `notDetermined: []`
+   * is a type error — but vitest transpiles without typechecking, so this
+   * assertion is enforced by `npx tsc --noEmit` in CI, not by `npm test`.
+   *
+   * The directive itself is the assertion. If the empty array ever becomes
+   * assignable, tsc reports "Unused '@ts-expect-error' directive" and the
+   * build fails. It cannot rot quietly in either direction.
+   */
+  it('is asserted at compile time', () => {
+    const empty = () => {
+      const bad = {
+        packageVersion: PACKAGE_VERSION,
+        // @ts-expect-error notDetermined is a non-empty tuple: [] must not be assignable.
+        notDetermined: [] as const,
+      } satisfies Pick<ReferralPackage, 'packageVersion' | 'notDetermined'>;
+      return bad;
+    };
+    // The runtime half is trivial; the compile-time half above is the point.
+    expect(typeof empty).toBe('function');
+  });
+
+  it('accepts a populated section, so the directive above is not vacuous', () => {
+    // Without this, a mistake making EVERY assignment fail would still leave
+    // the @ts-expect-error satisfied.
+    const ok = {
+      packageVersion: PACKAGE_VERSION,
+      notDetermined: pkg().notDetermined,
+    } satisfies Pick<ReferralPackage, 'packageVersion' | 'notDetermined'>;
+    expect(ok.notDetermined.length).toBeGreaterThanOrEqual(4);
+  });
+});
 
 describe('the not-determined section cannot be omitted', () => {
   it('has no parameter to supply, override or suppress it', () => {
@@ -201,7 +237,18 @@ describe('the rejected method must not reappear', () => {
     const stripComments = (s: string) =>
       s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-    const files = ['referral-package.ts', 'not-determined.ts', 'area-derivation.ts'];
+    // index.ts is in the list because the barrel is the easiest place for the
+    // rejected method to re-enter: a single re-export line would make
+    // EasementValuationCalculator reachable from `@/lib/handoff`, which is the
+    // one import path whose whole premise is that no such figure exists.
+    const files = [
+      'index.ts',
+      'referral-package.ts',
+      'not-determined.ts',
+      'area-derivation.ts',
+      'render.ts',
+      'rent-intake.ts',
+    ];
     for (const f of files) {
       const code = stripComments(readFileSync(new URL(`./${f}`, import.meta.url), 'utf8'));
       expect(code).not.toMatch(/from ['"].*valuation\/calculator['"]/);
