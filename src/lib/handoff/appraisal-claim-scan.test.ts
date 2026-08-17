@@ -7,6 +7,7 @@ import {
 } from './appraisal-claim-scan';
 import { YELLOW_BOOK_4_6_5 } from '@/lib/valuation/encumbrance-factors';
 import { BEFORE_AND_AFTER_METHODOLOGY_NOTE } from '@/lib/valuation/encumbrance-factors';
+import { STANDING_HEADER } from './referral-package';
 
 const CLEAN = `This package is a screening summary and is not an appraisal.
 It cites the ${YELLOW_BOOK_4_6_5.citation}
@@ -71,6 +72,40 @@ describe('false-positive control — the citations must NOT trip it', () => {
       'The correct measure is the accepted before and after appraisal method. ' +
       'This summary is not an appraisal.';
     expect(scanForAppraisalClaims(text).ok).toBe(true);
+  });
+
+  it('permits the REAL standing header, not a hand-written stand-in', () => {
+    // Every fixture above is prose written for the test, and that is how the
+    // defect got through: STANDING_HEADER says "IT OFFERS NO OPINION OF MARKET
+    // VALUE FOR ANY PERMANENT EASEMENT", the opinion-of-value pattern is
+    // case-insensitive, and it matched. The scan the package runs at render
+    // time would have rejected every well-formed package, and no test noticed
+    // because no test used the actual string. A control that does not exercise
+    // production text is not a control.
+    const result = scanForAppraisalClaims(STANDING_HEADER);
+    expect(result.violations).toEqual([]);
+    expect(result.hasRequiredDisclaimer).toBe(true);
+    expect(result.ok).toBe(true);
+  });
+
+  it('permits disclaiming an opinion of value, in several phrasings', () => {
+    for (const text of [
+      'This package contains no opinion of value. It is not an appraisal.',
+      'We do not offer an opinion of market value. This is not an appraisal.',
+      'Prepared without an opinion of value. This document is not an appraisal.',
+    ]) {
+      expect(scanForAppraisalClaims(text).ok).toBe(true);
+    }
+  });
+
+  it('still catches an opinion of value that is actually offered', () => {
+    // The negation guard must not blunt the pattern it guards.
+    for (const text of [
+      `${CLEAN}\nOur opinion of market value follows.`,
+      `${CLEAN}\nThe opinion of value is $50,000.`,
+    ]) {
+      expect(scanForAppraisalClaims(text).ok).toBe(false);
+    }
   });
 });
 

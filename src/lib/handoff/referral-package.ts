@@ -51,7 +51,15 @@ export const STANDING_HEADER =
   `${YELLOW_BOOK_4_6_5.citation} ` +
   'That correct measure requires a highest-and-best-use analysis of this specific property, which ' +
   'comes from a licensed appraiser and not from any dataset. ' +
-  'Nothing here is an appraisal, a legal determination, or advice.';
+  // The exact wording carries a requirement. REQUIRED_DISCLAIMER_PHRASE is the
+  // literal string "is not an appraisal", and the scan fails when it is absent
+  // — saying nothing is not neutral, because a reader who is not told will
+  // assume. The previous wording, "Nothing here is an appraisal", disclaims the
+  // same thing to a human and does not contain the phrase, so no rendered
+  // package would have passed its own scan. Phrased this way it satisfies the
+  // affirmative while the negation lookahead on the first forbidden pattern
+  // keeps it from reading as a claim.
+  'This package is not an appraisal, a legal determination, or legal advice.';
 
 export interface ParcelIdentity {
   readonly parcelId: string;

@@ -30,7 +30,18 @@ export const FORBIDDEN_CLAIM_PATTERNS: readonly { readonly name: string; readonl
   { name: 'asserts appraised value', pattern: /\bappraised value\b/i },
   { name: 'asserts a certified appraisal', pattern: /\bcertified appraisal\b/i },
   { name: 'claims USPAP compliance', pattern: /\bUSPAP[- ]compliant\b/i },
-  { name: 'offers an opinion of value', pattern: /\bopinion of (market )?value\b/i },
+  {
+    name: 'offers an opinion of value',
+    // Negation lookbehind, for the same reason pattern 1 has a lookahead, and
+    // found the same way. STANDING_HEADER says "IT OFFERS NO OPINION OF MARKET
+    // VALUE FOR ANY PERMANENT EASEMENT" — the strongest disclaimer in the
+    // package — and the unguarded pattern matched it case-insensitively. Every
+    // renderer would have thrown on every well-formed package, and the
+    // available fix under deadline is to soften the disclaimer, which is
+    // backwards. The claim shape is OFFERING an opinion of value; disclaiming
+    // one is the opposite and must pass.
+    pattern: /(?<!\b(no|not|never|without|neither)\b[^.]{0,25})\bopinion of (market )?value\b/i,
+  },
   {
     name: 'states a market value for the easement',
     pattern: /\b(fair )?market value of the easement\s+(is|=)/i,
