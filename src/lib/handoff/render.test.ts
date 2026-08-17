@@ -29,6 +29,8 @@ const PARCEL = {
   ownerName: null,
   geometrySource: 'LACounty_Parcel/MapServer/0',
   sourceVerifiedOn: '2026-07-30',
+  landClass: null,
+  landClassSource: null,
 };
 
 function build(overrides: Partial<Parameters<typeof buildReferralPackage>[0]> = {}) {

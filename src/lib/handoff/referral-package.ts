@@ -32,6 +32,11 @@ import type { TierAssessment } from '@/lib/easements/evidence-tier';
 import { provenanceConfidence, type EasementProvenance } from '@/lib/easements/easement-types';
 import { buildNotDetermined, hasFloorItems, type NotDeterminedSection } from './not-determined';
 import type { EncumberedAreaSection } from './area-derivation';
+// Type-only, so the cycle with rent-intake.ts is erased at compile time and no
+// runtime import exists. The alternative — declaring the section here — would
+// put the temporary-easement vocabulary in the module that must never value
+// anything itself.
+import type { TemporaryEasementSection } from './rent-intake';
 import { explainClaimScan, scanForAppraisalClaims } from './appraisal-claim-scan';
 
 export const PACKAGE_VERSION = '1.0.0';
@@ -72,6 +77,16 @@ export interface ParcelIdentity {
   readonly ownerName: string | null;
   readonly geometrySource: string | null;
   readonly sourceVerifiedOn: string | null;
+  /**
+   * Assessor land-use classification, when the county publishes one.
+   *
+   * Nullable and required rather than optional, because the temporary-easement
+   * path compares it against the land class a rent was observed for, and an
+   * unrecorded class is exactly where an agricultural rate slips onto a
+   * residential lot — a 360x error. A caller must decide what to put here.
+   */
+  readonly landClass: string | null;
+  readonly landClassSource: string | null;
 }
 
 export interface EvidenceSection {
@@ -113,6 +128,13 @@ export interface ReferralPackage {
   /** null is the MAJORITY state, not a failure — see buildLandValueSection. */
   readonly landValue: LandValueSection | null;
   readonly caveats: readonly Caveat[];
+  /**
+   * The one valuation this product may perform, and only via
+   * `applyObservedRent`. Null until an appraiser supplies an observed rent —
+   * there is no parameter on `buildReferralPackage` that sets it, because the
+   * rate cannot come from any dataset this product reads.
+   */
+  readonly temporary: TemporaryEasementSection | null;
   readonly notDetermined: NotDeterminedSection;
   readonly attorneyReview: AttorneyReviewDecision | null;
   /** True when any figure rests on a hypothetical input. */
@@ -243,6 +265,9 @@ export function buildReferralPackage(input: ReferralPackageInput): ReferralPacka
     landValue: input.landValue,
     caveats,
     notDetermined,
+    // Always null at build. Only applyObservedRent can set it, and only from a
+    // rate a person supplied.
+    temporary: null,
     attorneyReview: input.attorneyReview ?? null,
     illustrative: input.illustrative ?? false,
   };

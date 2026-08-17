@@ -192,6 +192,29 @@ export function buildSections(pkg: ReferralPackage): readonly RenderedSection[] 
 
   sections.push({ heading: 'LAND VALUE', lines: landValueLines(pkg.landValue) });
 
+  // Section 7. Present only when a rent was actually applied — an empty
+  // heading would imply a temporary easement was checked for and ruled out.
+  if (pkg.temporary !== null) {
+    const t = pkg.temporary;
+    const lines: string[] = [];
+    // The mismatch notice leads. A reader who sees the figure first has
+    // already anchored on it, and the 360x trap is a magnitude error rather
+    // than a rounding one.
+    if (t.mismatchNotice !== null) lines.push(t.mismatchNotice);
+    lines.push(
+      `Compensation: ${money(t.valuation.compensation)}`,
+      `Term: ${t.valuation.termYears} year${t.valuation.termYears === 1 ? '' : 's'}`,
+      `Area: ${t.valuation.areaSqFt.toLocaleString('en-US')} sq ft`,
+      `Rate: $${t.rate.perSqFtPerYear}/sq ft/year, observed ${t.rate.observedOn} for land class ` +
+        `"${t.rate.landClass}" (${t.rate.landClassSource})`,
+      `Source: ${t.rate.source}`,
+      `Parcel land class: ${orUnknown(t.parcelLandClass)} — match: ${t.landClassMatch}`,
+      t.valuation.note,
+      t.scopeNote,
+    );
+    sections.push({ heading: 'TEMPORARY EASEMENT', lines });
+  }
+
   sections.push({
     heading: 'CAVEATS AND METHODOLOGY',
     lines: pkg.caveats.flatMap((c) => [c.text, `    [source: ${c.sourceSymbol}]`]),
