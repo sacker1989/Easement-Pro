@@ -83,6 +83,7 @@ export {
 export {
   interpretField,
   classifyParcel,
+  type EnforcementNoticeRule,
   type AcquisitionMeaning,
   type FieldSemantic,
   type RecordsRequestJurisdictionRule,
@@ -110,3 +111,22 @@ export {
   type RecordsRequestDraft,
   type RecordsRequestResult,
 } from './records-request/build-request';
+
+export {
+  buildFollowUp,
+  FollowUpError,
+  type FollowUpOptions,
+  type FollowUpDraft,
+} from './records-request/follow-up';
+
+// Escalation is a separate export from the follow-up on purpose. Reaching for
+// it is a deliberate act, and it throws for every jurisdiction whose
+// pre-enforcement requirement has not been researched.
+export {
+  buildEnforcementNotice,
+  earliestActionDate,
+  EnforcementNoticeError,
+  COUNSEL_LINE,
+  type EnforcementNoticeOptions,
+  type EnforcementNoticeDraft,
+} from './records-request/enforcement-notice';

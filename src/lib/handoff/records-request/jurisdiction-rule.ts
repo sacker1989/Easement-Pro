@@ -37,6 +37,30 @@ export interface FieldSemantic {
   readonly note: string;
 }
 
+/**
+ * A pre-enforcement notice requirement.
+ *
+ * WHAT THIS IS NOT. It is not a demand letter and it does not allege anything.
+ * Under the Florida provision this models, whether an agency "unlawfully
+ * refused" is a determination A COURT MAKES — the notice's statutory job is
+ * only to identify the request and start a clock. A generated document that
+ * asserted unlawful refusal would be stating a legal conclusion this product
+ * cannot reach, and would hand the agency the first paragraph of its reply.
+ */
+export interface EnforcementNoticeRule {
+  readonly cite: string;
+  /** What sending it preserves — and, as important, what it does not do. */
+  readonly purpose: string;
+  readonly noticePeriod: string;
+  /** What the notice must identify to satisfy the statute. */
+  readonly mustIdentify: string;
+  readonly recipient: string;
+  /** How the same provision can run against the requester. Never omitted. */
+  readonly counterRisk: string;
+  /** Business days that must elapse, where the statute fixes a number. */
+  readonly businessDaysRequired: number | null;
+}
+
 export interface RecordsRequestJurisdictionRule {
   /** e.g. 'FL/FDOT-D7'. */
   readonly key: string;
@@ -70,6 +94,18 @@ export interface RecordsRequestJurisdictionRule {
     readonly describeGroupB: string;
     readonly fieldSemantics: readonly FieldSemantic[];
   };
+  /**
+   * A statutory notice that must precede an enforcement action, where the
+   * jurisdiction has one. Null everywhere it has not been researched, which is
+   * everywhere but Florida — and null is also the right answer for states that
+   * genuinely have no such requirement.
+   *
+   * Modelled on the rule rather than in the builder because this is precisely
+   * the kind of provision that does not travel: it is a precondition to
+   * RECOVERING FEES, not to filing, and a state without it would have a user
+   * sending a document that accomplishes nothing.
+   */
+  readonly enforcementNotice: EnforcementNoticeRule | null;
   /** Partial production, statutory basis for withholding, re-request identifier. */
   readonly withholdingAsks: readonly string[];
   readonly feeAdvanceRule: string;

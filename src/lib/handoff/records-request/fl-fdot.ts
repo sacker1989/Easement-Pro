@@ -81,6 +81,28 @@ export const FL_FDOT_D7: RecordsRequestJurisdictionRule = {
       },
     ],
   },
+  enforcementNotice: {
+    cite: 'Sec. 119.12, F.S.',
+    purpose:
+      'Written notice identifying the public record request, given to the agency\'s custodian at ' +
+      'least 5 business days before a civil action is filed, is a PRECONDITION TO RECOVERING ' +
+      'attorney fees and enforcement costs if a court later determines the agency unlawfully ' +
+      'refused access. It does not compel production, it does not start litigation, and it is not ' +
+      'a demand. It preserves an option that cannot be recovered afterwards.',
+    noticePeriod:
+      'At least 5 business days. The period begins on the day the custodian RECEIVES the notice, ' +
+      'excluding Saturday, Sunday and legal holidays.',
+    mustIdentify: 'the public record request',
+    recipient: 'the agency\'s custodian of public records',
+    // Never omitted from a rendered notice. The same section that offers fees
+    // takes them the other way, and a user who sees only the upside is being
+    // shown half a statute.
+    counterRisk:
+      'The same section runs both ways. If a court determines the records were requested for an ' +
+      'IMPROPER PURPOSE, it may not award the requester anything and SHALL award the agency its ' +
+      'reasonable costs and attorney fees against the requester.',
+    businessDaysRequired: 5,
+  },
   withholdingAsks: [
     'Provide the records for the parcels where the exemption does not apply — Group A in particular.',
     'State the statutory basis for any withholding, as Sec. 119.07(1)(e) requires.',
