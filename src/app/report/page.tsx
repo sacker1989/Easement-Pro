@@ -1,14 +1,22 @@
-import { resolveAddress } from '@/lib/parcel-resolution';
+import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
 import {
   buildRiskDisclosureReport,
   createLaCountyAssessorProvider,
   InvalidRiskDisclosureInputError,
 } from '@/lib/risk-disclosure';
-import type {
-  AssessorParcelValuation,
-  EasementPurpose,
-  ParcelCandidate,
-} from '@/lib/risk-disclosure';
+import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclosure';
+import {
+  lookupParcel,
+  SUPPORTED_COUNTIES,
+  type CountyLookupResult,
+  type UnifiedParcelValuation,
+} from '@/lib/parcel-lookup/county-dispatch';
+import {
+  buildEncumberedArea,
+  buildReferralPackage,
+  renderPlainText,
+  type ReferralPackage,
+} from '@/lib/handoff';
 
 interface ReportPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -39,48 +47,90 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let report: ReturnType<typeof buildRiskDisclosureReport> | null = null;
   let isLaCounty = false;
   let error: string | null = null;
+  /**
+   * LA-shaped valuation, used ONLY for the economic-impact path. That path's
+   * data-coverage labels in economic-impact.ts are hardcoded to "LA County
+   * parcel" and "LA County assessment roll", so feeding an Orange County or
+   * San Diego valuation through it would print a label naming the wrong
+   * county. The unified valuation below carries those two.
+   */
   let valuation: AssessorParcelValuation | null = null;
-  let candidates: ParcelCandidate[] | null = null;
+  let unified: UnifiedParcelValuation | null = null;
+  let lookup: CountyLookupResult | null = null;
   let lookupNotice: string | null = null;
+  let referral: ReferralPackage | null = null;
+  let referralText: string | null = null;
 
   if (submitted) {
     try {
       const addressResult = await resolveAddress({ street, city, state, zip });
       isLaCounty = addressResult.kind === 'la-county-fallback';
 
-      // Only LA County has a machine-queryable parcel source. A lookup failure
-      // must not sink the report — Track 3 is free and available nationwide,
-      // so it degrades to national benchmarks with a coverage label saying so.
+      // normalizeAddress only carries a county when the CALLER supplied one —
+      // resolveAddress computes one internally and does not put it back on the
+      // normalized address. Passing the raw normalized value would leave the
+      // dispatch with an undefined county and report every address as an
+      // unsupported jurisdiction, which is exactly the false negative the
+      // unsupported/not-found distinction exists to prevent.
+      const resolvedCounty =
+        addressResult.normalized.county ?? zipHeuristicCountyResolver.resolve(addressResult.normalized);
+
+      // Every supported county goes through one dispatch. A lookup failure
+      // must not sink the report — Track 3 is free nationwide, so it degrades
+      // to national benchmarks with a coverage label saying so.
+      lookup = await lookupParcel({ ...addressResult.normalized, county: resolvedCounty ?? undefined });
+
+      switch (lookup.status) {
+        case 'found':
+          unified = lookup.valuation;
+          break;
+        case 'not-found':
+          lookupNotice =
+            `No ${lookup.county} parcel matched this address, so figures below use national ` +
+            'benchmarks.';
+          break;
+        case 'unsupported-county':
+          // Deliberately distinct from not-found: no search ran. Saying "no
+          // parcel found" would report a search that never happened.
+          lookupNotice = lookup.explanation;
+          break;
+        case 'service-error':
+          lookupNotice =
+            `${lookup.county} parcel service unavailable (${lookup.message}); figures below use ` +
+            'national benchmarks.';
+          break;
+        default:
+          break;
+      }
+
+      // LA additionally supplies the roll-shaped record the economic-impact
+      // path needs, including the base year that lets a frozen Proposition 13
+      // assessment be indexed forward. One call, whichever way we get there.
       if (isLaCounty) {
-        const provider = createLaCountyAssessorProvider();
         try {
+          const provider = createLaCountyAssessorProvider();
           if (selectedAin) {
             valuation = await provider.fetchByAin(selectedAin);
-            if (!valuation) lookupNotice = `No LA County parcel found for AIN ${selectedAin}.`;
+            if (valuation === null) {
+              lookupNotice = `No LA County parcel found for AIN ${selectedAin}.`;
+            }
           } else {
             const found = await provider.findByAddress(street, zip);
-            if (found.status === 'found') {
-              valuation = found.valuation;
-            } else if (found.status === 'ambiguous') {
-              candidates = found.candidates;
-            } else {
-              lookupNotice =
-                'No LA County parcel matched this address, so figures below use national benchmarks.';
-            }
+            valuation = found.status === 'found' ? found.valuation : null;
           }
-        } catch (lookupErr) {
-          lookupNotice = `LA County parcel lookup unavailable (${
-            lookupErr instanceof Error ? lookupErr.message : 'unknown error'
-          }); figures below use national benchmarks.`;
+        } catch {
+          // The dispatch above already recorded a notice for this address; a
+          // second failure here adds nothing the reader can act on.
+          valuation = null;
         }
       }
 
       // A matched parcel supplies the real lot area, so the typed value is only
       // a fallback. Guard the easement against exceeding it — the real lot may
       // be smaller than whatever was typed.
-      const lotAreaSqFt = valuation ? valuation.lotAreaSqFt : typedLotAreaSqFt;
+      const lotAreaSqFt = unified?.lotAreaSqFt ?? valuation?.lotAreaSqFt ?? typedLotAreaSqFt;
 
-      if (candidates === null) {
+      if (lookup.status !== 'ambiguous') {
         if (easementAreaSqFt > lotAreaSqFt) {
           error =
             `Easement area (${easementAreaSqFt.toLocaleString()} sq ft) exceeds this parcel's ` +
@@ -94,6 +144,55 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             state,
             assessorValuation: valuation ?? undefined,
           });
+
+          // The referral package: what a licensed appraiser or attorney would
+          // actually be handed. Built for every address, including the ones
+          // where nothing was found — a package listing what could not be
+          // determined is the honest output, and the majority one.
+          referral = buildReferralPackage({
+            parcel: {
+              parcelId: unified?.apn ?? valuation?.apn ?? 'not established',
+              county: unified?.county ?? (isLaCounty ? 'Los Angeles County' : 'not established'),
+              state: addressResult.normalized.state,
+              fipsCode: unified?.fipsCode ?? null,
+              routingTier: unified ? 'immediate' : 'fallback',
+              situsAddress: unified?.situsAddress ?? valuation?.situsFullAddress ?? null,
+              // California Government Code §7928.205 bars owner identity from
+              // public parcel endpoints statewide, so this is null by law
+              // rather than by omission.
+              ownerName: null,
+              geometrySource: unified?.serviceUrl ?? null,
+              sourceVerifiedOn: unified?.queriedOn ?? null,
+              landClass: null,
+              landClassSource: null,
+            },
+            // No proximity scan is wired into this route, so there is no
+            // geometric evidence to tier. An empty findings list is the honest
+            // input; inventing a tier from a typed area would manufacture the
+            // evidence the package exists to report on.
+            findings: [],
+            evidenceSummary:
+              'No infrastructure proximity scan was run for this address. The easement facts below ' +
+              'were supplied by the user and have not been verified against any recorded instrument ' +
+              'or published layer.',
+            fromRecordedEasements: false,
+            provenance: { kind: 'user-asserted' },
+            encumberedArea: buildEncumberedArea(
+              easementAreaSqFt,
+              { kind: 'user-asserted' },
+              lotAreaSqFt,
+            ),
+            // Null on every path here. The ZIP-comparable estimator is not
+            // wired into this route, and an assessed land value is not a
+            // market land value — passing one through would be the substitution
+            // buildLandValueSection exists to refuse.
+            landValue: null,
+            extraCaveats: (unified?.caveats ?? []).map((text) => ({
+              text,
+              sourceSymbol: `${unified?.county ?? 'county'} provider caveat`,
+            })),
+          });
+          referralText = renderPlainText(referral);
         }
       }
     } catch (err) {
@@ -111,7 +210,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     : 0;
 
   /** Preserves the current form state when linking to a specific parcel. */
-  function candidateHref(ain: string): string {
+  function candidateHref(apn: string): string {
     const q = new URLSearchParams({
       submitted: '1',
       street,
@@ -121,7 +220,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       easementPurpose,
       lotAreaSqFt: String(typedLotAreaSqFt),
       easementAreaSqFt: String(easementAreaSqFt),
-      ain,
+      ain: apn,
     });
     return `/report?${q}`;
   }
@@ -160,7 +259,11 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           </label>
           <label>
             Lot area (sq ft) <input name="lotAreaSqFt" type="number" defaultValue={typedLotAreaSqFt} />
-            <small> — ignored when an LA County parcel matches; the county&rsquo;s figure is used</small>
+            <small>
+              {' '}
+              — ignored when a county parcel matches; the county&rsquo;s own geometry is used.
+              Live coverage: {SUPPORTED_COUNTIES.join(', ')}.
+            </small>
           </label>
           <label>
             Easement area (sq ft) <input name="easementAreaSqFt" type="number" defaultValue={easementAreaSqFt} />
@@ -173,39 +276,58 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
       {lookupNotice && <p role="status">{lookupNotice}</p>}
 
-      {candidates && (
+      {lookup?.status === 'ambiguous' && (
         <>
-          <h2>Which unit?</h2>
+          <h2>Which parcel?</h2>
           <p>
-            This address matches {candidates.length} separate parcels in the LA County assessor
-            roll — typically one per unit. Each carries its own assessment, so pick the one you
-            own rather than having us guess.
+            This address matches {lookup.candidates.length} separate parcels in the {lookup.county}{' '}
+            assessor roll — typically one per unit. Each carries its own assessment, so pick the one
+            you own rather than having us guess.
           </p>
           <ul>
-            {candidates.map((c) => (
-              <li key={c.ain}>
-                <a href={candidateHref(c.ain)}>
-                  {c.unit ? `Unit ${c.unit}` : 'No unit designation'} — AIN {c.ain}
-                </a>{' '}
-                <small>{c.situsFullAddress}</small>
+            {lookup.candidates.map((c) => (
+              <li key={c.apn}>
+                <a href={candidateHref(c.apn)}>APN {c.apn}</a>{' '}
+                <small>
+                  {c.situsAddress}
+                  {c.zip ? ` ${c.zip}` : ''}
+                </small>
               </li>
             ))}
           </ul>
         </>
       )}
 
-      {valuation && (
+      {unified && (
         <>
           <h2>Matched parcel</h2>
           <ul>
-            <li>AIN {valuation.ain} (APN {valuation.apn})</li>
-            <li>{valuation.situsFullAddress}</li>
-            <li>Lot area: {Math.round(valuation.lotAreaSqFt).toLocaleString()} sq ft (from county parcel geometry)</li>
             <li>
-              {valuation.rollYear} assessed land value: ${valuation.landValue.toLocaleString()}
-              {valuation.landBaseYear ? ` (Proposition 13 base year ${valuation.landBaseYear})` : ''}
+              APN {unified.apn} — {unified.county}
+            </li>
+            <li>{unified.situsAddress}</li>
+            <li>
+              Lot area: {Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft (from county parcel
+              geometry)
+            </li>
+            <li>
+              Assessed land value: ${unified.landValue.toLocaleString()}
+              {unified.rollYear ? ` (${unified.rollYear} roll)` : ''}
+              {unified.landBaseYear
+                ? ` — Proposition 13 base year ${unified.landBaseYear}`
+                : ' — this county publishes no Proposition 13 base year'}
+            </li>
+            <li>
+              <small>
+                Source: {unified.serviceUrl}, queried {unified.queriedOn}
+              </small>
             </li>
           </ul>
+          {unified.caveats.map((c) => (
+            <p key={c} role="note">
+              <strong>Caveat:</strong> {c}
+            </p>
+          ))}
           {report?.economicImpact.marketAdjustment && (
             <p>
               That assessment reflects a {report.economicImpact.marketAdjustment.indexed.baseYear}{' '}
@@ -296,6 +418,26 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           </details>
 
           <pre>{JSON.stringify(report, null, 2)}</pre>
+        </>
+      )}
+
+      {referral && referralText && (
+        <>
+          <h2>Referral package</h2>
+          <p>
+            This is what a licensed appraiser or attorney would be handed. It reports what the
+            public records say and how each figure was derived, and it states plainly what it does
+            not determine — {referral.notDetermined.length} open items, listed before any figure.
+          </p>
+          <p>
+            <strong>{referral.notDetermined.length} items are not determined here.</strong> That is
+            the expected result rather than a failure: no formula available to this product produces
+            the market value of a permanent easement.
+          </p>
+          <details>
+            <summary>Read the full package</summary>
+            <pre>{referralText}</pre>
+          </details>
         </>
       )}
     </main>
