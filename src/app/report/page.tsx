@@ -5,6 +5,8 @@ import {
   InvalidRiskDisclosureInputError,
 } from '@/lib/risk-disclosure';
 import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclosure';
+import { mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
+import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
   lookupParcel,
   SUPPORTED_COUNTIES,
@@ -38,7 +40,14 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   const city = param(searchParams.city);
   const state = param(searchParams.state) || 'CA';
   const zip = param(searchParams.zip);
-  const easementPurpose = (param(searchParams.easementPurpose) || 'utility') as EasementPurpose;
+  // The interface now selects a physical easement TYPE (twelve of them) and
+  // derives the purpose, rather than offering the five purposes directly.
+  // Seven types were previously unreachable from this page.
+  const easementType = (param(searchParams.easementType) || 'utility-overhead') as EasementType;
+  const typeMapping = EASEMENT_TYPES.includes(easementType)
+    ? mapEasementTypeToPurpose(easementType)
+    : mapEasementTypeToPurpose('utility-overhead');
+  const easementPurpose: EasementPurpose = typeMapping.purpose;
   const typedLotAreaSqFt = Number(param(searchParams.lotAreaSqFt) || '8000');
   const easementAreaSqFt = Number(param(searchParams.easementAreaSqFt) || '800');
   const selectedAin = param(searchParams.ain);
@@ -227,50 +236,84 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
   return (
     <main>
-      <h1>Track 3 — Risk Disclosure Report</h1>
+      <h1>What an easement on your property means</h1>
+      <p className="lede">
+        This reads public parcel, assessment and infrastructure records and reports what they say.
+        It tells you which activities are typically restricted, what the county publishes about your
+        lot, and — most importantly — what it cannot determine. It does not tell you what an
+        easement is worth. No dataset can, and the section below explains why.
+      </p>
+
       <form>
         <input type="hidden" name="submitted" value="1" />
         <fieldset>
-          <legend>Address</legend>
-          <label>
-            Street <input name="street" defaultValue={street} required />
-          </label>
-          <label>
-            City <input name="city" defaultValue={city} required />
-          </label>
-          <label>
-            State <input name="state" defaultValue={state} maxLength={2} required />
-          </label>
-          <label>
-            ZIP <input name="zip" defaultValue={zip} required />
-          </label>
+          <legend>Property address</legend>
+          <div className="field-row">
+            <label>
+              Street <input name="street" defaultValue={street} required />
+            </label>
+            <label>
+              City <input name="city" defaultValue={city} required />
+            </label>
+            <label>
+              State <input name="state" defaultValue={state} maxLength={2} required />
+            </label>
+            <label>
+              ZIP <input name="zip" defaultValue={zip} required />
+            </label>
+          </div>
+          <p className="muted" style={{ marginTop: '0.6rem' }}>
+            Live county records: {SUPPORTED_COUNTIES.join(', ')}. Anywhere else still produces a
+            report — it uses national benchmarks and says so.
+          </p>
         </fieldset>
+
         <fieldset>
-          <legend>Easement facts</legend>
+          <legend>The easement</legend>
           <label>
-            Purpose
-            <select name="easementPurpose" defaultValue={easementPurpose}>
-              <option value="utility">Utility</option>
-              <option value="drainage">Drainage</option>
-              <option value="access">Access</option>
-              <option value="sewer">Sewer</option>
-              <option value="unknown">Unknown</option>
+            What kind of easement is it?
+            <select name="easementType" defaultValue={easementType}>
+              {EASEMENT_TYPES.map((t) => {
+                const m = mapEasementTypeToPurpose(t);
+                return (
+                  <option key={t} value={t}>
+                    {m.label}
+                    {m.reviewed ? '' : ' — treated conservatively'}
+                  </option>
+                );
+              })}
             </select>
           </label>
-          <label>
-            Lot area (sq ft) <input name="lotAreaSqFt" type="number" defaultValue={typedLotAreaSqFt} />
-            <small>
-              {' '}
-              — ignored when a county parcel matches; the county&rsquo;s own geometry is used.
-              Live coverage: {SUPPORTED_COUNTIES.join(', ')}.
-            </small>
-          </label>
-          <label>
-            Easement area (sq ft) <input name="easementAreaSqFt" type="number" defaultValue={easementAreaSqFt} />
-          </label>
+          <div className="field-row" style={{ marginTop: '0.75rem' }}>
+            <label>
+              Lot area (sq ft)
+              <input name="lotAreaSqFt" type="number" defaultValue={typedLotAreaSqFt} />
+            </label>
+            <label>
+              Easement area (sq ft)
+              <input name="easementAreaSqFt" type="number" defaultValue={easementAreaSqFt} />
+            </label>
+          </div>
+          <p className="muted" style={{ marginTop: '0.6rem' }}>
+            Lot area is ignored when a county parcel matches — the county&rsquo;s own geometry is
+            used instead. If you don&rsquo;t know the easement area, put your best guess; the report
+            will record that you did.
+          </p>
         </fieldset>
+
         <button type="submit">Generate report</button>
       </form>
+
+      {/*
+        Shown for every selection, not only the conservative ones. A homeowner
+        choosing "pipeline" needs to know the answer is deliberately cautious
+        BEFORE they read four "restricted" rows and conclude the tool is broken.
+      */}
+      {submitted && (
+        <p role={typeMapping.reviewed ? 'status' : 'note'}>
+          <strong>{typeMapping.label}.</strong> {typeMapping.note}
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
 
@@ -300,29 +343,43 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
       {unified && (
         <>
-          <h2>Matched parcel</h2>
-          <ul>
-            <li>
-              APN {unified.apn} — {unified.county}
-            </li>
-            <li>{unified.situsAddress}</li>
-            <li>
-              Lot area: {Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft (from county parcel
-              geometry)
-            </li>
-            <li>
-              Assessed land value: ${unified.landValue.toLocaleString()}
-              {unified.rollYear ? ` (${unified.rollYear} roll)` : ''}
-              {unified.landBaseYear
-                ? ` — Proposition 13 base year ${unified.landBaseYear}`
-                : ' — this county publishes no Proposition 13 base year'}
-            </li>
-            <li>
-              <small>
-                Source: {unified.serviceUrl}, queried {unified.queriedOn}
-              </small>
-            </li>
-          </ul>
+          <h2>Your parcel, according to the county</h2>
+          <div className="panel">
+            <ul className="facts">
+              <li>
+                <span className="k">Parcel number</span>
+                <span className="v">{unified.apn}</span>
+              </li>
+              <li>
+                <span className="k">County</span>
+                <span className="v">{unified.county}</span>
+              </li>
+              <li>
+                <span className="k">Address of record</span>
+                <span className="v">{unified.situsAddress}</span>
+              </li>
+              <li>
+                <span className="k">Lot area (county geometry)</span>
+                <span className="v">{Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft</span>
+              </li>
+              <li>
+                <span className="k">Assessed land value</span>
+                <span className="v">
+                  ${unified.landValue.toLocaleString()}
+                  {unified.rollYear ? ` (${unified.rollYear} roll)` : ''}
+                </span>
+              </li>
+              <li>
+                <span className="k">Proposition 13 base year</span>
+                <span className="v">
+                  {unified.landBaseYear ?? 'not published by this county'}
+                </span>
+              </li>
+            </ul>
+            <p className="muted" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+              Source: {unified.serviceUrl} — queried {unified.queriedOn}
+            </p>
+          </div>
           {unified.caveats.map((c) => (
             <p key={c} role="note">
               <strong>Caveat:</strong> {c}
@@ -361,15 +418,25 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             </text>
           </svg>
 
-          <h2>Restriction checklist</h2>
-          <ul>
-            {report.restrictionChecklist.map((item) => (
-              <li key={item.activity}>
-                <strong>{item.activity}</strong>: {item.restricted ? 'Restricted' : 'Generally permitted'} —{' '}
-                {item.rationale}
-              </li>
-            ))}
-          </ul>
+          <h2>What you can and cannot do here</h2>
+          <div className="panel">
+            <ul className="checks">
+              {report.restrictionChecklist.map((item) => (
+                <li key={item.activity}>
+                  <span className={item.restricted ? 'badge badge-stop' : 'badge badge-ok'}>
+                    {item.restricted ? 'Restricted' : 'Usually OK'}
+                  </span>
+                  <strong style={{ textTransform: 'capitalize' }}>{item.activity}</strong>
+                  <br />
+                  <small>{item.rationale}</small>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="muted">
+            These are general rules for this kind of easement, not a reading of your easement
+            document. The document itself controls, and it can be stricter or looser than this.
+          </p>
 
           <h2>Economic impact</h2>
           <ul>
@@ -417,25 +484,57 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             <p>{report.economicImpact.methodology}</p>
           </details>
 
-          <pre>{JSON.stringify(report, null, 2)}</pre>
+          {/*
+            Was a bare <pre> in the page flow, from when this route was a
+            developer harness. On a page a homeowner reads, a raw JSON dump
+            between two prose sections reads as a malfunction.
+          */}
+          <details>
+            <summary>Raw report data (JSON)</summary>
+            <pre>{JSON.stringify(report, null, 2)}</pre>
+          </details>
         </>
       )}
 
       {referral && referralText && (
         <>
-          <h2>Referral package</h2>
+          <h2>What this report does not tell you</h2>
           <p>
-            This is what a licensed appraiser or attorney would be handed. It reports what the
-            public records say and how each figure was derived, and it states plainly what it does
-            not determine — {referral.notDetermined.length} open items, listed before any figure.
+            This is the part most worth reading. Each item below is a question this report does not
+            answer, why it cannot, and who can. It is not a disclaimer bolted onto the end — it is
+            the finding.
           </p>
+
+          <div className="undetermined">
+            <h3>{referral.notDetermined.length} open questions</h3>
+            <ol>
+              {referral.notDetermined.map((item) => (
+                <li key={item.key}>
+                  {item.what}
+                  <span className="why">{item.why}</span>
+                  <span className="who">Resolved by: {item.whoResolves}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <p>
-            <strong>{referral.notDetermined.length} items are not determined here.</strong> That is
-            the expected result rather than a failure: no formula available to this product produces
-            the market value of a permanent easement.
+            The most important one is the first: <strong>no dataset can tell you what a permanent
+            easement is worth.</strong> The controlling federal standard measures it as the value of
+            the whole property before the easement minus its value afterwards, and it specifically
+            rejects the shortcuts — a percentage of your land value, a customary per-foot rate, or
+            pricing the strip on its own. That comparison requires a licensed appraiser looking at
+            your specific property.
+          </p>
+
+          <h2>Taking this to a professional</h2>
+          <p>
+            The package below is written for an appraiser or attorney. It gathers the parcel record,
+            the geometry, the sources queried and the dates, so the person you hire starts from
+            evidence instead of from scratch.
           </p>
           <details>
-            <summary>Read the full package</summary>
+            <summary>Read the full referral package</summary>
             <pre>{referralText}</pre>
           </details>
         </>
