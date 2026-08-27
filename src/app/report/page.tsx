@@ -8,6 +8,13 @@ import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclo
 import { mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
+  screeningEstimate,
+  ORIENTATION_ONLY_BANNER,
+  THREE_REGIME_DISCLOSURE,
+  type ScreeningResult,
+} from '@/lib/valuation/screening-estimate';
+import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import {
   lookupParcel,
   SUPPORTED_COUNTIES,
   type CountyLookupResult,
@@ -69,6 +76,9 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let lookupNotice: string | null = null;
   let referral: ReferralPackage | null = null;
   let referralText: string | null = null;
+  let screening: ScreeningResult | null = null;
+  let remedy: RemedyPlan | null = null;
+  const acquisitionPending = searchParams.acquisitionPending === '1';
 
   if (submitted) {
     try {
@@ -202,6 +212,33 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             })),
           });
           referralText = renderPlainText(referral);
+
+          // The screening range. Refusal and insufficient-data are ordinary
+          // outcomes here, not errors — four of the twelve types have no
+          // citable band, and a parcel with no county match has no land value.
+          screening = screeningEstimate({
+            easementType,
+            landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
+            encumberedAreaSqFt: easementAreaSqFt,
+            totalPropertyValue:
+              unified !== null ? unified.landValue + unified.improvementValue : null,
+            valueSource:
+              unified !== null
+                ? `${unified.county} assessor${unified.rollYear ? `, ${unified.rollYear} roll` : ''}, queried ${unified.queriedOn}`
+                : 'No county assessment matched this address.',
+            // LA publishes a base year; Orange and San Diego do not, and the
+            // range inherits that uncertainty in full.
+            assessmentVintageUnknown: unified === null || unified.landBaseYear === null,
+          });
+
+          remedy = buildRemedyPlan({
+            easementType,
+            instrumentInHand: false,
+            easementConfirmed: false,
+            areaEstablished: unified !== null,
+            acquisitionPending,
+            hasScreeningRange: screening.status === 'range',
+          });
         }
       }
     } catch (err) {
@@ -238,10 +275,12 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     <main>
       <h1>What an easement on your property means</h1>
       <p className="lede">
-        This reads public parcel, assessment and infrastructure records and reports what they say.
-        It tells you which activities are typically restricted, what the county publishes about your
-        lot, and — most importantly — what it cannot determine. It does not tell you what an
-        easement is worth. No dataset can, and the section below explains why.
+        This reads public parcel, assessment and infrastructure records and reports what they say:
+        which activities are typically restricted, what the county publishes about your lot, a rough
+        sense of the scale of money involved, and a plan for what to do next. It also states what it
+        cannot determine, which for an easement is a great deal. The range it gives is for
+        orientation — enough to tell you whether this is worth a professional&rsquo;s time. It is not
+        a valuation, and the report is explicit about why not.
       </p>
 
       <form>
@@ -294,6 +333,16 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               <input name="easementAreaSqFt" type="number" defaultValue={easementAreaSqFt} />
             </label>
           </div>
+          <label style={{ marginTop: '0.9rem' }}>
+            <input
+              type="checkbox"
+              name="acquisitionPending"
+              value="1"
+              defaultChecked={acquisitionPending}
+              style={{ width: 'auto', marginRight: '0.5rem' }}
+            />
+            A utility or agency has contacted me about acquiring an easement
+          </label>
           <p className="muted" style={{ marginTop: '0.6rem' }}>
             Lot area is ignored when a county parcel matches — the county&rsquo;s own geometry is
             used instead. If you don&rsquo;t know the easement area, put your best guess; the report
@@ -438,51 +487,17 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             document. The document itself controls, and it can be stricter or looser than this.
           </p>
 
-          <h2>Economic impact</h2>
-          <ul>
-            <li>Lost buildable area: {report.economicImpact.lostBuildableAreaSqFt.toLocaleString()} sq ft</li>
-            <li>
-              Value at risk: ${report.economicImpact.valueAtRiskRange.low.toLocaleString()} – $
-              {report.economicImpact.valueAtRiskRange.high.toLocaleString()}
-            </li>
-            <li>
-              Rework cost (lower bound): $
-              {report.economicImpact.reworkCostRange.low.toLocaleString()} – $
-              {report.economicImpact.reworkCostRange.high.toLocaleString()}
-              <br />
-              <small>
-                Based on ${report.economicImpact.constructionCost.costPerSqFt}/sq ft
-                {report.economicImpact.constructionCost.isDivisionReported
-                  ? ` (${report.economicImpact.constructionCost.division?.replace(/-/g, ' ')} region)`
-                  : ' (national median)'}
-                . Excludes demolition and site constraints, so actual rework costs more.
-              </small>
-            </li>
-          </ul>
-          <h3>Data coverage</h3>
-          <p>
-            <strong>
-              {report.economicImpact.dataCoverage.tier === 'flagged-ambiguous'
-                ? 'Flagged — ambiguous'
-                : report.economicImpact.dataCoverage.tier === 'clear'
-                  ? 'Clear'
-                  : 'Likely, with caveat'}
-            </strong>
-            {report.economicImpact.dataCoverage.tier !== 'flagged-ambiguous' && (
-              <> — {report.economicImpact.dataCoverage.value.label}</>
-            )}
-          </p>
-          {report.economicImpact.dataCoverage.tier === 'likely-with-caveat' && (
-            <p>{report.economicImpact.dataCoverage.caveat}</p>
-          )}
-          {report.economicImpact.dataCoverage.tier === 'flagged-ambiguous' && (
-            <p>{report.economicImpact.dataCoverage.flagReason}</p>
-          )}
-
-          <details>
-            <summary>How we calculated this</summary>
-            <p>{report.economicImpact.methodology}</p>
-          </details>
+          {/*
+            The economic-impact block MOVED BELOW the not-determined panel.
+            It was rendering "Value at risk: $78,934 - $118,400" above every
+            caveat on the page, with no three-regime disclosure attached —
+            an older and less-qualified range sitting above the carefully
+            qualified one, which is worse than either alone. The referral
+            package has enforced "no dollar figure before the limits" since it
+            was written; the page now follows the same rule. The county's own
+            published assessment stays above, because that is a recorded fact
+            rather than an estimate.
+          */}
 
           {/*
             Was a bare <pre> in the page flow, from when this route was a
@@ -526,6 +541,165 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             pricing the strip on its own. That comparison requires a licensed appraiser looking at
             your specific property.
           </p>
+
+          {/*
+            The screening range renders AFTER the open-questions panel, never
+            before it. The ordering rule that governs the referral package
+            applies with more force here: a reader who meets a dollar figure
+            first has anchored on it before reading a word of what it is not.
+          */}
+          {screening && (
+            <>
+              <h2>Roughly what scale of question is this?</h2>
+
+              {screening.status === 'range' && (
+                <>
+                  <p role="note">
+                    <strong>{ORIENTATION_ONLY_BANNER}</strong>
+                  </p>
+                  <div className="panel">
+                    <p style={{ fontSize: '1.35rem', margin: '0 0 0.5rem' }}>
+                      <strong>
+                        ${screening.range.low.toLocaleString()} – $
+                        {screening.range.high.toLocaleString()}
+                      </strong>
+                    </p>
+                    <p className="muted" style={{ marginBottom: '0.75rem' }}>
+                      {(screening.range.lowPercent * 100).toFixed(0)}–
+                      {(screening.range.highPercent * 100).toFixed(0)}% of the{' '}
+                      {screening.range.appliedToLabel}
+                    </p>
+                    <p style={{ marginBottom: 0 }}>
+                      <strong>How this was calculated:</strong> {screening.range.derivation}
+                    </p>
+                  </div>
+
+                  <h3>The three limits on this number</h3>
+                  <p role="note">
+                    <strong>Valuation.</strong> {THREE_REGIME_DISCLOSURE.valuation}
+                  </p>
+                  <p role="note">
+                    <strong>Legal.</strong> {THREE_REGIME_DISCLOSURE.legal}
+                  </p>
+                  <p role="note">
+                    <strong>Advertising and substantiation.</strong>{' '}
+                    {THREE_REGIME_DISCLOSURE.advertising}
+                  </p>
+                  {screening.range.caveats
+                    .filter(
+                      (c) =>
+                        c !== ORIENTATION_ONLY_BANNER &&
+                        !Object.values(THREE_REGIME_DISCLOSURE).includes(
+                          c as (typeof THREE_REGIME_DISCLOSURE)[keyof typeof THREE_REGIME_DISCLOSURE],
+                        ),
+                    )
+                    .map((c) => (
+                      <p key={c} className="muted">
+                        {c}
+                      </p>
+                    ))}
+                </>
+              )}
+
+              {screening.status === 'refused' && (
+                <p role="note">
+                  <strong>No range is offered for this easement type.</strong> {screening.reason}
+                </p>
+              )}
+
+              {screening.status === 'insufficient-data' && (
+                <p role="note">
+                  <strong>No range could be produced.</strong> {screening.reason} Missing:{' '}
+                  {screening.missing.join('; ')}.
+                </p>
+              )}
+            </>
+          )}
+
+          {report && (
+            <>
+              <h2>What the easement costs you in use</h2>
+              <div className="panel">
+                <ul className="facts">
+                  <li>
+                    <span className="k">Buildable area lost</span>
+                    <span className="v">
+                      {report.economicImpact.lostBuildableAreaSqFt.toLocaleString()} sq ft
+                    </span>
+                  </li>
+                  <li>
+                    <span className="k">Value at risk</span>
+                    <span className="v">
+                      ${report.economicImpact.valueAtRiskRange.low.toLocaleString()} – $
+                      {report.economicImpact.valueAtRiskRange.high.toLocaleString()}
+                    </span>
+                  </li>
+                  <li>
+                    <span className="k">Rework cost if you build and must undo it</span>
+                    <span className="v">
+                      ${report.economicImpact.reworkCostRange.low.toLocaleString()} – $
+                      {report.economicImpact.reworkCostRange.high.toLocaleString()}
+                    </span>
+                  </li>
+                </ul>
+                <p className="muted" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+                  Rework is based on ${report.economicImpact.constructionCost.costPerSqFt}/sq ft
+                  {report.economicImpact.constructionCost.isDivisionReported
+                    ? ` (${report.economicImpact.constructionCost.division?.replace(/-/g, ' ')} region)`
+                    : ' (national median)'}
+                  . It excludes demolition and site constraints, so real rework costs more.
+                </p>
+              </div>
+              <p className="muted">
+                <strong>Data coverage: </strong>
+                {report.economicImpact.dataCoverage.tier === 'flagged-ambiguous'
+                  ? report.economicImpact.dataCoverage.flagReason
+                  : report.economicImpact.dataCoverage.value.label}
+                {report.economicImpact.dataCoverage.tier === 'likely-with-caveat' &&
+                  ` ${report.economicImpact.dataCoverage.caveat}`}
+              </p>
+              <details>
+                <summary>How this was calculated</summary>
+                <p>{report.economicImpact.methodology}</p>
+              </details>
+            </>
+          )}
+
+          {remedy && (
+            <>
+              <h2>What to do about it, in order</h2>
+              <p>{remedy.sequencingNote}</p>
+              {remedy.urgencyNote && (
+                <p role="alert">
+                  <strong>{remedy.urgencyNote}</strong>
+                </p>
+              )}
+              <div className="panel">
+                <ol style={{ paddingLeft: '1.1rem', margin: 0 }}>
+                  {remedy.steps.map((s) => (
+                    <li key={s.order} style={{ marginBottom: '1.1rem' }}>
+                      <strong>{s.title}</strong>
+                      {s.weCanProvide && <span className="badge badge-ok" style={{ marginLeft: '0.5rem' }}>We provide this</span>}
+                      <br />
+                      <small>{s.outcome}</small>
+                      <br />
+                      <small className="muted">
+                        Who: {s.actor} · Cost: {COST_TIER_LABEL[s.cost]}
+                      </small>
+                      <br />
+                      <small className="muted">Why now: {s.whyNow}</small>
+                      {s.skipIf && (
+                        <>
+                          <br />
+                          <small className="muted">Skip if: {s.skipIf}</small>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </>
+          )}
 
           <h2>Taking this to a professional</h2>
           <p>
