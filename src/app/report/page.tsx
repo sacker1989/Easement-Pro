@@ -16,6 +16,7 @@ import {
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
+import { legalReviewDisclosure } from '@/lib/compliance/legal-review-disclosure';
 import {
   lookupParcel,
   SUPPORTED_COUNTIES,
@@ -683,6 +684,9 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 <strong>{CURRENT_DISCLAIMER.recommendationsNotOpinionText}</strong>
               </p>
               <p role="note">{CURRENT_DISCLAIMER.notLegalCounselText}</p>
+              {legalReviewDisclosure(state).text !== null && (
+                <p role="note">{legalReviewDisclosure(state).text}</p>
+              )}
               <p>{remedy.sequencingNote}</p>
               {remedy.urgencyNote && (
                 <p role="alert">

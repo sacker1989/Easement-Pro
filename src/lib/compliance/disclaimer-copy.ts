@@ -64,6 +64,17 @@ export interface DisclaimerVersion {
    * the other surfaces get missed.
    */
   notLegalCounselText: string;
+  /**
+   * Stated wherever this product applies a rule of law — which is any surface
+   * saying what an easement restricts, how long it lasts, or what a record
+   * means.
+   *
+   * This is the user-facing half of the review docket. Rendered through
+   * `legalReviewDisclosure()`, which reads the SAME GATE the engine reads, so
+   * it disappears on its own when a state is actually reviewed rather than
+   * lingering as a disclaimer nobody remembered to remove.
+   */
+  unreviewedLawText: string;
 }
 
 export const CURRENT_DISCLAIMER: DisclaimerVersion = {
@@ -99,4 +110,13 @@ export const CURRENT_DISCLAIMER: DisclaimerVersion = {
     'prepared for you, any report, recommendation or message — is legal counsel, and no ' +
     'attorney-client relationship is created by using it. Only an attorney licensed in your ' +
     'state can advise you on your rights.',
+  unreviewedLawText:
+    'THE LEGAL RULES BEHIND THIS HAVE NOT BEEN REVIEWED BY AN ATTORNEY. Easement law is state law ' +
+    'and differs materially between states — how long a right must be used before it becomes ' +
+    'permanent, which unwritten easements a state recognises and on what test, whether an ' +
+    'unrecorded easement binds someone who later buys the property, and whether an old easement ' +
+    'expires at all. This product applies rules assembled from published statutes by researchers ' +
+    'rather than lawyers, and no attorney licensed in your state has confirmed that they are ' +
+    'correct or complete. Where that matters to a decision you are about to make, treat what you ' +
+    'read here as a starting point for a conversation with an attorney, not as the answer.',
 };

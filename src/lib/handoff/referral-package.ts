@@ -21,6 +21,7 @@
  */
 
 import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
+import { legalReviewDisclosure } from '@/lib/compliance/legal-review-disclosure';
 import type { AttorneyReviewDecision } from '@/lib/compliance/attorney-review';
 import {
   BEFORE_AND_AFTER_METHODOLOGY_NOTE,
@@ -227,6 +228,16 @@ export function buildReferralPackage(input: ReferralPackageInput): ReferralPacka
       text: CURRENT_DISCLAIMER.notLegalCounselText,
       sourceSymbol: 'CURRENT_DISCLAIMER.notLegalCounselText',
     },
+    // Only when the state's rules are actually unreviewed. Derived from the
+    // same gate analyzeEasement reads, so the caveat cannot outlive the fact.
+    ...(legalReviewDisclosure(input.parcel.state).text === null
+      ? []
+      : [
+          {
+            text: CURRENT_DISCLAIMER.unreviewedLawText,
+            sourceSymbol: 'legalReviewDisclosure(state)',
+          },
+        ]),
     { text: BEFORE_AND_AFTER_METHODOLOGY_NOTE, sourceSymbol: 'BEFORE_AND_AFTER_METHODOLOGY_NOTE' },
     { text: YELLOW_BOOK_4_6_5.citation, sourceSymbol: 'YELLOW_BOOK_4_6_5.citation' },
   ];
