@@ -21,7 +21,12 @@ export interface ConfidenceRule<TFacts, TValue> {
   evaluate(facts: TFacts): Omit<TieredResult<TValue>, 'ruleId'> | null;
 }
 
-type FlaggedFallback<TValue> = Omit<Extract<TieredResult<TValue>, { tier: 'flagged-ambiguous' }>, 'ruleId'>;
+/**
+ * The fallback a state supplies when no rule matches. Omits `ruleId` because
+ * `classifyByRules` stamps that on. Exported in Phase 3 so each state's rule
+ * set can declare its own fallback against the same shape.
+ */
+export type FlaggedFallback<TValue> = Omit<Extract<TieredResult<TValue>, { tier: 'flagged-ambiguous' }>, 'ruleId'>;
 
 /**
  * Runs an ordered rule set against a set of facts. The first rule that

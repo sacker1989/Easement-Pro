@@ -1,5 +1,6 @@
 import type { ConfidenceRule } from './confidence-tiering';
 import type { DurationDetermination, ExpressDurationBasis } from './duration-basis';
+import type { EasementDurationFacts } from './duration-facts';
 
 /**
  * California-specific easement duration rule set. Per docs/development-strategy-v2.md,
@@ -28,17 +29,11 @@ import type { DurationDetermination, ExpressDurationBasis } from './duration-bas
  * be appurtenant or in gross (legal), and the valuation and the doctrine
  * questions turn on different ones.
  */
-export type EasementLegalCharacter = 'appurtenant' | 'in-gross' | 'prescriptive' | 'unknown';
-
-export interface EasementDurationFacts {
-  easementType: EasementLegalCharacter;
-  /** Document contains language like "perpetual," "forever," "runs with the land." */
-  hasPerpetualLanguage: boolean;
-  /** Document contains a specific term (e.g. "for 20 years") or condition subsequent (e.g. "until X occurs"). */
-  hasTermOrConditionSubsequent: boolean;
-  /** Whether the source document/image was legible enough to trust the two flags above. */
-  documentLegible: boolean;
-}
+// Hoisted to duration-facts.ts in Phase 3 and re-exported here so existing
+// importers keep working. These describe what a DOCUMENT says, which holds in
+// any jurisdiction; declaring them beside California's doctrinal outcomes meant
+// every later state would have inherited California's vocabulary with them.
+export type { EasementLegalCharacter, EasementDurationFacts } from './duration-facts';
 
 /**
  * California duration bases: the shared instrument-derived ones, plus the

@@ -24,10 +24,19 @@ export interface AdvocacyWizardState {
  * gate results for each wizard field (currently just duration — more fields
  * plug in the same way as the Analysis Layer grows past Phase 1 MVP).
  *
- * Assumes analysis-layer has a rule set for any state this wizard makes
- * available; true for Phase 1 MVP since only CA is Tier A and CA is the only
- * rule set implemented. Adding a Tier A/B state without its rule set would
- * need this assumption revisited.
+ * NO LONGER ASSUMES a rule set exists for every state this wizard makes
+ * available. That assumption was stated here and was false for California
+ * itself the moment Phase 3 applied the counsel-review gate honestly: CA is
+ * Tier A for UPL purposes AND has an unreviewed rule set, so Track 1 is
+ * available while the duration field is blocked.
+ *
+ * THESE ARE TWO SEPARATE GATES AND MUST NOT BE MERGED. state-tiers.ts answers
+ * "may this product prepare a document for a fee in this state?", which is a
+ * licensing question. The analysis registry answers "does this product know
+ * this state's easement law well enough to state a conclusion?", which is a
+ * substantive-law question. Different counsel, independent expiry, neither
+ * implies the other — and all four combinations occur. `gateWizardField`
+ * already blocks a flagged field, so the wizard degrades correctly on its own.
  */
 export function buildAdvocacyWizardState(input: AdvocacyWizardInput): AdvocacyWizardState {
   const stateCompliance = getStateCompliance(input.state);

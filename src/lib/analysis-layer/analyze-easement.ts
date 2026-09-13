@@ -1,13 +1,18 @@
 import { classifyByRules, type TieredResult } from './confidence-tiering';
-import {
-  CA_DURATION_FALLBACK,
-  CA_DURATION_RULE_SET,
-  type EasementDurationFacts,
-} from './ca-rule-set';
 // State-agnostic on purpose: this is the multi-state entry point, so its
 // result type must not be narrowed to one state's doctrine.
 import type { DurationDetermination } from './duration-basis';
+import type { EasementDurationFacts } from './duration-facts';
+import { resolveStateRuleSet, resolveStateRuleSetAt } from './registry';
+import type { RuleSetResolution } from './rule-set';
 
+/**
+ * Retained and NARROWED to genuine programmer error.
+ *
+ * It used to mean "no rule set for this state", which is an ordinary fact
+ * about the world and now returns a flagged result. It now means only that
+ * the caller passed something that is not a state code at all.
+ */
 export class UnsupportedStateRuleSetError extends Error {
   constructor(message: string) {
     super(message);
@@ -16,30 +21,83 @@ export class UnsupportedStateRuleSetError extends Error {
 }
 
 export interface EasementAnalysisInput {
-  /** Two-letter USPS state code. Phase 1 MVP only has a rule set for CA. */
+  /** Two-letter USPS state code. */
   state: string;
   duration: EasementDurationFacts;
 }
 
 export interface EasementAnalysisResult {
-  state: string;
-  duration: TieredResult<DurationDetermination>;
+  readonly state: string;
+  /** Why the rules ran, or why they did not. Carried so the UI and audit can branch. */
+  readonly ruleSet: RuleSetResolution;
+  readonly duration: TieredResult<DurationDetermination>;
+}
+
+/** The rule id the UI and the audit trail branch on. Distinct on purpose. */
+export const UNAVAILABLE_RULE_ID = 'state-rule-set-unavailable';
+
+function unavailableResult(
+  state: string,
+  reason: string,
+): Extract<TieredResult<DurationDetermination>, { tier: 'flagged-ambiguous' }> {
+  return {
+    tier: 'flagged-ambiguous',
+    ruleId: UNAVAILABLE_RULE_ID,
+    flagReason:
+      `Easement duration is governed by ${state} law, and this product has no counsel-reviewed ` +
+      `rule set for ${state} (${reason}). No determination is offered. This is an absence of ` +
+      `review, not a finding that the easement itself is ambiguous.`,
+  };
 }
 
 /**
- * Runs the Analysis Layer's confidence-tiering gate against a set of
- * extracted easement facts. Per docs/development-strategy-v2.md, Phase 1 MVP
- * only implements a rule set for California — this throws for any other
- * state rather than silently producing an unreviewed determination.
+ * Runs the Analysis Layer's confidence-tiering gate.
+ *
+ * BEHAVIOUR CHANGE, PHASE 3. This used to throw for any state but CA. Throwing
+ * is not degrading: it forced every caller into a try/catch and produced no
+ * user-facing tiered result, when what the product needs is a
+ * `flagged-ambiguous` the existing three-state display already renders.
+ *
+ * AND CALIFORNIA NOW DEGRADES TOO. The CA entry has no review record, so it
+ * resolves `unavailable` exactly as Texas does. That is the honest application
+ * of the gate rather than a regression — the previous behaviour asserted a
+ * California determination on the strength of a rule set nobody had reviewed.
+ *
+ * WHEN UNAVAILABLE, NO RULE IS EVALUATED. Not evaluated and discarded —
+ * unreached. A rule set that cannot be trusted to produce a conclusion cannot
+ * be trusted to produce a flag REASON either, and evaluating it anyway invites
+ * a later refactor to start reading the result.
  */
 export function analyzeEasement(input: EasementAnalysisInput): EasementAnalysisResult {
+  return analyzeEasementAt(input, new Date().toISOString().slice(0, 10));
+}
+
+/** As `analyzeEasement`, with the date supplied. For tests and deterministic audits. */
+export function analyzeEasementAt(
+  input: EasementAnalysisInput,
+  today: string,
+): EasementAnalysisResult {
   const state = input.state.trim().toUpperCase();
-  if (state !== 'CA') {
+
+  if (!/^[A-Z]{2}$/.test(state)) {
     throw new UnsupportedStateRuleSetError(
-      `No confidence-tier rule set is implemented yet for "${state}"; Phase 1 MVP only covers California.`,
+      `"${input.state}" is not a two-letter state code. This is a programmer error rather than an ` +
+        'unsupported jurisdiction — a state with no rule set returns a flagged result instead.',
     );
   }
 
-  const duration = classifyByRules(input.duration, CA_DURATION_RULE_SET, CA_DURATION_FALLBACK);
-  return { state, duration };
+  const ruleSet = resolveStateRuleSetAt(state, today);
+
+  if (ruleSet.status === 'unavailable') {
+    return { state, ruleSet, duration: unavailableResult(state, ruleSet.reason) };
+  }
+
+  const duration = classifyByRules(
+    input.duration,
+    ruleSet.ruleSet.durationRules,
+    ruleSet.ruleSet.durationFallback,
+  );
+  return { state, ruleSet, duration };
 }
+
+export { resolveStateRuleSet };
