@@ -193,6 +193,23 @@ export const THREE_REGIME_DISCLOSURE = {
 } as const;
 
 /** Rendered immediately beside the number, never in a footer. */
+/**
+ * PRODUCT POSITION ON ITEM 9, recorded 2026-08-22 (product owner, NOT counsel):
+ * showing the figure does not create exposure that language cannot cure; the
+ * risk is an assumed figure being taken for fact.
+ *
+ * That is the reading this module was already built to, and it is why the
+ * design invests in the SHAPE of the output rather than in the wording alone —
+ * wording is what a reader skips. The structural defences are: no
+ * `pointEstimate` field exists for any caller to render, the arithmetic is
+ * printed beside the number, the figure is rounded hard so it cannot imply
+ * precision, and the page renders it BELOW the not-determined panel by a rule
+ * the suite asserts. A disclaimer can be skimmed past; a missing field cannot.
+ *
+ * STILL UNREVIEWED. The position is the product owner's, and it is a judgement
+ * about exposure, which is the kind of judgement counsel exists to make. It
+ * does not close item 9.
+ */
 export const ORIENTATION_ONLY_BANNER =
   'ROUGH ORIENTATION RANGE — NOT A VALUATION. Use this only to judge the SCALE of the question ' +
   'and whether it is worth engaging a professional. Do not quote it to a utility, an agency, an ' +

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
 import type { TieredResult } from '@/lib/analysis-layer/confidence-tiering';
 import { normalizeAddress } from '@/lib/parcel-resolution';
 import {
@@ -77,7 +78,12 @@ describe('buildRequestForClarificationLetter', () => {
 
   it('includes a placeholder disclaimer footer', () => {
     const letter = buildRequestForClarificationLetter(validInput);
-    expect(letter.footerDisclaimer).toContain('not a substitute for legal advice');
+    // Asserted against the CONSTANT, not a hardcoded phrase. Hardcoding one
+    // defeats the single-source-of-truth this module exists to be: the copy
+    // changed in v2 and these were the only two places that noticed, for the
+    // wrong reason.
+    expect(letter.footerDisclaimer).toContain(CURRENT_DISCLAIMER.letterFooterText);
+    expect(letter.footerDisclaimer).toMatch(/not legal advice/);
   });
 
   it('rejects an empty recipient name', () => {

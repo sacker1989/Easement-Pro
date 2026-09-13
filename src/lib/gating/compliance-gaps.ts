@@ -52,7 +52,22 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       'A written opinion from a California-admitted attorney addressing whether the Track 1 ' +
       'letter output constitutes unauthorized practice of law under Cal. Bus. & Prof. Code ' +
       '§6400 et seq., with the reviewer, bar number, date, and the scope approved. Recording ' +
-      'the date alone is not the artifact — the opinion is.',
+      'the date alone is not the artifact — the opinion is. ' +
+      'MITIGATIONS IMPLEMENTED 2026-08-22 at product direction, in disclaimer-copy v2: the ' +
+      'letter states it is not written by an attorney, states that the homeowner is its author ' +
+      'and sender, and paid analytical output is framed as recommendations rather than a legal ' +
+      'opinion. These narrow the exposure and they do not close this gap. ' +
+      'WHY NOT: §6400(c) defines a legal document assistant as a person "who provides ... for ' +
+      'compensation, any self-help service to a member of the public who is representing ' +
+      'themselves in a legal matter" (fetched 2026-08-22). The definition turns on compensation, ' +
+      'self-help service and self-representation — not on whether attorney status is disclaimed. ' +
+      'Disclaiming it is what an LDA does, not what exempts one, so these mitigations may place ' +
+      'the product inside the LDA regime rather than outside it. That regime requires ' +
+      'REGISTRATION AND A BOND, which no disclaimer substitutes for. ' +
+      'TWO QUESTIONS, EASILY COLLAPSED AND DIFFERENT: (1) is the output "self-help service" ' +
+      'within §6400(d), or does it cross into legal advice, which no registration authorises; ' +
+      '(2) if it is within §6400(d), must this product register. §6401\'s exemption list has not ' +
+      'been fetched and is the specific next step.',
     owner: 'product-and-counsel',
     markedOn: '2026-08-16',
   },

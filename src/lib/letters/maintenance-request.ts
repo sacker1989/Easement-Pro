@@ -101,7 +101,12 @@ export function buildMaintenanceRequestLetter(input: MaintenanceRequestInput): M
   const closing = `Sincerely,\n${input.senderName.trim()}`;
 
   const footerDisclaimer =
-    `${CURRENT_DISCLAIMER.letterFooterText} ${buildAttorneyReviewStatusLine(input.attorneyReviewDecision)}`;
+    [
+      CURRENT_DISCLAIMER.notFromAttorneyText,
+      CURRENT_DISCLAIMER.letterFooterText,
+      CURRENT_DISCLAIMER.notLegalCounselText,
+      buildAttorneyReviewStatusLine(input.attorneyReviewDecision),
+    ].join(' ');
 
   return {
     subject,

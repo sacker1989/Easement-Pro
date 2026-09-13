@@ -111,8 +111,12 @@ export function buildRequestForClarificationLetter(
 
   const closing = `Sincerely,\n${input.senderName.trim()}`;
 
-  const footerDisclaimer =
-    `${CURRENT_DISCLAIMER.letterFooterText} This is a request for information only.`;
+  const footerDisclaimer = [
+    CURRENT_DISCLAIMER.notFromAttorneyText,
+    CURRENT_DISCLAIMER.letterFooterText,
+    CURRENT_DISCLAIMER.notLegalCounselText,
+    'This is a request for information only.',
+  ].join(' ');
 
   return {
     subject,

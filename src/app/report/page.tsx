@@ -14,6 +14,7 @@ import {
   type ScreeningResult,
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
 import {
   lookupParcel,
   SUPPORTED_COUNTIES,
@@ -668,6 +669,12 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           {remedy && (
             <>
               <h2>What to do about it, in order</h2>
+              {/* Recommendations, not a legal opinion — and the universal
+                  not-legal-counsel line, which every communication carries. */}
+              <p role="note">
+                <strong>{CURRENT_DISCLAIMER.recommendationsNotOpinionText}</strong>
+              </p>
+              <p role="note">{CURRENT_DISCLAIMER.notLegalCounselText}</p>
               <p>{remedy.sequencingNote}</p>
               {remedy.urgencyNote && (
                 <p role="alert">

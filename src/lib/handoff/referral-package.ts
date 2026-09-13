@@ -223,6 +223,10 @@ export interface ReferralPackageInput {
 export function buildReferralPackage(input: ReferralPackageInput): ReferralPackage {
   const caveats: Caveat[] = [
     { text: CURRENT_DISCLAIMER.letterFooterText, sourceSymbol: 'CURRENT_DISCLAIMER.letterFooterText' },
+    {
+      text: CURRENT_DISCLAIMER.notLegalCounselText,
+      sourceSymbol: 'CURRENT_DISCLAIMER.notLegalCounselText',
+    },
     { text: BEFORE_AND_AFTER_METHODOLOGY_NOTE, sourceSymbol: 'BEFORE_AND_AFTER_METHODOLOGY_NOTE' },
     { text: YELLOW_BOOK_4_6_5.citation, sourceSymbol: 'YELLOW_BOOK_4_6_5.citation' },
   ];
