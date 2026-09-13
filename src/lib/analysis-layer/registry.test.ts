@@ -122,11 +122,55 @@ describe('California is registered and still does not clear the gate', () => {
     }
   });
 
-  it('keeps the untouched facts empty', () => {
-    for (const fact of [CA_RULE_SET.recordingAct, CA_RULE_SET.marketableTitle]) {
-      if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
-      expect(fact.researcherReading).toBeNull();
-    }
+  it('leaves easement-by-necessity empty, because the answer was half a shape', () => {
+    // A reading WAS offered for this field. The type requires both
+    // `recognised` and a necessity standard; only the first was supplied, and
+    // a half-filled reading would present as a complete one.
+    const fact = CA_RULE_SET.easementByNecessity;
+    if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
+    expect(fact.researcherReading).toBeNull();
+    expect(fact.note).toMatch(/STILL OPEN, AND IT IS NOW EXACTLY ONE FIELD/);
+  });
+
+  it('flags the marketable-title reading as a preference rather than a finding', () => {
+    // "Easements should not be excepted from extinguishment" states a desired
+    // outcome. Whether the Act excepts them is a question about what the
+    // statute says, and no section addressing exceptions has been fetched.
+    const fact = CA_RULE_SET.marketableTitle;
+    if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
+    expect(fact.researcherReading).toEqual({
+      actExists: true,
+      rootOfTitleYears: null,
+      easementsExcepted: false,
+    });
+    expect(fact.note).toMatch(/PREFERENCE, NOT A FINDING/);
+    expect(fact.note).toMatch(/FAVOURS OUR OWN USER/);
+    expect(confirmedValue(fact)).toBeNull();
+  });
+
+  it('records the rule-order reading without creating a review', () => {
+    // Item 6 is the one that would turn California back on. A ReviewRecord
+    // requires reviewedBy, barNumber and barJurisdiction — there is no shape
+    // of it that means "the product owner believes this". Filling those would
+    // let the gate be satisfied by its own forgery.
+    expect(CA_RULE_SET.review).toBeNull();
+    expect(resolveStateRuleSetAt('CA', TODAY).status).toBe('unavailable');
+  });
+
+  it('flags a reading the fetched statute contradicts, rather than filing it quietly', () => {
+    // The recording act reading is 'notice'. §1214 conditions the subsequent
+    // purchaser's protection on a conveyance "first duly recorded", which is
+    // the distinguishing feature of race-notice. Recording the reading is
+    // useful; recording it WITHOUT the conflict would hand a reviewer a
+    // starting position that the product's own evidence undercuts.
+    const fact = CA_RULE_SET.recordingAct;
+    if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
+    expect(fact.researcherReading).toBe('notice');
+    expect(fact.note).toMatch(/CONTRADICTED BY THE FETCHED TEXT/);
+    expect(fact.note).toMatch(/first\s+duly recorded/);
+    expect(fact.note).toMatch(/RACE-NOTICE/);
+    // And it still unlocks nothing.
+    expect(confirmedValue(fact)).toBeNull();
   });
 });
 
@@ -183,8 +227,12 @@ describe('the fetched citations are real and quoted', () => {
     // matters is that no value is reachable, and the union already guarantees
     // that: on the unreviewed branch there is no `value` key at all.
     expect('value' in fact).toBe(false);
-    expect(fact.researcherReading).toBeNull();
     expect(confirmedValue(fact)).toBeNull();
+    // researcherReading now holds a provisional 'notice'. That is deliberately
+    // NOT asserted null here any more: the guarantee is that no value is
+    // REACHABLE, which the union provides, not that the provisional branch is
+    // empty. The conflict between that reading and the quoted text is asserted
+    // in its own test above.
   });
 });
 

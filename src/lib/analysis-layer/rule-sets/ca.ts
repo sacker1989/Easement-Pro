@@ -32,8 +32,25 @@ const LEGINFO = 'https://leginfo.legislature.ca.gov/faces/codes_displaySection.x
 export const CA_RULE_SET: StateEasementRuleSet = {
   state: 'CA',
   schemaVersion: RULE_SET_SCHEMA_VERSION,
-  // The whole point of the phase. No review record exists, so no substantive
-  // conclusion may issue for California either.
+  /*
+   * The whole point of the phase. No review record exists, so no substantive
+   * conclusion may issue for California either.
+   *
+   * READING OFFERED 2026-08-22 (product owner, NOT counsel), ON ITEM 6: the
+   * three presumptions are correct and the rule order is fine.
+   *
+   * IT CANNOT BE RECORDED AS A REVIEW, and the reason is structural rather
+   * than procedural. A ReviewRecord requires `reviewedBy`, `barNumber` and
+   * `barJurisdiction`. There is no shape of this type that says "the product
+   * owner believes this is right" — filling those fields with anything other
+   * than a real attorney's details would fabricate the exact artifact the gate
+   * exists to demand, and the gate would then be satisfied by its own forgery.
+   *
+   * This is also the single item that would turn California back on: confirm
+   * the eight rules and their order and every CA duration finding unblocks at
+   * once. That is precisely why it is the one to take to counsel first, and
+   * precisely why it is the one that must not be self-certified.
+   */
   review: null,
 
   prescriptivePeriodYears: {
@@ -120,7 +137,17 @@ export const CA_RULE_SET: StateEasementRuleSet = {
       'easements are treated as serving public safety and betterment would resolve systematically ' +
       'AGAINST the homeowner this product serves — it would read an existing encroachment as ' +
       'justified rather than as a question. That is the opposite of the posture every other gate ' +
-      'in this codebase takes. Counsel must supply the private-law standard and its authority.',
+      'in this codebase takes. ' +
+      'CORRECTED SAME DAY by the product owner: "for landlocked parcels, just assume that no prior ' +
+      'use is needed." That is the right line, and it is the one that separates this doctrine from ' +
+      'the field above — prior use is an element of the quasi-easement doctrine, not of necessity, ' +
+      'which classically turns on unity of ownership, severance, and necessity existing AT ' +
+      'severance. So `recognised: true` is a sound provisional position. ' +
+      'STILL OPEN, AND IT IS NOW EXACTLY ONE FIELD: strict or reasonable necessity. This type ' +
+      'requires both `recognised` and a standard, so researcherReading stays null until the second ' +
+      'half exists — a half-filled reading would read as a complete one. In many states the two ' +
+      'doctrines take DIFFERENT standards, so the "reasonable" recorded above for prior use ' +
+      'cannot simply be carried across.',
   },
 
   recordingAct: {
@@ -134,12 +161,29 @@ export const CA_RULE_SET: StateEasementRuleSet = {
         'thereof, in good faith and for a valuable consideration, whose conveyance is first duly ' +
         'recorded',
     },
-    researcherReading: null,
+    // Recorded as offered, and flagged hard. It stays on the unreachable
+    // branch, so nothing downstream can act on it while the conflict below is
+    // unresolved.
+    researcherReading: 'notice',
     note:
       'BOTH a good-faith-and-value element and a first-to-record element appear in the same ' +
       'sentence, re-verified against the live text. That is what makes the three-way race / ' +
       'notice / race-notice classification a counsel question rather than a reading exercise, and ' +
-      'it is the field this project got wrong on a first pass. No value is written here.',
+      'it is the field this project got wrong on a first pass. ' +
+      'READING OFFERED 2026-08-22 (product owner, NOT counsel), RECORDED BUT CONTRADICTED BY THE ' +
+      'FETCHED TEXT: "a notice jurisdiction for our purposes." ' +
+      'CONFLICT: §1214 conditions the subsequent purchaser\'s protection on a conveyance "first ' +
+      'duly recorded". Under a pure NOTICE rule a good-faith purchaser for value prevails whether ' +
+      'or not they record first — recording is not required to win. A recording requirement ' +
+      'imposed on the subsequent purchaser is the distinguishing feature of RACE-NOTICE, and that ' +
+      'requirement is on the face of the section this project fetched. The offered reading and ' +
+      'the quoted statute point different ways, so counsel must resolve them rather than either ' +
+      'being adopted. ' +
+      'WHAT TURNS ON IT: whether an UNRECORDED easement binds someone who later buys the burdened ' +
+      'parcel. Under notice, a buyer with actual or constructive notice takes subject to it even ' +
+      'if the easement was never recorded. Under race-notice the same buyer must also have ' +
+      'recorded first to be protected. Wrong either way, the product tells a homeowner the ' +
+      'opposite of their position in a priority contest.',
   },
 
   marketableTitle: {
@@ -152,12 +196,28 @@ export const CA_RULE_SET: StateEasementRuleSet = {
         'Real property is a basic resource of the people of the state and should be made freely ' +
         'alienable and marketable to the extent practicable',
     },
-    researcherReading: null,
+    researcherReading: { actExists: true, rootOfTitleYears: null, easementsExcepted: false },
     note:
       'Confirms California has a Marketable Record Title Act and states its policy. Says nothing ' +
       'about the root-of-title period, and nothing about whether easements are excepted from ' +
       'extinguishment — which is the decisive question for this product. Those live in other ' +
-      'sections of the article that were NOT fetched.',
+      'sections of the article that were NOT fetched. ' +
+      'READING OFFERED 2026-08-22 (product owner, NOT counsel), RECORDED BUT FLAGGED TWICE: ' +
+      '"easements should not be excepted from extinguishment here." No root-of-title period was ' +
+      'supplied, so rootOfTitleYears stays null. ' +
+      'FLAG 1, IT IS A PREFERENCE, NOT A FINDING. "Should not be" states a desired outcome. ' +
+      'Whether the Act in fact excepts easements is a question about what the statute says, and no ' +
+      'section addressing exceptions has been fetched. The two are not interchangeable, and this ' +
+      'field is the one where the difference is most consequential. ' +
+      'FLAG 2, THE DIRECTION FAVOURS OUR OWN USER, WHICH IS THE DANGEROUS DIRECTION HERE. This ' +
+      'product serves the BURDENED owner. "Not excepted" means an old recorded easement is wiped ' +
+      'once the root-of-title period runs — the outcome the homeowner wants. If that is wrong, the ' +
+      'product tells someone a burden on their land has lapsed when it has not, and the ways they ' +
+      'would act on that are building over it or refusing access. Both get them sued by the ' +
+      'holder. Every other gate in this codebase is set to fail toward caution; a reading that ' +
+      'fails toward the user is worth more scrutiny than one that fails against them, not less. ' +
+      'Counsel must supply the root-of-title period and the exception treatment from the operative ' +
+      'sections.',
   },
 
   durationRules: CA_DURATION_RULE_SET,
