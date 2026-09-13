@@ -88,15 +88,42 @@ describe('California is registered and still does not clear the gate', () => {
     expect(confirmedValue(CA_RULE_SET.marketableTitle)).toBeNull();
   });
 
-  it('writes no researcherReading, so nothing is sitting there to be picked up', () => {
-    // The type already stops the engine reading it. Leaving the field null as
-    // well means there is no provisional number in the file for a future edit
-    // to promote by accident.
-    for (const fact of [
-      CA_RULE_SET.prescriptivePeriodYears,
-      CA_RULE_SET.recordingAct,
-      CA_RULE_SET.marketableTitle,
-    ]) {
+  it('carries provisional readings without those readings unlocking anything', () => {
+    // Two facts now hold a product-owner reading: five years for the
+    // prescriptive period, reasonable necessity for implied-from-prior-use.
+    // Recording them is the point of the field — a reviewer starts from a
+    // position rather than a blank. What must stay true is that recording one
+    // changes NOTHING the engine can see.
+    const period = CA_RULE_SET.prescriptivePeriodYears;
+    const implied = CA_RULE_SET.impliedFromPriorUse;
+    if (period.status !== 'unreviewed' || implied.status !== 'unreviewed') {
+      throw new Error('a provisional reading must never promote a fact to counsel-confirmed');
+    }
+    expect(period.researcherReading).toBe(5);
+    expect(implied.researcherReading).toEqual({ recognised: true, necessityStandard: 'reasonable' });
+
+    // The engine's only reader still returns null for both.
+    expect(confirmedValue(period)).toBeNull();
+    expect(confirmedValue(implied)).toBeNull();
+
+    // And California still does not clear the gate.
+    expect(resolveStateRuleSetAt('CA', TODAY).status).toBe('unavailable');
+  });
+
+  it('labels every provisional reading as not-counsel in the note', () => {
+    // A reading with no attribution is indistinguishable from a finding six
+    // months from now. The note carries who supplied it and when.
+    for (const fact of [CA_RULE_SET.prescriptivePeriodYears, CA_RULE_SET.impliedFromPriorUse]) {
+      if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
+      expect(fact.researcherReading).not.toBeNull();
+      expect(fact.note).toMatch(/PROVISIONAL READING/);
+      expect(fact.note).toMatch(/NOT counsel/);
+      expect(fact.note).toMatch(/WHAT REMAINS OPEN/);
+    }
+  });
+
+  it('keeps the untouched facts empty', () => {
+    for (const fact of [CA_RULE_SET.recordingAct, CA_RULE_SET.marketableTitle]) {
       if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
       expect(fact.researcherReading).toBeNull();
     }
@@ -132,7 +159,7 @@ describe('the fetched citations are real and quoted', () => {
   it('each note says what the fetch did NOT settle', () => {
     // That gap is the reviewer's actual job, so it is recorded per field.
     expect(CA_RULE_SET.prescriptivePeriodYears.status === 'unreviewed' &&
-      CA_RULE_SET.prescriptivePeriodYears.note).toMatch(/does NOT establish/i);
+      CA_RULE_SET.prescriptivePeriodYears.note).toMatch(/does NOT establish|WHAT REMAINS OPEN/i);
     expect(CA_RULE_SET.recordingAct.status === 'unreviewed' &&
       CA_RULE_SET.recordingAct.note).toMatch(/counsel question/i);
     expect(CA_RULE_SET.impliedFromPriorUse.status === 'unreviewed' &&

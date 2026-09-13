@@ -46,14 +46,22 @@ export const CA_RULE_SET: StateEasementRuleSet = {
         'the property has been held and possessed adversely to such legal title, for five years ' +
         'before the commencement of the action',
     },
-    // Deliberately null. A five-year figure sitting in a field the engine can
-    // reach is exactly the accident this type exists to prevent.
-    researcherReading: null,
+    // PROVISIONAL READING, supplied by the product owner on 2026-08-22, not by
+    // counsel. It sits here rather than in `value` because this branch is the
+    // one the engine cannot read: recording it loses nothing and unlocks
+    // nothing. The reviewer sees a starting position instead of a blank.
+    researcherReading: 5,
     note:
-      'Establishes that a five-year adverse-possession period appears in CCP §321. It does NOT ' +
-      'establish that §321 — rather than §318, §319 or §325 — supplies the period for a ' +
-      'prescriptive EASEMENT, nor what elements must run for that period. That chain is what a ' +
-      'reviewer confirms and a fetch cannot.',
+      'Establishes that a five-year adverse-possession period appears in CCP §321. PROVISIONAL ' +
+      'READING (product owner, 2026-08-22, NOT counsel): five years, per §321. ' +
+      'WHAT REMAINS OPEN, and it is the half with teeth: the ELEMENTS that must run for that ' +
+      'period. CCP §325 was fetched 2026-08-22 and requires, for adverse possession, that the ' +
+      'claimant "timely paid all state, county, or municipal taxes" for the five years, and that ' +
+      'the land be "protected by a substantial enclosure" or "usually cultivated or improved". ' +
+      'Those are possession elements. A prescriptive easement is a right of USE rather than ' +
+      'possession, so whether either element carries over is exactly the question — and reading ' +
+      'the period off §325 would import a tax-payment requirement with it. Counsel must confirm ' +
+      'the operative section AND the element list, not merely the number of years.',
   },
 
   impliedFromPriorUse: {
@@ -68,12 +76,18 @@ export const CA_RULE_SET: StateEasementRuleSet = {
         'extent as such property was obviously and permanently used… at the time when the ' +
         'transfer was agreed upon or completed',
     },
-    researcherReading: null,
+    // PROVISIONAL READING, product owner, 2026-08-22. Same status as above:
+    // visible to a reviewer, unreachable by the engine.
+    researcherReading: { recognised: true, necessityStandard: 'reasonable' },
     note:
       'The statute states a standard of OBVIOUS AND PERMANENT USE. Re-verified against the live ' +
-      'text: the word "necessity" does not appear in §1104 at all. Whether California applies a ' +
-      'strict or reasonable necessity standard to this doctrine is therefore not on the face of ' +
-      'the statute and must not be inferred from it.',
+      'text: the word "necessity" does not appear in §1104 at all. PROVISIONAL READING (product ' +
+      'owner, 2026-08-22, NOT counsel): recognised, reasonable necessity. ' +
+      'WHAT REMAINS OPEN: the standard is not on the face of the statute, so it rests on case law ' +
+      'this project has not fetched. It also matters which way it is wrong — "reasonable" is the ' +
+      'more permissive reading, so an error here finds easements that a strict standard would ' +
+      'not, which is the direction that overstates a burden on the owner rather than understating ' +
+      'it. Counsel must supply the standard and the authority for it.',
   },
 
   easementByNecessity: {
@@ -82,12 +96,31 @@ export const CA_RULE_SET: StateEasementRuleSet = {
     // reading is the correct expression of that, and the registry must be able
     // to carry it without a placeholder standing in.
     citation: null,
+    // Left null ON PURPOSE, and the reason is itself the finding. A reading was
+    // offered on 2026-08-22 and it does not fit this type — see the note. A
+    // researcherReading must carry BOTH `recognised` and a necessity standard,
+    // and no standard was supplied, because the answer given was about a
+    // different doctrine. Filling half the shape by picking a standard would
+    // hide that.
     researcherReading: null,
     note:
       'No primary source has been fetched for easement by necessity in California. It is a ' +
       'DISTINCT doctrine from implied easement from prior use above — it turns on landlocking ' +
       'rather than on a pre-existing apparent use — and the two must not be answered from one ' +
-      'source.',
+      'source. ' +
+      'READING OFFERED 2026-08-22 (product owner, NOT counsel), RECORDED BUT FLAGGED: "it does, ' +
+      'on the standard that the easements that are already inferred or prescribed are needed for ' +
+      'public use and should be considered a public safety and betterment use." ' +
+      'CONCERN: that describes PUBLIC necessity — the eminent-domain and public-use framing under ' +
+      'which an agency condemns or justifies a taking. Easement by necessity is a PRIVATE ' +
+      'doctrine: it arises when commonly owned land is severed and one parcel is left without ' +
+      'access, and it asks whether the claimant needs the way, not whether the public benefits. ' +
+      'The two share the word "necessity" and little else. ' +
+      'WHY THE DIRECTION MATTERS HERE: a standard under which existing inferred or prescriptive ' +
+      'easements are treated as serving public safety and betterment would resolve systematically ' +
+      'AGAINST the homeowner this product serves — it would read an existing encroachment as ' +
+      'justified rather than as a question. That is the opposite of the posture every other gate ' +
+      'in this codebase takes. Counsel must supply the private-law standard and its authority.',
   },
 
   recordingAct: {
