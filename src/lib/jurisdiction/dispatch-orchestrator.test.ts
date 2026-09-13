@@ -230,9 +230,15 @@ describe('Dispatch Orchestrator', () => {
 
     it('totals all counties from database', () => {
       const summary = getTierCoverageSummary();
-      // 3 immediate (LA, Orange, San Diego) + 8 standard + 1 fallback (Santa Clara)
-      expect(summary.totalCounties).toBe(12);
-      expect(summary.tierA.count).toBe(3);
+      // 4 immediate (LA, Orange, San Diego, Clay FL) + 8 standard + 1 fallback.
+      //
+      // This also reconciles a discrepancy the Phase 3 spec flagged: the phase
+      // plan claimed 13 counties with 4 immediate while the code had 12 with 3.
+      // Adding Clay County makes the code match the claim — by coincidence
+      // rather than because the plan was counting this entry, so the number is
+      // now right for a stated reason instead of by assertion.
+      expect(summary.totalCounties).toBe(13);
+      expect(summary.tierA.count).toBe(4);
       expect(summary.tierB.count).toBe(8);
       expect(summary.fallback.count).toBe(1);
     });

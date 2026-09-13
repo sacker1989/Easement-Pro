@@ -281,6 +281,50 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
       },
     },
   },
+
+  // ===== FLORIDA — first entry. Phase 2 strand 3 recorded Florida as having
+  // zero county routes; this closes that for one jurisdiction.
+  {
+    county: 'Clay County',
+    state: 'FL',
+    fipsCode: '12019',
+    tier: 'immediate',
+    agent: {
+      type: 'gis-explorer',
+      esriServiceUrl:
+        'https://services2.arcgis.com/R0MaBWycrb80Pvlu/arcgis/rest/services/GCS_Parcels/FeatureServer/41',
+      countyGisPortal: 'https://services2.arcgis.com/R0MaBWycrb80Pvlu/arcgis/rest/services',
+      assessorMapServer: 'GCS_Parcels',
+      description:
+        'Green Cove Springs (Clay County) public Esri FeatureServer. Layer 41 "GCS_Parcels" is a ' +
+        'polygon layer with 133 fields over 4,756 parcels, carrying MktLandVal, JustValue, ' +
+        'BldgValue, TaxableVal, UseCode/Usedesc, split address components (HouseNo, StreetName, ' +
+        'StreetDir, StreetUnit) and both GISACRES and ACREAGE. No API key required.',
+      source: {
+        accessMode: 'documented-api',
+        verifiedOn: '2026-08-22',
+        verifiedVia:
+          'Live curl against FeatureServer/41?f=json (133 fields, 4,756 records) and a values ' +
+          'query returning real market land values — e.g. parcel 016499-002-00 at MktLandVal ' +
+          '1,050,000 over GISACRES 5.273, and 015234-005-62 at 32,838 over 0.2149 acres.',
+        limitations:
+          'FLORIDA ASSESSES AT JUST VALUE ANNUALLY, so MktLandVal is a current market land value ' +
+          'as published and none of the Proposition 13 base-year machinery built for California ' +
+          'applies or is needed. ' +
+          'AREA UNITS — CHECKED, AND NOT WHAT THE SERVICE METADATA IMPLIES. The layer extent ' +
+          'advertises wkid 102100 / latestWkid 3857 (Web Mercator), which would make an ' +
+          'ArcGIS-generated Shape__Area square METRES inflated by 1/cos²(latitude), about 1.333x ' +
+          'at this latitude. But the stored field here is Shape_STAr (single underscore, ' +
+          'shapefile-derived from the source projection) and it is ALREADY SQUARE FEET: verified ' +
+          'against GISACRES x 43,560 on four parcels — 66,571 vs 66,571, 229,692 vs 229,692, ' +
+          '9,349 vs 9,360, 10,734 vs 10,736. Applying the Web Mercator conversion would inflate ' +
+          'every area by 10.76x. Do not infer units from the service SR; check the field. ' +
+          'Coverage is the CITY of Green Cove Springs, not all of Clay County, so the tier is ' +
+          'accurate for matched parcels and most of the county will not match. Owner name is ' +
+          'present as "Name", unlike California, where Gov Code §7928.205 bars it.',
+      },
+    },
+  },
 ];
 
 /**
