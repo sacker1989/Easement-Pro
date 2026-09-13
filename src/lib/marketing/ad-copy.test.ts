@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { APPROVED_COPY, MARKETING_DISCLOSURE, PROHIBITED_COPY } from './ad-copy';
+import {
+  APPROVED_COPY,
+  COPY_APPROVED_IN_STATES,
+  copyApprovedIn,
+  MARKETING_DISCLOSURE,
+  PROHIBITED_COPY,
+} from './ad-copy';
 import {
   REQUIRED_DISCLAIMER_PHRASE,
   scanForAppraisalClaims,
@@ -51,6 +57,40 @@ describe('the disclosure does its job', () => {
   it('fails the scan when omitted, so silence is not an option', () => {
     // Copy that merely avoids claiming, without disclaiming, does not pass.
     expect(scanForAppraisalClaims(APPROVED_COPY[0]!).ok).toBe(false);
+  });
+});
+
+describe('the entitlement framing survives; the claim it was offered to rescue does not', () => {
+  it('carries the substantiated version of "you are entitled to know"', () => {
+    // The position offered on item 10 was that a disclaimer covers valuation
+    // claims because the figures are assumptions the homeowner is entitled to
+    // learn about. The entitlement half is true, appealing, and describes what
+    // the product actually does, so it is approved copy.
+    const joined = APPROVED_COPY.join(' ');
+    expect(joined).toMatch(/right to see what the public record says/);
+    expect(joined).toMatch(/assumptions built from public records/);
+  });
+
+  it('still refuses the valuation claim the disclaimer was offered to rescue', () => {
+    // A disclaimer that contradicts the headline does not cure the headline,
+    // the claim is unsubstantiated rather than under-disclaimed, and appraisal
+    // is a licensed activity. Three separate reasons, each sufficient.
+    const worth = PROHIBITED_COPY.find((c) => /what your easement is worth/i.test(c.text))!;
+    expect(scanForAppraisalClaims(`${worth.text} ${MARKETING_DISCLOSURE}`).ok).toBe(false);
+  });
+
+  it('says in the disclosure that a figure is an assumption, not a fact', () => {
+    expect(MARKETING_DISCLOSURE).toMatch(/assumption derived from published records/);
+    expect(MARKETING_DISCLOSURE).toMatch(/not a statement of fact about the value of your easement/);
+  });
+
+  it('records approval per state, and no state has cleared', () => {
+    // "Likely varies by state" is right, which is why this is a list rather
+    // than a boolean. Empty is the honest state.
+    expect(COPY_APPROVED_IN_STATES).toEqual([]);
+    for (const s of ['CA', 'FL', 'TX', 'PA']) {
+      expect(copyApprovedIn(s)).toBe(false);
+    }
   });
 });
 

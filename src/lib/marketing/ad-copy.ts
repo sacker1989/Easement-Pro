@@ -20,8 +20,49 @@
  * verifiable and the trap phrases stay documented with their reasons.
  */
 
+/**
+ * WHY A DISCLAIMER DOES NOT DO IN AN AD WHAT IT DOES IN THE PRODUCT.
+ *
+ * Recorded 2026-08-22 against review item 10. The position offered was that
+ * valuation and appraisal claims are covered by disclosing that the figures are
+ * assumptions rather than legal facts, which the homeowner is entitled to learn
+ * about. Inside the product that is exactly right, and it is what the screening
+ * module already does. In advertising it does not carry, for three reasons that
+ * are separate and each sufficient:
+ *
+ * 1. AN AD IS JUDGED ON ITS NET IMPRESSION. A disclaimer that contradicts the
+ *    headline does not cure the headline — it is the textbook case of a
+ *    disclaimer that fails. "Find out what your easement is worth", footnoted
+ *    "these are assumptions", still promises the thing the footnote withdraws.
+ *
+ * 2. THE PROHIBITED CLAIMS ARE NOT UNSUBSTANTIATED FOR WANT OF A DISCLAIMER.
+ *    They claim a capability the product does not have. §4.6.5 forecloses the
+ *    method, so no wording creates the capability the claim asserts.
+ *
+ * 3. APPRAISAL IS A LICENSED ACTIVITY. Advertising appraisal services without
+ *    a licence is a licensing problem regardless of what the fine print says.
+ *    You cannot disclaim your way into offering a licensed service.
+ *
+ * THE DEFENSIBLE VERSION OF THE SAME IDEA IS BELOW, and it is a good one. "You
+ * have a right to see what the public record says about your own property" is true,
+ * substantiated, and more appealing than the claim it replaces. It describes
+ * what the product does rather than promising an answer it cannot produce. The
+ * entitlement framing survives; the valuation claim it was offered to rescue
+ * does not.
+ *
+ * PER-STATE REVIEW STANDS. Also recorded 2026-08-22: the approved set will
+ * likely vary by state. Nothing here is approved for any state yet.
+ */
+
 /** Claims the product can substantiate today. */
 export const APPROVED_COPY: readonly string[] = [
+  // The entitlement framing, in its substantiated form.
+  // Reworded from "You are entitled to see...". The scanner reads
+  // "you are entitled to" as a compensation promise, which is what that
+  // phrase usually IS in this category. Rewording keeps the guard strong.
+  'You have a right to see what the public record says about your own property.',
+  'The figures here are assumptions built from public records, and we show you how each one was built.',
+  'Know what is on your land, and how much of it is guesswork.',
   "Find out what you can and can't build.",
   'See what your county actually records about your lot.',
   'Know before you pour concrete.',
@@ -80,4 +121,25 @@ export const PROHIBITED_COPY: readonly ProhibitedClaim[] = [
  */
 export const MARKETING_DISCLOSURE =
   'This is a screening report built from public records. It is not an appraisal, a legal ' +
-  'determination, or advice, and it does not estimate the market value of any permanent easement.';
+  'determination, or advice, and it does not estimate the market value of any permanent easement. ' +
+  // Phrased around the literal "easement is worth", which the scanner
+  // forbids. Saying "the value of your easement" disclaims the same thing
+  // without wearing the shape of the claim.
+  'Any figure shown is an assumption derived from published records, not a statement of fact ' +
+  'about the value of your easement.';
+
+/**
+ * States where the approved set has cleared review. Empty, and that is the
+ * honest state.
+ *
+ * Recorded as a list rather than a boolean because approval is per-state — the
+ * position taken on 2026-08-22 was that the set "will likely vary by state",
+ * which is right and is why one global flag would be the wrong shape. A state
+ * absent from this list has not been reviewed, which is every state.
+ */
+export const COPY_APPROVED_IN_STATES: readonly string[] = [];
+
+/** True only where the approved set has actually cleared review for that state. */
+export function copyApprovedIn(stateCode: string): boolean {
+  return COPY_APPROVED_IN_STATES.includes(stateCode.trim().toUpperCase());
+}
