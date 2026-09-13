@@ -16,13 +16,28 @@ const ambiguousDuration = {
 };
 
 describe('buildAdvocacyWizardState', () => {
-  it('keeps CA Track 1 available while blocking the duration field', () => {
-    // The two gates, both firing, independently. CA is Tier A for UPL — the
-    // product may prepare a document for a fee there — AND its easement rule
-    // set has never been counsel-reviewed, so no substantive duration
-    // conclusion may issue. Both facts are true at once, and this combination
-    // is the one the previous code assumed away.
+  it('lets a document-derived CA finding through while CA is unreviewed', () => {
+    // The observation/doctrine split. `clearDuration` comes from
+    // ca-express-perpetual, which reads the instrument rather than applying
+    // California doctrine, so it survives the review gate and the wizard field
+    // is usable. This is what partial operation in an unreviewed state buys.
     const state = buildAdvocacyWizardState({ state: 'CA', duration: clearDuration });
+    expect(state.access.available).toBe(true);
+    expect(state.fields?.duration.status).toBe('usable');
+  });
+
+  it('blocks the field when the finding depends on doctrine', () => {
+    // The flagged result an unreviewed state produces for a doctrine question
+    // still blocks, which is the half of the gate that must not move.
+    const state = buildAdvocacyWizardState({
+      state: 'CA',
+      duration: {
+        easementType: 'appurtenant',
+        hasPerpetualLanguage: false,
+        hasTermOrConditionSubsequent: false,
+        documentLegible: true,
+      },
+    });
     expect(state.access.available).toBe(true);
     expect(state.fields?.duration.status).toBe('blocked');
   });

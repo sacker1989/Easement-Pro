@@ -9,20 +9,58 @@ const clearAppurtenantFacts = {
 };
 
 describe('analyzeEasement', () => {
-  it('DEGRADES for CA, because CA has never been counsel-reviewed', () => {
-    // Behaviour change, Phase 3. This previously asserted 'clear'. California
-    // is the reference implementation of the SHAPE, not a state that cleared
-    // the gate: its entry has review: null, so it resolves 'unavailable' for
-    // exactly the same reason Texas does. The old assertion encoded the very
-    // problem this phase exists to remove — a substantive determination issued
-    // on the strength of a rule set nobody had reviewed.
+  it('runs CA OBSERVATION rules even though CA is unreviewed', () => {
+    // The unlock. The gate blocks claims about the LAW; reading the document
+    // is a different thing and needs no review. This instrument expressly says
+    // perpetual, so the document has already answered the question and the
+    // product says so.
     const result = analyzeEasement({ state: 'CA', duration: clearAppurtenantFacts });
     expect(result.state).toBe('CA');
-    expect(result.duration.tier).toBe('flagged-ambiguous');
+    expect(result.duration.tier).toBe('clear');
+    expect(result.duration.ruleId).toBe('ca-express-perpetual');
+    // The rule set itself is still ungated — nothing about this made CA reviewed.
     expect(result.ruleSet.status).toBe('unavailable');
     if (result.ruleSet.status === 'unavailable') {
       expect(result.ruleSet.reason).toBe('never-reviewed');
     }
+  });
+
+  it('still blocks the CA answers that depend on doctrine', () => {
+    // No express language, so the answer turns on California's presumption
+    // that an appurtenant easement runs with the land. That is the claim the
+    // gate exists to stop, and it stays stopped.
+    const result = analyzeEasement({
+      state: 'CA',
+      duration: {
+        easementType: 'appurtenant',
+        hasPerpetualLanguage: false,
+        hasTermOrConditionSubsequent: false,
+        documentLegible: true,
+      },
+    });
+    expect(result.duration.tier).toBe('flagged-ambiguous');
+    expect(result.duration.ruleId).toBe(UNAVAILABLE_RULE_ID);
+  });
+
+  it('runs the observation rules that FLAG, too', () => {
+    // An illegible document is an observation, not doctrine, and saying so is
+    // more useful than a generic unavailable notice.
+    const result = analyzeEasement({
+      state: 'CA',
+      duration: {
+        easementType: 'appurtenant',
+        hasPerpetualLanguage: true,
+        hasTermOrConditionSubsequent: false,
+        documentLegible: false,
+      },
+    });
+    expect(result.duration.ruleId).toBe('ca-illegible-document');
+  });
+
+  it('gives a state with NO entry nothing to run', () => {
+    // Texas has no rule set at all, so there are no observation rules either.
+    const result = analyzeEasement({ state: 'TX', duration: clearAppurtenantFacts });
+    expect(result.duration.ruleId).toBe(UNAVAILABLE_RULE_ID);
   });
 
   it('normalizes a lowercase state code', () => {

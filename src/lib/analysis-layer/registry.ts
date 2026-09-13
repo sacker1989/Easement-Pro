@@ -179,3 +179,17 @@ export function resolveStateRuleSetAt(stateCode: string, today: string): RuleSet
 export function resolveStateRuleSet(stateCode: string): RuleSetResolution {
   return resolveStateRuleSetAt(stateCode, new Date().toISOString().slice(0, 10));
 }
+
+/**
+ * The raw entry for a state, if one is registered — WITHOUT the review gate.
+ *
+ * Exported for exactly one caller: `analyzeEasement`, which needs an
+ * unreviewed entry's OBSERVATION rules. It deliberately returns the rule set
+ * rather than a resolution, so it cannot be mistaken for a way to obtain an
+ * `available` status. A caller reaching for this to run doctrine rules would
+ * have to write that intent out in full.
+ */
+export function registeredRuleSet(stateCode: string): StateEasementRuleSet | undefined {
+  const state = stateCode.trim().toUpperCase();
+  return REGISTRY.find((r) => r.state === state);
+}

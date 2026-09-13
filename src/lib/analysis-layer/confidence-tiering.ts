@@ -15,8 +15,39 @@ export type TieredResult<TValue> =
   | { tier: 'likely-with-caveat'; ruleId: string; value: TValue; caveat: string }
   | { tier: 'flagged-ambiguous'; ruleId: string; flagReason: string };
 
+/**
+ * What a rule actually asserts — and therefore whether it needs counsel review
+ * before it may run.
+ *
+ * THIS IS THE DISTINCTION THAT LETS AN UNREVIEWED STATE STILL BE USEFUL.
+ * "Your recorded instrument contains the words 'perpetual' and states no term"
+ * is a reading of a document. Any careful reader would agree with it, it holds
+ * identically in every jurisdiction, and it asserts nothing about what the law
+ * does with that fact. "California presumes an appurtenant easement runs with
+ * the land absent contrary language" is state doctrine, and a researcher
+ * assembling it from general sources is exactly what the review gate exists to
+ * stop reaching a user.
+ *
+ * Both were previously blocked together, which meant a homeowner holding an
+ * instrument that plainly says "perpetual" was told nothing could be
+ * determined — when the document had already answered them.
+ */
+export type RuleClaimType =
+  /** Reports an observable fact — what a document says, where data came from.
+   *  Asserts no rule of law, so it runs in any state, reviewed or not. */
+  | 'observation'
+  /** Applies a rule of law. Requires a counsel-reviewed rule set. */
+  | 'state-doctrine';
+
 export interface ConfidenceRule<TFacts, TValue> {
   id: string;
+  /**
+   * Required rather than optional, and deliberately so: a rule added without
+   * declaring what it claims would default to whichever value the author
+   * happened to omit, and the safe default is the one that makes the rule
+   * useless. Forcing the declaration makes it a decision.
+   */
+  claimType: RuleClaimType;
   /** Return null to defer to the next rule. Rules are evaluated in order; first match wins. */
   evaluate(facts: TFacts): Omit<TieredResult<TValue>, 'ruleId'> | null;
 }

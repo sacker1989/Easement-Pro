@@ -3,7 +3,7 @@ import { classifyByRules, type TieredResult } from './confidence-tiering';
 // result type must not be narrowed to one state's doctrine.
 import type { DurationDetermination } from './duration-basis';
 import type { EasementDurationFacts } from './duration-facts';
-import { resolveStateRuleSet, resolveStateRuleSetAt } from './registry';
+import { registeredRuleSet, resolveStateRuleSet, resolveStateRuleSetAt } from './registry';
 import type { RuleSetResolution } from './rule-set';
 
 /**
@@ -89,6 +89,30 @@ export function analyzeEasementAt(
   const ruleSet = resolveStateRuleSetAt(state, today);
 
   if (ruleSet.status === 'unavailable') {
+    // PARTIAL OPERATION IN AN UNREVIEWED STATE.
+    //
+    // The gate blocks claims about the LAW. It was also blocking claims about
+    // the DOCUMENT, which is a different thing and needs no review: "your
+    // instrument contains the word perpetual and states no term" is a reading
+    // any careful person would agree with, holds identically in every
+    // jurisdiction, and asserts nothing about what the law does with it.
+    // Blocking both together told a homeowner holding an instrument that
+    // plainly answers their question that nothing could be determined.
+    //
+    // So where an entry EXISTS but is unreviewed, its observation rules run
+    // and its doctrine rules do not. Where no entry exists at all there is
+    // nothing to run, reviewed or otherwise.
+    const entry = registeredRuleSet(state);
+    if (entry !== undefined) {
+      const observationOnly = entry.durationRules.filter((r) => r.claimType === 'observation');
+      const result = classifyByRules(input.duration, observationOnly, entry.durationFallback);
+      // The fallback fires when no observation rule matched, which means the
+      // answer depends on doctrine. That is the unreviewed case, and it must
+      // say so rather than reporting the state's generic fallback copy.
+      if (result.ruleId !== 'fallback-no-rule-matched') {
+        return { state, ruleSet, duration: result };
+      }
+    }
     return { state, ruleSet, duration: unavailableResult(state, ruleSet.reason) };
   }
 

@@ -60,6 +60,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
 > = [
   {
     id: 'ca-illegible-document',
+    claimType: 'observation',
     evaluate(facts) {
       if (!facts.documentLegible) {
         return {
@@ -72,6 +73,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-conflicting-duration-clauses',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.hasPerpetualLanguage && facts.hasTermOrConditionSubsequent) {
         return {
@@ -86,6 +88,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-unknown-easement-type',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.easementType === 'unknown') {
         return {
@@ -100,6 +103,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-express-term-limited',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.hasTermOrConditionSubsequent) {
         return {
@@ -117,6 +121,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-express-perpetual',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.hasPerpetualLanguage) {
         return {
@@ -132,6 +137,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-appurtenant-default-presumption',
+    claimType: 'state-doctrine',
     evaluate(facts) {
       if (facts.easementType === 'appurtenant') {
         return {
@@ -154,6 +160,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-prescriptive-default-presumption',
+    claimType: 'state-doctrine',
     evaluate(facts) {
       if (facts.easementType === 'prescriptive') {
         return {
@@ -175,6 +182,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   },
   {
     id: 'ca-in-gross-default-presumption',
+    claimType: 'state-doctrine',
     evaluate(facts) {
       if (facts.easementType === 'in-gross') {
         return {

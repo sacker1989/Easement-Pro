@@ -8,6 +8,7 @@ interface Facts {
 const rules: ReadonlyArray<ConfidenceRule<Facts, string>> = [
   {
     id: 'negative-is-flagged',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.value < 0) {
         return { tier: 'flagged-ambiguous', flagReason: 'negative value' };
@@ -17,6 +18,7 @@ const rules: ReadonlyArray<ConfidenceRule<Facts, string>> = [
   },
   {
     id: 'small-is-caveated',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.value < 10) {
         return { tier: 'likely-with-caveat', value: 'small', caveat: 'value is small' };
@@ -26,6 +28,7 @@ const rules: ReadonlyArray<ConfidenceRule<Facts, string>> = [
   },
   {
     id: 'large-is-clear',
+    claimType: 'observation',
     evaluate(facts) {
       if (facts.value >= 10) {
         return { tier: 'clear', value: 'large' };

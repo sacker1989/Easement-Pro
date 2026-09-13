@@ -33,6 +33,8 @@ export interface DataCoverageFacts {
 const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataCoverageLabel>> = [
   {
     id: 'la-county-market-indexed',
+    // Data provenance, not law. Needs no state rule set.
+    claimType: 'observation' as const,
     evaluate(facts) {
       const v = facts.assessorValuation;
       if (!v || !facts.marketIndexed) return null;
@@ -56,6 +58,8 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
   },
   {
     id: 'la-county-assessor-verified',
+    // Data provenance, not law. Needs no state rule set.
+    claimType: 'observation' as const,
     evaluate(facts) {
       const v = facts.assessorValuation;
       if (!v) return null;
@@ -74,6 +78,8 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
   },
   {
     id: 'la-county-assessor-unavailable',
+    // Data provenance, not law. Needs no state rule set.
+    claimType: 'observation' as const,
     evaluate(facts) {
       if (!facts.isLaCounty) return null;
       return {
@@ -88,6 +94,8 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
   },
   {
     id: 'national-estimate-default',
+    // Data provenance, not law. Needs no state rule set.
+    claimType: 'observation' as const,
     evaluate() {
       return {
         tier: 'likely-with-caveat',
