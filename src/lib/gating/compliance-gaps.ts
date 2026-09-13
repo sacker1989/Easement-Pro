@@ -35,6 +35,24 @@ export interface ComplianceGap {
   /** Who can decide to accept the risk instead. Never engineering alone. */
   readonly owner: 'product' | 'counsel' | 'product-and-counsel';
   readonly markedOn: string;
+  /**
+   * Present when someone with authority chose to operate with this gap open.
+   *
+   * ACCEPTANCE IS NOT CLOSURE, and the two must not collapse into one field.
+   * A closed gap has had its question answered; an accepted gap still has the
+   * question open and now has a dated decision to proceed anyway. The product
+   * behaves identically in both cases — what differs is whether anyone
+   * examined it, which is precisely what an audit trail needs to distinguish.
+   * `hasOpenComplianceGaps()` deliberately still counts an accepted gap.
+   */
+  readonly riskAccepted?: {
+    readonly by: 'product' | 'counsel' | 'product-and-counsel';
+    readonly on: string;
+    /** What was accepted and on what reasoning, in the accepter's terms. */
+    readonly rationale: string;
+    /** The event that should reopen the decision rather than a date to forget. */
+    readonly revisitWhen: string;
+  };
 }
 
 export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
@@ -88,6 +106,24 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       'take knowingly rather than one to arrive at as a side effect of a refactor.',
     owner: 'product',
     markedOn: '2026-08-16',
+    riskAccepted: {
+      by: 'product',
+      on: '2026-08-22',
+      rationale:
+        'Decision: do NOT go dark. Track 1 stays available in California without a recorded ' +
+        'review date, because obtaining the date is not presently feasible and the control would ' +
+        'take the only live paid product offline. To be revisited annually or semi-annually as ' +
+        'feasible. This is the decision the reverted branch was left open for, taken knowingly. ' +
+        'ONE THING IT DOES NOT CHANGE: the hard part is not ascertaining the date — the date is ' +
+        'simply when counsel signs off. What is hard is obtaining the review. So this accepts ' +
+        'operating without the review itself, which is CA-TRACK1-UNREVIEWED, and that gap is now ' +
+        'the load-bearing one rather than a parallel note. The two are coupled: a Track 1 review ' +
+        'closes both, and nothing else closes either.',
+      revisitWhen:
+        'At the next annual or semi-annual pass, whichever comes first; immediately on any State ' +
+        'Bar or regulator contact, any consumer complaint touching the letter product, or any ' +
+        'decision to advertise Track 1 rather than only offer it.',
+    },
   },
   {
     id: 'CA-DURATION-RULES-UNREVIEWED',
@@ -106,6 +142,42 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     markedOn: '2026-08-16',
   },
   {
+    id: 'SCREENING-BANDS-UNCITED',
+    location: 'src/lib/valuation/encumbrance-factors.ts — UNCITED_SCREENING_RANGES',
+    current:
+      'Four percentage bands with no citation anyone has verified drive the dollar range shown to ' +
+      'a homeowner on /report. They were recorded-but-not-adopted until the screening estimate ' +
+      'shipped; the module name still says UNCITED.',
+    required:
+      'The module\'s own header states percentage-of-fee is the method Allen (IRWA 2001) and ' +
+      'UASFLA §4.6.5 reject, and that the bands are kept "as an order-of-magnitude sanity check ' +
+      'on a figure produced by a proper before-and-after appraisal. That is the only sanctioned ' +
+      'use." Driving a user-facing figure is not that use.',
+    closedBy:
+      'A licensed appraiser confirming the bands are defensible as an order-of-magnitude screen ' +
+      'and that the three denominators are applied correctly — strip land value for utility and ' +
+      'drainage, TOTAL property value for access, development value for conservation. A citation ' +
+      'that can be fetched and read would close it properly; a professional opinion on the ' +
+      'record would close it adequately.',
+    owner: 'product',
+    markedOn: '2026-08-22',
+    riskAccepted: {
+      by: 'product',
+      on: '2026-08-22',
+      rationale:
+        'Cannot be fully determined now; the bands are assumed correct for the time being. The ' +
+        'residual exposure is bounded by structure rather than by wording: the output is a range ' +
+        'with no point estimate field to render, the arithmetic prints beside it, the figure is ' +
+        'rounded hard, and the page places it below the not-determined panel by an asserted rule. ' +
+        'Four easement types are refused outright rather than approximated.',
+      revisitWhen:
+        'Before any paid tier is sold against the figure, before advertising runs in any state, ' +
+        'or on the first occasion an appraiser, a regulator or a user disputes a range. Not a ' +
+        'date — an event, because a date gets forgotten and these will not.',
+    },
+  },
+
+  {
     id: 'LA-FALLBACK-UNVERIFIED',
     location: 'src/lib/document-retrieval/la-county-fallback.ts',
     current:
@@ -121,6 +193,16 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     markedOn: '2026-08-16',
   },
 ];
+
+/** Gaps someone with authority chose to operate with. Still open. */
+export function acceptedGaps(): readonly ComplianceGap[] {
+  return COMPLIANCE_GAPS.filter((g) => g.riskAccepted !== undefined);
+}
+
+/** Gaps nobody has examined or accepted. The ones that are simply outstanding. */
+export function unexaminedGaps(): readonly ComplianceGap[] {
+  return COMPLIANCE_GAPS.filter((g) => g.riskAccepted === undefined);
+}
 
 /** Gaps at a given location, for a test or a pre-launch check to assert against. */
 export function gapsAt(locationSubstring: string): readonly ComplianceGap[] {

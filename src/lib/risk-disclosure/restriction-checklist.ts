@@ -11,6 +11,35 @@
  * can then verify.
  */
 
+/**
+ * POSITION RECORDED 2026-08-22 (product owner, NOT an engineer).
+ *
+ * The two permissive cells in this table — `utility.landscaping` and
+ * `access.landscaping` — were confirmed as worded, with the governing
+ * principle stated as: landscaping must not affect the accessway of the
+ * easement area. That is consistent with both cells as written, since each
+ * already conditions permission on keeping the way clear, and it is now
+ * surfaced explicitly as LANDSCAPING_ACCESS_CONDITION rather than left implied
+ * in two separate rationales.
+ *
+ * STILL NOT AN ENGINEER'S REVIEW. This is a domain question rather than a
+ * legal one, so a product-owner position carries more weight here than it
+ * would on a statute — but the module header still says what it says, and
+ * these two cells are the only places this product tells someone an activity
+ * is probably fine.
+ */
+
+/**
+ * The condition both permissive landscaping answers depend on.
+ *
+ * Stated once and rendered beside the checklist. Two rationales each implying
+ * it separately is how one of them later gets edited to drop it.
+ */
+export const LANDSCAPING_ACCESS_CONDITION =
+  'Landscaping must not affect the accessway of the easement area. Anything that narrows it, ' +
+  'blocks it, or would have to be dug up to reach what is buried there is not "landscaping" for ' +
+  'this purpose — including plants that are small now and will not stay that way.';
+
 export type RestrictedActivity = 'fencing' | 'additions' | 'pool' | 'landscaping';
 
 export type EasementPurpose = 'utility' | 'drainage' | 'access' | 'sewer' | 'unknown';

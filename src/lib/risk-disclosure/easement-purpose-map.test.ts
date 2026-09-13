@@ -130,11 +130,28 @@ describe('unreviewed mappings are marked, not hidden', () => {
     ]);
   });
 
-  it('explains the conservatism in every unreviewed note', () => {
+  it('says what is still open in every unreviewed note', () => {
+    // Broadened from the original phrasing. A note may now record a position
+    // that has been taken without yet being qualified review — water-line is
+    // the case — so the invariant is that the note names what remains open,
+    // not that it uses one particular warning phrase.
     for (const type of unreviewedEasementTypes()) {
       const note = mapEasementTypeToPurpose(type).note;
-      expect(note).toMatch(/NOT REVIEWED|restricted|no .*rules have been researched|contested/i);
+      expect(note).toMatch(
+        /NOT REVIEWED|STILL OPEN|restricted|no .*rules have been researched|contested/i,
+      );
     }
+  });
+
+  it('keeps water-line marked despite a recorded position', () => {
+    // `reviewed` means checked by someone qualified in the domain. A
+    // product-owner position is not that, and flipping the flag would silence
+    // the user-facing marker on the wrong kind of confirmation.
+    const m = mapEasementTypeToPurpose('water-line');
+    expect(m.reviewed).toBe(false);
+    expect(m.note).toMatch(/POSITION RECORDED/);
+    expect(m.note).toMatch(/STILL OPEN/);
+    expect(m.purpose).toBe('utility');
   });
 
   it('keeps reviewed and conservatively-restricted as separate ideas', () => {

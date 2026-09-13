@@ -29,6 +29,12 @@ export interface LaCountyFallbackData {
    * published information before this ships to real users.
    */
   needsLiveVerificationBeforeLaunch: true;
+  /**
+   * Shown to the user beside this data. Required rather than optional: the
+   * whole record is unverified, and a surface that renders it without saying
+   * so is the failure this flag exists to prevent.
+   */
+  stalenessDisclosure: string;
 }
 
 export interface GeneralGuidance {

@@ -90,12 +90,20 @@ export const PURPOSE_BY_EASEMENT_TYPE = {
   },
   'water-line': {
     purpose: 'utility',
+    // Left false deliberately. `reviewed` means "checked by someone qualified
+    // in this domain", and a product-owner position is not that — flipping it
+    // would silence the user-facing marker on the strength of the wrong kind
+    // of confirmation, and the flag stops meaning anything the first time it
+    // is set loosely. This is one step from closing, not closed.
     reviewed: false,
     label: 'Water line',
     note:
-      'Treated as a utility easement. NOT REVIEWED: a potable water main may carry setback or ' +
-      'cross-connection rules closer to the sewer row than the utility one. Verify with the ' +
-      'water provider before relying on the landscaping answer.',
+      'Treated as a utility easement. POSITION RECORDED 2026-08-22 (product owner, not an ' +
+      'engineer): a potable water main IS governed as a utility easement rather than a sewer one. ' +
+      'That is consistent with the physical reason the sewer row is stricter — sewer lines leak ' +
+      'nutrients and have joints that roots actively seek, which a pressurised potable main does ' +
+      'not. STILL OPEN: confirmation from a water provider or civil engineer, since local setback ' +
+      'or cross-connection rules can still be stricter than the utility row.',
   },
   pipeline: {
     purpose: 'unknown',

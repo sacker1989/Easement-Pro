@@ -6,6 +6,7 @@ import {
 } from '@/lib/risk-disclosure';
 import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclosure';
 import { mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
+import { LANDSCAPING_ACCESS_CONDITION } from '@/lib/risk-disclosure/restriction-checklist';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
   screeningEstimate,
@@ -483,6 +484,13 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               ))}
             </ul>
           </div>
+          {report.restrictionChecklist.some(
+            (i) => i.activity === 'landscaping' && !i.restricted,
+          ) && (
+            <p role="note">
+              <strong>{LANDSCAPING_ACCESS_CONDITION}</strong>
+            </p>
+          )}
           <p className="muted">
             These are general rules for this kind of easement, not a reading of your easement
             document. The document itself controls, and it can be stricter or looser than this.

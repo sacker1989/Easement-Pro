@@ -45,6 +45,22 @@ export const LA_COUNTY_FALLBACK_DATA: LaCountyFallbackData = {
       'search rooms (Room 2207 or Room LL001, depending on the recording date).',
   },
   needsLiveVerificationBeforeLaunch: true,
+  // Added 2026-08-22 at product direction. Note what it does and does not
+  // claim: the direction given was that the data "is only as accurate as the
+  // LA Registrar-Recorder office's data upkeep". That attributes the staleness
+  // to the county, and it is OURS — these figures were hardcoded in Phase 1
+  // from a strategy document and have never been checked against the live
+  // source. Saying so plainly is the honest version, and it also tells the
+  // reader the one thing they can act on: call before you drive there.
+  //
+  // The disclosure does NOT clear the flag. A warning that data may be wrong
+  // is not a verification that it is right.
+  stalenessDisclosure:
+    'These office details, hours and fees were recorded when this tool was built and have NOT ' +
+    'been re-checked against the Registrar-Recorder since. Counties change hours, relocate ' +
+    'counters and revise fee schedules without notice, and this tool has no live connection to ' +
+    'theirs. Call the office or check their website before you travel, and treat any fee here as ' +
+    'an estimate rather than a quote.',
 };
 
 export function getLaCountyFallback(): LaCountyFallbackData {

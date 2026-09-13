@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMPLIANCE_GAPS, gapsAt, hasOpenComplianceGaps } from './compliance-gaps';
+import { COMPLIANCE_GAPS, gapsAt, hasOpenComplianceGaps , acceptedGaps, unexaminedGaps } from './compliance-gaps';
 import { getStateCompliance } from '@/config/state-tiers';
 import { evaluateAdvocacyWizardAccess } from './advocacy-wizard-access';
 
@@ -50,5 +50,48 @@ describe('the marked gaps describe reality, not a worry', () => {
 
   it('reports gaps as open', () => {
     expect(hasOpenComplianceGaps()).toBe(true);
+  });
+});
+
+describe('accepted is a distinct state from closed', () => {
+  it('records the screening-bands acceptance with an owner, a date and a trigger', () => {
+    // Accepting a risk is an act someone performed on a date. Without those,
+    // an accepted gap is indistinguishable from one nobody looked at.
+    const gap = COMPLIANCE_GAPS.find((g) => g.id === 'SCREENING-BANDS-UNCITED');
+    expect(gap).toBeDefined();
+    expect(gap!.riskAccepted).toBeDefined();
+    expect(gap!.riskAccepted!.by).toBe('product');
+    expect(gap!.riskAccepted!.on).toBe('2026-08-22');
+    expect(gap!.riskAccepted!.rationale.length).toBeGreaterThan(80);
+  });
+
+  it('revisits on an event rather than a date', () => {
+    // A date gets forgotten. "Before any paid tier is sold against the figure"
+    // does not.
+    const gap = COMPLIANCE_GAPS.find((g) => g.id === 'SCREENING-BANDS-UNCITED')!;
+    expect(gap.riskAccepted!.revisitWhen).toMatch(/Not a\s+date — an event/);
+  });
+
+  it('still counts an accepted gap as open', () => {
+    // The product behaves identically whether a gap was examined or not. What
+    // differs is whether anyone looked, which is what the audit trail needs.
+    expect(hasOpenComplianceGaps()).toBe(true);
+    expect(acceptedGaps().map((g) => g.id).sort()).toEqual([
+      'LASTREVIEWEDDATE-NOT-ENFORCED',
+      'SCREENING-BANDS-UNCITED',
+    ]);
+    expect(unexaminedGaps().length).toBe(COMPLIANCE_GAPS.length - 2);
+  });
+
+  it('leaves the genuinely unexamined gaps unexamined', () => {
+    // CA-TRACK1-UNREVIEWED is now the load-bearing one: item 16 accepted
+    // operating without the review, which is this gap rather than the
+    // date-enforcement one it was recorded against.
+    const ids = unexaminedGaps().map((g) => g.id).sort();
+    expect(ids).toEqual([
+      'CA-DURATION-RULES-UNREVIEWED',
+      'CA-TRACK1-UNREVIEWED',
+      'LA-FALLBACK-UNVERIFIED',
+    ]);
   });
 });
