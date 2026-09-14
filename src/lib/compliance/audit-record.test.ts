@@ -30,6 +30,11 @@ describe('buildSendAuditRecord', () => {
       disclaimerVersion: CURRENT_DISCLAIMER.version,
       attorneyReviewDecision: { requiredFlow: 'licensed-pathway', choice: 'declined', status: 'not-required' },
       generatedAt: '2026-01-15T12:00:00.000Z',
+      // Null when no rule set was passed. The analysis half is optional
+      // because not every artefact involves substantive analysis — a records
+      // request does not — and a required-but-meaningless field would be
+      // filled with something untrue.
+      analysis: null,
     });
   });
 
