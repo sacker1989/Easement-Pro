@@ -1,4 +1,4 @@
-import { classifyByRules, type TieredResult } from './confidence-tiering';
+import { classifyByRules, type RuleClaimType, type TieredResult } from './confidence-tiering';
 // State-agnostic on purpose: this is the multi-state entry point, so its
 // result type must not be narrowed to one state's doctrine.
 import type { DurationDetermination } from './duration-basis';
@@ -31,6 +31,15 @@ export interface EasementAnalysisResult {
   /** Why the rules ran, or why they did not. Carried so the UI and audit can branch. */
   readonly ruleSet: RuleSetResolution;
   readonly duration: TieredResult<DurationDetermination>;
+  /**
+   * Which rule produced the finding, and WHAT IT CLAIMED.
+   *
+   * Returned rather than looked up by id afterwards, because a caller
+   * resolving the claim type from a registry could drift from the rule that
+   * actually ran — and the audit trail needs the two to be the same fact. Null
+   * where no rule ran at all.
+   */
+  readonly firedRule: { readonly id: string; readonly claimType: RuleClaimType } | null;
 }
 
 /** The rule id the UI and the audit trail branch on. Distinct on purpose. */
@@ -110,10 +119,21 @@ export function analyzeEasementAt(
       // answer depends on doctrine. That is the unreviewed case, and it must
       // say so rather than reporting the state's generic fallback copy.
       if (result.ruleId !== 'fallback-no-rule-matched') {
-        return { state, ruleSet, duration: result };
+        const fired = observationOnly.find((r) => r.id === result.ruleId);
+        return {
+          state,
+          ruleSet,
+          duration: result,
+          firedRule: fired === undefined ? null : { id: fired.id, claimType: fired.claimType },
+        };
       }
     }
-    return { state, ruleSet, duration: unavailableResult(state, ruleSet.reason) };
+    return {
+      state,
+      ruleSet,
+      duration: unavailableResult(state, ruleSet.reason),
+      firedRule: null,
+    };
   }
 
   const duration = classifyByRules(
@@ -121,7 +141,13 @@ export function analyzeEasementAt(
     ruleSet.ruleSet.durationRules,
     ruleSet.ruleSet.durationFallback,
   );
-  return { state, ruleSet, duration };
+  const fired = ruleSet.ruleSet.durationRules.find((r) => r.id === duration.ruleId);
+  return {
+    state,
+    ruleSet,
+    duration,
+    firedRule: fired === undefined ? null : { id: fired.id, claimType: fired.claimType },
+  };
 }
 
 export { resolveStateRuleSet };

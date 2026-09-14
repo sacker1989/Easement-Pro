@@ -5,3 +5,8 @@ dist/
 .env
 .env.local
 *.tsbuildinfo
+
+# Audit records. Real ones name a homeowner's state, the compliance basis a
+# letter went out under, and when — they belong in durable storage chosen for
+# the deployment, never in version control.
+.audit/

@@ -1,4 +1,10 @@
 import { buildAdvocacyWizardState } from '@/lib/advocacy-wizard';
+import { getStateCompliance } from '@/config/state-tiers';
+import { analyzeEasement } from '@/lib/analysis-layer';
+import {
+  AUDIT_BLOCKED_MESSAGE,
+  recordGeneration,
+} from '@/lib/compliance/record-generation';
 import { resolveAttorneyReviewDecision } from '@/lib/compliance/attorney-review';
 import {
   buildMaintenanceRequestLetter,
@@ -41,6 +47,8 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
   const submitted = searchParams.submitted === '1';
 
   let unavailableMessage: string | null = null;
+  let auditBlocked: string | null = null;
+  let auditWarning: string | null = null;
   let letterText: string | null = null;
   let fallbackLetterText: string | null = null;
   let error: string | null = null;
@@ -56,24 +64,74 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
       if (!wizardState.access.available) {
         unavailableMessage = wizardState.access.message;
       } else if (wizardState.fields?.duration.status === 'blocked') {
-        const fallbackLetter = buildRequestForClarificationLetter({
-          recipientName,
-          senderName,
-          propertyAddress,
-          clarificationPoints: [wizardState.fields.duration.clarificationOffer],
+        // The clarification letter is the free fallback. It is still audited —
+        // it carries the same disclaimer version and tier — and it is still
+        // withheld if the record cannot be written, because the reason to
+        // record is not that money changed hands.
+        const audit = await recordGeneration({
+          letterType: 'request-for-clarification',
+          stateCompliance: getStateCompliance(state),
+          ruleSet: analyzeEasement({
+            state,
+            duration: {
+              easementType,
+              hasPerpetualLanguage,
+              hasTermOrConditionSubsequent,
+              documentLegible: true,
+            },
+          }).ruleSet,
         });
-        fallbackLetterText = renderLetterAsPlainText(fallbackLetter);
+        if (!audit.ok) {
+          auditBlocked = AUDIT_BLOCKED_MESSAGE;
+        } else {
+          auditWarning = audit.warning;
+          const fallbackLetter = buildRequestForClarificationLetter({
+            recipientName,
+            senderName,
+            propertyAddress,
+            clarificationPoints: [wizardState.fields.duration.clarificationOffer],
+          });
+          fallbackLetterText = renderLetterAsPlainText(fallbackLetter);
+        }
       } else if (wizardState.fields) {
-        const letter = buildMaintenanceRequestLetter({
+        // Track 1, the paid letter. Recorded BEFORE it is rendered: an
+        // artefact that exists without a trail is the case this whole control
+        // is for, and producing it first and logging after would leave exactly
+        // that gap on any failure.
+        const analysis = analyzeEasement({
           state,
-          recipientName,
-          senderName,
-          propertyAddress,
-          durationGate: wizardState.fields.duration,
-          attorneyReviewDecision: resolveAttorneyReviewDecision(wizardState.access.requiredFlow, 'declined'),
-          maintenanceDescription,
+          duration: {
+            easementType,
+            hasPerpetualLanguage,
+            hasTermOrConditionSubsequent,
+            documentLegible: true,
+          },
         });
-        letterText = renderLetterAsPlainText(letter);
+        const audit = await recordGeneration({
+          letterType: 'maintenance-request',
+          stateCompliance: getStateCompliance(state),
+          attorneyReviewDecision: resolveAttorneyReviewDecision(
+            wizardState.access.requiredFlow,
+            'declined',
+          ),
+          ruleSet: analysis.ruleSet,
+          firedRule: analysis.firedRule ?? undefined,
+        });
+        if (!audit.ok) {
+          auditBlocked = AUDIT_BLOCKED_MESSAGE;
+        } else {
+          auditWarning = audit.warning;
+          const letter = buildMaintenanceRequestLetter({
+            state,
+            recipientName,
+            senderName,
+            propertyAddress,
+            durationGate: wizardState.fields.duration,
+            attorneyReviewDecision: resolveAttorneyReviewDecision(wizardState.access.requiredFlow, 'declined'),
+            maintenanceDescription,
+          });
+          letterText = renderLetterAsPlainText(letter);
+        }
       }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unknown error';
@@ -139,6 +197,12 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
         </fieldset>
         <button type="submit">Run wizard</button>
       </form>
+
+      {auditBlocked && <p role="alert">{auditBlocked}</p>}
+
+      {/* Operator-facing, not homeowner-facing. It says the records are going
+          somewhere that works locally and will not survive a serverless host. */}
+      {auditWarning && <p role="status"><small>{auditWarning}</small></p>}
 
       {error && <p role="alert">{error}</p>}
 
