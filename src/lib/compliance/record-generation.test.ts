@@ -172,3 +172,48 @@ describe('the send flows record before they render', () => {
     expect(src).toContain("letterType: 'request-for-clarification'");
   });
 });
+
+describe('checkout records before a payable session exists', () => {
+  const src = readFileSync(new URL('../../app/checkout/page.tsx', import.meta.url), 'utf8');
+
+  it('writes the audit record before buildCheckoutSession', () => {
+    // The money ordering. buildCheckoutSession returns a payable Stripe URL;
+    // past that point the user can pay and land on successUrl, and this
+    // process may never execute another line for them. An artefact someone
+    // PAID for, with no record of the basis it was prepared under, is the
+    // worst version of the gap this control closes.
+    const auditAt = src.indexOf('await recordGeneration');
+    const sessionAt = src.indexOf('await buildCheckoutSession');
+    expect(auditAt).toBeGreaterThan(-1);
+    expect(sessionAt).toBeGreaterThan(-1);
+    expect(auditAt).toBeLessThan(sessionAt);
+  });
+
+  it('creates no session at all when the record cannot be written', () => {
+    // Not "create the session and warn" — the payment link must not exist.
+    const blockedAt = src.indexOf('blockedMessage = AUDIT_BLOCKED_MESSAGE');
+    const sessionAt = src.indexOf('await buildCheckoutSession');
+    expect(blockedAt).toBeGreaterThan(-1);
+    expect(blockedAt).toBeLessThan(sessionAt);
+    expect(src).toMatch(/if \(!audit\.ok\) \{/);
+  });
+
+  it('records the attorney-review CHOICE the buyer actually made', () => {
+    // 'added' versus 'declined' changes what was sold and what was reviewed.
+    // Recording the required flow without the choice would lose that.
+    expect(src).toMatch(/resolveAttorneyReviewDecision\(\s*wizardState\.access\.requiredFlow,\s*attorneyReviewChoice,/);
+  });
+});
+
+describe('what a record means', () => {
+  it('documents that it records intent-to-produce, not delivery', () => {
+    // Observed live: Stripe was unconfigured, so buildCheckoutSession threw
+    // AFTER the record was written, leaving a record for a letter nobody got.
+    // That over-recording is the safe direction and is stated rather than left
+    // ambiguous — a spurious row is answerable, a missing one is not.
+    const src = readFileSync(new URL('./record-generation.ts', import.meta.url), 'utf8');
+    expect(src).toMatch(/ABOUT TO BE PRODUCED/);
+    expect(src).toMatch(/over-recording is deliberate and is the safe direction/);
+    expect(src).toMatch(/SECOND record appended later, not a reordering/);
+  });
+});

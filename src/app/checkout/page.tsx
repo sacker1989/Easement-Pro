@@ -2,6 +2,10 @@ import { buildAdvocacyWizardState } from '@/lib/advocacy-wizard';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance';
 import { buildCheckoutSession, StripePaymentProvider, totalLineItemsCents } from '@/lib/checkout';
 import { normalizeAddress } from '@/lib/parcel-resolution';
+import { getStateCompliance } from '@/config/state-tiers';
+import { analyzeEasement } from '@/lib/analysis-layer';
+import { resolveAttorneyReviewDecision } from '@/lib/compliance/attorney-review';
+import { AUDIT_BLOCKED_MESSAGE, recordGeneration } from '@/lib/compliance/record-generation';
 
 interface CheckoutPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -39,6 +43,7 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   let error: string | null = null;
   let checkoutUrl: string | null = null;
   let totalDollars: number | null = null;
+  let auditWarning: string | null = null;
 
   if (submitted) {
     try {
@@ -55,18 +60,52 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
           'Easement duration is flagged as ambiguous, so this letter cannot go to checkout. ' +
           'Use the Request for Clarification (Track 2) fallback for this field instead.';
       } else {
-        const result = await buildCheckoutSession(
-          {
-            requiredFlow: wizardState.access.requiredFlow,
-            attorneyReviewChoice,
-            disclaimerAccepted,
-            successUrl: 'http://localhost:3000/checkout?success=1',
-            cancelUrl: 'http://localhost:3000/checkout?canceled=1',
+        // RECORDED BEFORE THE SESSION EXISTS, and this is the one flow where
+        // the ordering is about money rather than only about evidence.
+        // buildCheckoutSession returns a payable Stripe URL; past that point
+        // the user can pay and land on successUrl, and we may never execute
+        // another line for them. An artefact they paid for with no record of
+        // the basis it was prepared under is the worst version of the gap this
+        // control exists to close, so the session is not created at all if the
+        // record cannot be written.
+        const analysis = analyzeEasement({
+          state,
+          duration: {
+            easementType,
+            hasPerpetualLanguage,
+            hasTermOrConditionSubsequent,
+            documentLegible: true,
           },
-          new StripePaymentProvider(),
-        );
-        checkoutUrl = result.session.url;
-        totalDollars = totalLineItemsCents(result.lineItems) / 100;
+        });
+        const audit = await recordGeneration({
+          letterType: 'maintenance-request',
+          stateCompliance: getStateCompliance(state),
+          attorneyReviewDecision: resolveAttorneyReviewDecision(
+            wizardState.access.requiredFlow,
+            attorneyReviewChoice,
+          ),
+          ruleSet: analysis.ruleSet,
+          firedRule: analysis.firedRule ?? undefined,
+        });
+        if (!audit.ok) {
+          // No session is created. checkoutUrl stays null, so the page renders
+          // the blocked message and no payment link.
+          blockedMessage = AUDIT_BLOCKED_MESSAGE;
+        } else {
+          auditWarning = audit.warning;
+          const result = await buildCheckoutSession(
+            {
+              requiredFlow: wizardState.access.requiredFlow,
+              attorneyReviewChoice,
+              disclaimerAccepted,
+              successUrl: 'http://localhost:3000/checkout?success=1',
+              cancelUrl: 'http://localhost:3000/checkout?canceled=1',
+            },
+            new StripePaymentProvider(),
+          );
+          checkoutUrl = result.session.url;
+          totalDollars = totalLineItemsCents(result.lineItems) / 100;
+        }
       }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unknown error';
@@ -147,6 +186,14 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
         </fieldset>
         <button type="submit">Continue to payment</button>
       </form>
+
+      {/* Operator-facing: says records are landing somewhere that works
+          locally and will not survive a serverless host. */}
+      {auditWarning && (
+        <p role="status">
+          <small>{auditWarning}</small>
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
 

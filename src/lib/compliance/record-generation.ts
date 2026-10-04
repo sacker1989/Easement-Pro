@@ -18,6 +18,19 @@
  * show them a stack trace. The caller gets a result it can render, and the
  * decision about what to do with an unrecordable artefact stays in the flow
  * that knows what it was about to produce.
+ *
+ * WHAT A RECORD MEANS, PRECISELY: "an artefact was ABOUT TO BE PRODUCED under
+ * this basis", not "an artefact was delivered". Because the record is written
+ * first, a later failure — Stripe unconfigured, a renderer throwing — leaves a
+ * record for a letter that never reached anyone.
+ *
+ * That over-recording is deliberate and is the safe direction. The question
+ * this trail must answer is "on what basis did you prepare something for this
+ * person", and a spurious row is answerable while a missing one is not. Writing
+ * afterwards would invert it: every failure between generation and logging
+ * would produce a delivered artefact with no record, which is the exact gap the
+ * control exists to close. If delivery itself ever needs auditing, that is a
+ * SECOND record appended later, not a reordering of this one.
  */
 
 import { buildSendAuditRecord, type SendAuditRecord } from './audit-record';
