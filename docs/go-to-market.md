@@ -2,7 +2,13 @@
 
 **Status: draft for review. Not approved for spend.** Section 8 lists the gates that must clear
 before the first dollar goes out. One of them is counsel review, which the product itself is still
-waiting on — `CURRENT_DISCLAIMER` is `placeholder-v1` with `needsComplianceSignOff: true`.
+waiting on — `CURRENT_DISCLAIMER` is `placeholder-v2` with `needsComplianceSignOff: true`.
+
+**Revised 2026-10-04 for FREE MODE.** The product now takes no money and offers no paid tier
+pending counsel review (`src/lib/compliance/commerce-mode.ts`). That is not a temporary note on an
+otherwise unchanged plan — it changes the funnel, the channel economics and what section 9 was
+waiting to learn. Sections 6, 8 and 9 are rewritten; the segment analysis in section 2 survives
+intact and is, if anything, better supported.
 
 ---
 
@@ -25,12 +31,20 @@ Three regimes bear on the copy, not one:
 |---|---|---|
 | FTC Act §5 | Deceptive or unsubstantiated advertising claims | Substantiation must exist *before* the claim runs |
 | State appraisal licensing | Holding out as providing valuation services | Varies by state; California is not permissive |
-| UPL statutes — Cal. Bus. & Prof. Code §6400 et seq. | Advertising legal document assistance or advice | Criminal in many states, already tracked in `attorney-review.ts` |
+| LDA registration — Cal. Bus. & Prof. Code §6400 et seq. | Providing or **offering** self-help service **for compensation** | Registration and bonding. **Free mode removes the compensation element, so this no longer applies** |
+| UPL — Cal. Bus. & Prof. Code §6125 / §6126 | Practising law without a licence, **payment irrelevant** | Misdemeanour. Free mode does **not** touch this, and it is now the live question |
 
-The marketing therefore has to sell something true. The good news is that there is something true
-and it is worth money: **the product answers "what can I do with my land, and what does the record
-actually say" faster and cheaper than any alternative, and it packages evidence so the professional
-you eventually hire starts from something.**
+The marketing therefore has to say something true. There is something true and it is worth having:
+**the product answers "what can I do with my land, and what does the record actually say" faster
+than any alternative, and it packages evidence so the professional you eventually hire starts from
+something.**
+
+**The §6400 / §6125 split is the most important line in this table and it is new.** Free mode
+removes the compensation element from the LDA definition, which takes registration and bonding off
+the table. It does nothing to §6125, which prohibits practising law without a licence whether or not
+anyone pays. So the copy constraint has not relaxed — it has moved. The question is no longer "may we
+sell this" but "is what we produce the practice of law at all", and every claim in section 5 is now
+judged against that rather than against a licensing question that free mode already answered.
 
 ---
 
@@ -84,8 +98,8 @@ these people do not know they have a question. Content and partnership only.
 
 > **Before you build, find out what is actually on your land.**
 > We read your county's own parcel records and tell you what the easement restricts, how much of
-> your lot it covers, and what the public record does and does not establish. In minutes, for less
-> than an hour of anyone's billable time.
+> your lot it covers, and what the public record does and does not establish. In minutes, free while
+> the service is under legal review.
 
 What that promises is all deliverable today. Note what it does not promise.
 
@@ -95,11 +109,24 @@ rest." For a homeowner who has already been told three different things by three
 that is a differentiator rather than a weakness — and it is the reason the report ends with a
 referral package instead of an invoice.
 
+**Free is now part of the positioning rather than a caveat buried in it.** "Free while under legal
+review" is an unusual thing to say out loud and it is worth saying: it tells a homeowner the service
+is not trying to extract anything from them at the moment they are most anxious, which is precisely
+when adjacent categories do extract. State it plainly and do not dress it as a limited-time offer —
+that framing implies a price is coming, which is the offer free mode cannot make.
+
 ---
 
 ## 4. Channels
 
-### 4.1 Search — primary
+### 4.1 Search — no longer primary
+
+**Reordered for free mode.** Paid search was ranked first on the assumption that a conversion paid
+for the click. With no revenue there is no payback period, only burn, and every click is a cost
+against a learning budget rather than an acquisition cost. That does not make it worthless — buying
+traffic to find out whether the report lands is a legitimate use of money — but it has to be
+budgeted and read as research, with a number set in advance and a question it is meant to answer.
+The compounding channels below now carry the launch.
 
 High-intent, low-ambiguity queries. These people are mid-decision:
 
@@ -117,7 +144,7 @@ Negative keywords are as important as keywords, and this is a compliance control
 budget one: `easement value`, `easement compensation`, `easement worth`, `eminent domain lawyer`,
 `condemnation attorney`, `easement appraisal`. Those queries want the thing we may not sell.
 
-### 4.2 Referral partners — highest leverage
+### 4.2 Referral partners — now the primary channel
 
 The people who hit the easement wall *on the homeowner's behalf*, repeatedly, and currently have no
 good next step to offer:
@@ -130,6 +157,13 @@ good next step to offer:
 They meet this problem weekly. A tool that resolves it in minutes makes them look competent and
 unblocks their own pipeline. This is a warm channel with near-zero CAC and it needs a partner page
 and a referral link, not an ad budget.
+
+**Free makes this channel dramatically easier to open, which is why it moves to first.** A
+contractor recommending a paid tool is making a referral their client may resent and is implicitly
+vouching for the price. Recommending a free one costs them nothing and carries no risk to the
+relationship — "there's a free thing that reads your county records, try it before we redesign" is a
+sentence they will actually say. The ask also gets simpler: no revenue share to negotiate, no
+affiliate terms, no invoice.
 
 ### 4.3 The professional side — two-sided
 
@@ -170,6 +204,8 @@ and it targets segments C and D which paid search cannot reach economically.
 | "Know your rights" | Legal advice framing |
 | "Fight your utility company" | Adversarial positioning we cannot support |
 | Any specific dollar figure in an ad | Unsubstantiated, and parcel-specific |
+| "Pro", "Premium", "upgrade", "coming soon", pricing pages | **New under free mode.** "Offers to provide ... for compensation" is in the §6400(c) definition — advertising a paid tier is the offer free mode exists to avoid |
+| A waitlist framed as early access to a paid product | Same reason. "Tell me when this covers my county" is a coverage signal; "join the list for launch pricing" is an offer |
 
 **The scanner is the backstop, and it is now pointed at marketing too.**
 `src/lib/marketing/ad-copy.ts` holds the approved and prohibited sets, and its suite runs
@@ -188,21 +224,39 @@ Either is defensible; pretending the table is fully enforced is not.
 
 ---
 
-## 6. Funnel
+## 6. Funnel — free, with no step five
 
 1. **Ad / partner link** → geo-matched, intent-matched
 2. **Landing page per easement type** — the same twelve, so the ad's promise matches the page
 3. **Address + easement type** — two fields, no account
-4. **Free report** — restrictions, county parcel record, and the open-questions panel
-5. **Paid step** — the referral package as a document, the records-request drafts, and the letters
+4. **The report, free** — restrictions, county parcel record, the screening range, the
+   open-questions panel, the remedy plan, the referral package and the letters
 
-The free tier has to be genuinely useful, because the honest report is also the demonstration. A
-homeowner who reads "10 open questions" and understands why is a qualified buyer for the paid step.
-One who feels teased is not.
+**There is no step five, and there must not be an advertised one.** The previous version of this
+funnel ended in a paid step. That step is gone, and the reason is not squeamishness: "offers to
+provide ... **for compensation**" is in the §6400(c) definition of a legal document assistant. A free
+product that advertises a coming paid tier, takes pre-orders, collects a card for later or runs an
+"upgrade" call to action is still *offering* to provide for compensation, which is the thing free
+mode exists to avoid. `mayOfferPaidTier()` returns the same flag as `COMMERCE_ENABLED` for exactly
+this reason.
 
-**Pricing note.** The paid artefact is preparation and correspondence, not valuation. Price it
-against the alternative — an hour of an attorney's time to explain the same thing — not against an
-appraisal.
+So: no "Pro" badge, no "coming soon", no waitlist framed as early access to a paid product, no
+pricing page. A plain "this is free while under legal review" is fine and is what the product says.
+
+**What this costs, honestly.** The old funnel used the free report to qualify buyers for a paid
+artefact. There is no conversion event now, which means no revenue signal and a weaker measure of
+intent — "they read the open-questions panel" is softer evidence than "they paid."
+
+**What it buys, which is more than it costs right now.** The strongest objection to the wedge in
+section 2A was always price: "can I build here" is worth tens of dollars, not hundreds, and a paid
+product in that range has to convert at a rate that leaves no room for a confusing first run. Free
+removes that constraint entirely while the report is still being tuned. It also removes refunds,
+chargebacks, consumer-protection exposure and the Stripe surface area, none of which were doing any
+work for a product this early.
+
+**An email capture is permissible and worth having**, provided it is framed as "tell me when this
+covers my county" rather than as a list for a future paid launch. The first is a coverage signal;
+the second is an offer.
 
 ---
 
@@ -242,36 +296,82 @@ correct answer looks like.
 
 ## 8. Gates before any spend
 
-Ordered. Do not skip 1 or 2.
+Reordered for free mode. Two of the original gates were about selling and have dissolved; one got
+harder to ignore.
 
-1. **Counsel review of the disclaimer and the ad copy.** `needsComplianceSignOff` is still `true`.
-   Advertising a product whose own disclaimer is a placeholder is the wrong order of operations, and
-   the copy needs the same review the product does — in each state advertised into.
-2. **Confirm the licensing posture** for advertising into CA on valuation-adjacent and
-   legal-document-adjacent services, and re-check the `CA-TRACK1-UNREVIEWED` gap in
-   `compliance-gaps.ts`, which is still open.
-3. **Automate the claim scan over marketing copy.** Point `scanForAppraisalClaims()` at ad text,
-   landing pages and emails in CI. Cheap, and it converts §5 from a rule into a build failure.
-4. **Geo-fence to the three live counties** and instrument what share of traffic falls outside them.
-   That number is the coverage roadmap.
-5. **Landing pages for all twelve types** before running type-specific ads, so no ad promises a page
-   that does not exist.
-6. **Instrument the honest funnel:** report generated → open-questions panel read → paid step. If
+1. **Counsel review of the ad copy**, in each state advertised into. Still first, and the question it
+   answers has changed: not "may we sell this" but whether the copy describes something that is the
+   practice of law under §6125. `COPY_APPROVED_IN_STATES` is a list and it is empty.
+2. **~~Confirm the licensing posture for charging~~** — dissolved. Free mode removes the compensation
+   element from §6400(c), so LDA registration and bonding do not arise. Recorded rather than deleted
+   so the reasoning survives if commerce resumes; `COMMERCE_REENABLE_CONDITIONS` is the list to
+   re-read then.
+3. **Automate the claim scan over marketing copy.** Done — `src/lib/marketing/ad-copy.ts` holds the
+   approved and prohibited sets and the suite scans both. Two rows remain human-review items, per
+   the known gap in section 5.
+4. **Point `AUDIT_LOG_PATH` at durable storage.** Promoted, because free traffic still generates
+   audit records and a free artefact is exactly as answerable-for as a paid one. Production now
+   refuses an unconfigured store rather than warning, so this blocks a deploy rather than degrading
+   one quietly.
+5. **Geo-fence to the three live counties** and instrument what share of traffic falls outside them.
+   That number is the coverage roadmap, and under free mode it is the primary thing traffic buys.
+6. **Landing pages for all twelve types** before running type-specific ads.
+7. **Instrument the free funnel honestly.** There is no purchase event now, so the measures are:
+   report generated → open-questions panel reached → referral package opened → letter generated. If
    people bounce at the panel, the positioning is wrong and more spend will not fix it.
 
 ---
 
-## 9. The strategic question this document cannot answer
+## 9. The strategic question, and what free mode does to it
 
-Segment A is real and reachable, and the product serves it honestly today. But it is a *modest*
-purchase: "can I build here" is worth tens of dollars, not hundreds.
+The previous version of this section ended on a question: segment A is real but modest — "can I
+build here" is worth tens of dollars — while the large willingness to pay sits in segment B, where
+the honest answer is "you need an appraiser, and here is a well-prepared package for them." Whether
+a homeowner facing an acquisition will pay for *preparation* rather than an *answer* was untested,
+and I said twenty conversations would settle it before committing budget.
 
-The large willingness to pay sits in segment B, where the product's honest answer is "you need an
-appraiser, and here is a well-prepared package for them." Whether that is a business depends on
-something not yet tested: **will a homeowner facing an acquisition pay for preparation rather than
-an answer?**
+**Free mode does not answer that question. It changes when you have to.**
 
-That is a customer-development question, not an engineering one, and it is cheap to test — twenty
-conversations with people who have received an acquisition notice, before any of the above is built
-out. I would run that test before committing budget to segment B, and I would launch on segment A
-regardless, because segment A works today.
+The test as framed required building a paid tier to run it, which meant committing to the counsel
+review, the LDA posture and the payment surface before learning anything. That sequencing was always
+backwards and free mode breaks it: demand, comprehension and segment mix can all be measured now,
+with no price in the way and no compliance spend committed.
+
+What can be learned for free, and could not be learned before:
+
+- **Does the honest report land?** Whether a homeowner who meets "10 open questions" understands why
+  that is the finding rather than a failure. This is the single riskiest assumption in the product
+  and it has never been tested on a stranger. If it does not land, no pricing fixes it.
+- **Which segment actually shows up.** Section 2 ranks A over B on reasoning, not evidence. Free
+  traffic tells you the real mix, and it tells you cheaply.
+- **Where the coverage gap bites.** The share of traffic outside LA, Orange and San Diego is the
+  county roadmap, and it costs nothing to collect.
+- **Whether referral partners will actually refer.** Much easier to test at zero price, per §4.2.
+
+What still cannot be learned, and is worth naming so nobody mistakes free usage for validated
+demand: **nobody has paid for this, so nothing here establishes that anyone would.** Free usage is
+weak evidence of willingness to pay — it is routine for a free tool to be used enthusiastically and
+bought by no one. Treat the free period as a test of comprehension and segment, not of price.
+
+**The one thing to decide now rather than later.** Free mode is a good position for the segment A
+wedge and a poor one for segment B. A homeowner facing a condemnation offer with a deadline is not
+price-sensitive and does not need a free tool; they need a professional, quickly. Serving them well
+eventually means the referral network in §4.3, which is a relationship-building effort that can start
+immediately and does not depend on commerce resuming. That is the highest-value thing available
+during the free period, and it is not a marketing activity.
+
+---
+
+## 10. What changed in this revision
+
+| Section | Change |
+|---|---|
+| 1 | Split the UPL row into §6400 (compensation, now moot) and §6125 (payment-irrelevant, now live) |
+| 2 | Unchanged. The segment analysis holds and A is better supported at zero price |
+| 3 | Removed the pricing comparison from the positioning; free is now stated rather than hidden |
+| 4 | Paid search demoted from primary to a budgeted research line; referral partners promoted |
+| 5 | New prohibition class: paid-tier offers, upgrade CTAs, pricing pages, launch-pricing waitlists |
+| 6 | Step five removed. There is no paid step and there must not be an advertised one |
+| 7 | Unchanged. The twelve type cases are independent of pricing |
+| 8 | Gate 2 dissolved; audit storage promoted; funnel instrumentation rewritten without a purchase event |
+| 9 | Rewritten. The paid-preparation question is deferred, not answered, and the free period has its own agenda |
