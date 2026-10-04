@@ -15,6 +15,7 @@ import {
   type ScreeningResult,
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import { EXPECTATIONS, NO_LIST_NO_FEE } from '@/lib/referral-network/what-to-expect';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
 import { legalReviewDisclosure } from '@/lib/compliance/legal-review-disclosure';
 import {
@@ -719,6 +720,35 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </div>
             </>
           )}
+
+          <h2>What to expect from a professional</h2>
+          <p>
+            Most people hire an appraiser once in their life, so here is roughly what you are
+            buying. Use it to judge a quote before you pay for one.
+          </p>
+          {EXPECTATIONS.map((e) => (
+            <div className="panel" key={e.kind}>
+              <h3 style={{ marginTop: 0 }}>{e.heading}</h3>
+              <p>{e.whatTheyDo}</p>
+              <p className="muted" style={{ marginBottom: '0.3rem' }}>
+                <strong>At best</strong>
+              </p>
+              <ul>
+                {e.bestCase.map((b) => (
+                  <li key={b}>{b}</li>
+                ))}
+              </ul>
+              <p className="muted" style={{ marginBottom: '0.3rem' }}>
+                <strong>At worst</strong>
+              </p>
+              <ul>
+                {e.worstCase.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <p className="muted">{NO_LIST_NO_FEE}</p>
 
           <h2>Taking this to a professional</h2>
           <p>
