@@ -13,7 +13,7 @@ appears nowhere. This document proposes boundaries so the work can be specced.
 |---|---|---|
 | **Phase 1** — LA County MVP | done | — |
 | **Phase 2** — nationwide data | county matrix at 12 counties (3 immediate, 8 standard, 1 fallback); vendor harness with a 25-parcel stratified test set | **strand 3 open**: every county except LA gets generic recorder fallback, including tier-A Orange and San Diego |
-| Analysis Layer | `ca-rule-set.ts` only | 1 state |
+| Analysis Layer | registry + review gate; CA and FL entries | **2 states, both unreviewed** — observation rules run, every doctrinal question is refused |
 | State compliance matrix | 1 entry (CA, Tier A) | 1 state |
 | Advocacy Wizard | built, gated | CA-only by construction |
 
@@ -104,3 +104,43 @@ independent of both and is the shortest path to user value, since it needs no ne
 consumes work already built and measured.
 
 **Recommendation: Phase 5 first**, then 3, then 4.
+
+---
+
+## Phase 3 progress — Florida added 2026-10-04
+
+Florida is the second registry entry. It is **unreviewed**, so `analyzeEasement({ state: 'FL' })`
+runs the document-observation rules and refuses every doctrinal question — the same posture
+California is in.
+
+**What adding a second state actually proved.** The interface was written against one state, which
+is not an abstraction, it is a rename. Florida disagrees with California on every field, and the
+schema absorbed all of it without changing:
+
+| field | California | Florida |
+|---|---|---|
+| prescriptive period | CCP §321 — 5 years, tax + enclosure elements in §325 | Fla. Stat. §95.18 — 7 years, tax + return-filing + enclosure elements |
+| implied from prior use | codified, Civ. Code §1104 | **no source found** |
+| easement by necessity | **no source found** | codified, Fla. Stat. §704.01(1), "reasonably necessary" on the statute's face |
+| recording act | §1214 carries "first duly recorded" — race-notice marker in a notice sentence | §695.01(1) has no such clause; reads as notice |
+| marketable title | §880.020 states policy only; period and easement treatment unfetched | §712.02 — 30 years; §712.03(5) **excepts easements**, conditioned on "so long as the same are used" |
+
+Two findings worth carrying forward:
+
+1. **The prior-use / necessity split earned its keep.** The two states are exact mirror images —
+   each has a statute for the doctrine the other lacks. A merged field would have looked complete in
+   both and been half-answered in each, from opposite halves.
+2. **Florida's MRTA reading fails toward caution**, which is the opposite of California's. The CA
+   entry's provisional reading wipes old easements (what the burdened homeowner wants) and is
+   flagged twice for it. Florida's keeps them alive. The FL entry therefore needs *less* scrutiny
+   than CA's on this field, not more.
+
+**What Florida deliberately does not ship:** any doctrinal duration rule. California has three
+presumptions; no primary source has been fetched for a Florida counterpart to any of them. Copying
+them across with `fl-` ids would have cost nothing while `review` is null and become live fiction
+the day counsel signed off on three rules they had never seen.
+
+**Not done.** `src/config/state-tiers.ts` still has one entry. A Florida *analysis* entry is not a
+Florida *Track 1* authorisation — UPL is a separate question from easement doctrine, and free mode
+closes Cal. Bus. & Prof. Code §6400's compensation element without touching §6125 or any other
+state's equivalent. Phase 4 is where that is decided, and it still needs counsel.

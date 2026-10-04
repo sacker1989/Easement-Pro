@@ -1,4 +1,5 @@
 import type { ConfidenceRule } from './confidence-tiering';
+import { documentObservationRules } from './document-observation-rules';
 import type { DurationDetermination, ExpressDurationBasis } from './duration-basis';
 import type { EasementDurationFacts } from './duration-facts';
 
@@ -58,83 +59,11 @@ export type CaDurationDetermination = DurationDetermination<CaDurationBasis>;
 export const CA_DURATION_RULE_SET: ReadonlyArray<
   ConfidenceRule<EasementDurationFacts, CaDurationDetermination>
 > = [
-  {
-    id: 'ca-illegible-document',
-    claimType: 'observation',
-    evaluate(facts) {
-      if (!facts.documentLegible) {
-        return {
-          tier: 'flagged-ambiguous',
-          flagReason: 'Document image quality is too poor to confirm duration language.',
-        };
-      }
-      return null;
-    },
-  },
-  {
-    id: 'ca-conflicting-duration-clauses',
-    claimType: 'observation',
-    evaluate(facts) {
-      if (facts.hasPerpetualLanguage && facts.hasTermOrConditionSubsequent) {
-        return {
-          tier: 'flagged-ambiguous',
-          flagReason:
-            'Document contains both perpetual language and a term/condition-subsequent ' +
-            'clause; these conflict and require manual review.',
-        };
-      }
-      return null;
-    },
-  },
-  {
-    id: 'ca-unknown-easement-type',
-    claimType: 'observation',
-    evaluate(facts) {
-      if (facts.easementType === 'unknown') {
-        return {
-          tier: 'flagged-ambiguous',
-          flagReason:
-            'Easement type (appurtenant, in gross, or prescriptive) could not be ' +
-            'determined from the document.',
-        };
-      }
-      return null;
-    },
-  },
-  {
-    id: 'ca-express-term-limited',
-    claimType: 'observation',
-    evaluate(facts) {
-      if (facts.hasTermOrConditionSubsequent) {
-        return {
-          tier: 'clear',
-          value: {
-            basis: 'term-limited',
-            summary:
-              'The document expressly limits the easement to a specific term or ' +
-              'condition subsequent.',
-          },
-        };
-      }
-      return null;
-    },
-  },
-  {
-    id: 'ca-express-perpetual',
-    claimType: 'observation',
-    evaluate(facts) {
-      if (facts.hasPerpetualLanguage) {
-        return {
-          tier: 'clear',
-          value: {
-            basis: 'perpetual-express',
-            summary: 'The document expressly states the easement is perpetual.',
-          },
-        };
-      }
-      return null;
-    },
-  },
+  // The five document-reading rules, formerly written out here with `ca-`
+  // prefixes. They produce the SAME IDS they always did — see
+  // document-observation-rules.ts for why the prefix survives the move, and
+  // why the order below them is not a style choice.
+  ...documentObservationRules<CaDurationBasis>('ca'),
   {
     id: 'ca-appurtenant-default-presumption',
     claimType: 'state-doctrine',

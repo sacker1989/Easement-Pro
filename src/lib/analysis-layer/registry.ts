@@ -16,6 +16,7 @@
  */
 
 import { CA_RULE_SET } from './rule-sets/ca';
+import { FL_RULE_SET } from './rule-sets/fl';
 import {
   RULE_SET_SCHEMA_VERSION,
   type RuleSetResolution,
@@ -23,7 +24,14 @@ import {
 } from './rule-set';
 import { REVIEW_MAX_AGE_MONTHS, type ReviewRecord } from './legal-fact';
 
-const REGISTRY: readonly StateEasementRuleSet[] = [CA_RULE_SET];
+/*
+ * BOTH ENTRIES RESOLVE TO `unavailable` TODAY, and that is the registry
+ * working rather than the registry being empty. An entry buys the
+ * document-observation rules and a fetched citation set for the reviewer; it
+ * does not buy a doctrinal answer. Adding a state is therefore a cheap,
+ * honest act, which is the property that makes it safe to keep doing.
+ */
+const REGISTRY: readonly StateEasementRuleSet[] = [CA_RULE_SET, FL_RULE_SET];
 
 /** States with an ENTRY. Not states that have cleared the gate — see the header. */
 export function registeredStates(): readonly string[] {
