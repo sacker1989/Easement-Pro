@@ -6,6 +6,7 @@ import { getStateCompliance } from '@/config/state-tiers';
 import { analyzeEasement } from '@/lib/analysis-layer';
 import { resolveAttorneyReviewDecision } from '@/lib/compliance/attorney-review';
 import { AUDIT_BLOCKED_MESSAGE, recordGeneration } from '@/lib/compliance/record-generation';
+import { COMMERCE_DISABLED_MESSAGE, COMMERCE_ENABLED } from '@/lib/compliance/commerce-mode';
 
 interface CheckoutPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -45,7 +46,12 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
   let totalDollars: number | null = null;
   let auditWarning: string | null = null;
 
-  if (submitted) {
+  // Checked before anything else, including address validation. There is no
+  // point validating input for a transaction that cannot occur, and asking for
+  // details first would imply one is coming.
+  if (!COMMERCE_ENABLED) {
+    blockedMessage = COMMERCE_DISABLED_MESSAGE;
+  } else if (submitted) {
     try {
       normalizeAddress({ street, city, state, zip });
       const wizardState = buildAdvocacyWizardState({
