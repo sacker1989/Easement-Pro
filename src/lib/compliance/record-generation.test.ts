@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AUDIT_BLOCKED_MESSAGE, recordGeneration } from './record-generation';
 import { AUDIT_PATH_ENV, resolveAuditStore } from './audit-store-config';
 import { unclassifiedState } from '@/lib/gating/state-tier-config';
@@ -215,5 +215,79 @@ describe('what a record means', () => {
     expect(src).toMatch(/ABOUT TO BE PRODUCED/);
     expect(src).toMatch(/over-recording is deliberate and is the safe direction/);
     expect(src).toMatch(/SECOND record appended later, not a reordering/);
+  });
+});
+
+describe('every letter path is audited, free or paid', () => {
+  it('inquiry (Track 2, free) records before rendering', () => {
+    // The reason to record is the compliance basis an artefact was prepared
+    // under, and that does not change with the price.
+    const src = readFileSync(new URL('../../app/inquiry/page.tsx', import.meta.url), 'utf8');
+    const auditAt = src.indexOf('await recordGeneration');
+    const renderAt = src.indexOf('buildRequestForClarificationLetter({');
+    expect(auditAt).toBeGreaterThan(-1);
+    expect(auditAt).toBeLessThan(renderAt);
+    expect(src).toContain('AUDIT_BLOCKED_MESSAGE');
+  });
+
+  it('no letter-producing route is left unaudited', () => {
+    // The check that catches the NEXT one. Any page building a letter must
+    // also call recordGeneration — a new route that forgets is exactly how a
+    // gap reopens, and nothing else in the suite would notice.
+    const pages = ['advocacy', 'inquiry', 'checkout'];
+    for (const page of pages) {
+      const src = readFileSync(new URL(`../../app/${page}/page.tsx`, import.meta.url), 'utf8');
+      const buildsLetter =
+        src.includes('buildRequestForClarificationLetter(') ||
+        src.includes('buildMaintenanceRequestLetter(') ||
+        src.includes('buildCheckoutSession(');
+      if (buildsLetter) {
+        expect(src, `${page} builds an artefact without recording it`).toContain(
+          'recordGeneration',
+        );
+      }
+    }
+  });
+});
+
+describe('production refuses an unconfigured store rather than warning', () => {
+  it('is durable in development when unconfigured', () => {
+    // Local work has to function. The default path is real and it writes.
+    expect(resolveAuditStore({ NODE_ENV: 'development' }).store.durable).toBe(true);
+  });
+
+  it('is NOT durable in production when unconfigured', () => {
+    // A warning is operator-facing and gets shipped past — that is what
+    // warnings are for. Marking it non-durable reuses the existing guard:
+    // recordSend refuses, recordGeneration returns not-ok, and every send flow
+    // already withholds and explains. No new error path.
+    expect(resolveAuditStore({ NODE_ENV: 'production' }).store.durable).toBe(false);
+  });
+
+  it('is durable in production once configured', () => {
+    const cfg = resolveAuditStore({
+      NODE_ENV: 'production',
+      [AUDIT_PATH_ENV]: join(dir, 'prod.jsonl'),
+    });
+    expect(cfg.store.durable).toBe(true);
+    expect(cfg.configured).toBe(true);
+    expect(cfg.warning).toBeNull();
+  });
+
+  it('blocks a real generation in unconfigured production', async () => {
+    // End to end through the guard: the artefact is withheld.
+    vi.stubEnv('NODE_ENV', 'production');
+    delete process.env[AUDIT_PATH_ENV];
+    try {
+      const result = await recordGeneration({
+        letterType: 'maintenance-request',
+        stateCompliance: unclassifiedState('CA'),
+      });
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.reason).toMatch(/non-durable/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

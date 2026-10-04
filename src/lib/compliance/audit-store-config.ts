@@ -54,8 +54,24 @@ export function resolveAuditStore(
   }
 
   const path = join(process.cwd(), DEFAULT_RELATIVE_PATH);
+  const fileStore = createFileAuditStore(path);
+
+  // IN PRODUCTION, UNCONFIGURED IS A REFUSAL RATHER THAN A WARNING.
+  //
+  // A warning is operator-facing and gets shipped past; that is what warnings
+  // are for and it is why this cannot rely on one. Marking the store
+  // non-durable reuses the guard that already exists — `recordSend` refuses it,
+  // `recordGeneration` returns not-ok, and every send flow already withholds
+  // its artefact and shows the blocked message. No new error path, and the
+  // asymmetry is the right way round: development works, production stops.
+  //
+  // The file store itself is unchanged and still writes. What is being refused
+  // is the CLAIM that an unconfigured production deployment has somewhere
+  // durable to put these, which on a serverless host it does not.
+  const productionUnconfigured = env.NODE_ENV === 'production';
+
   return {
-    store: createFileAuditStore(path),
+    store: productionUnconfigured ? { ...fileStore, durable: false } : fileStore,
     configured: false,
     path,
     warning:

@@ -1,4 +1,6 @@
 import { analyzeEasement } from '@/lib/analysis-layer';
+import { getStateCompliance } from '@/config/state-tiers';
+import { AUDIT_BLOCKED_MESSAGE, recordGeneration } from '@/lib/compliance/record-generation';
 import {
   buildRequestForClarificationLetter,
   clarificationPointFromTieredResult,
@@ -40,6 +42,8 @@ export default async function InquiryPage({ searchParams }: InquiryPageProps) {
   let letterText: string | null = null;
   let noClarificationNeeded = false;
   let error: string | null = null;
+  let auditBlocked: string | null = null;
+  let auditWarning: string | null = null;
 
   if (submitted) {
     try {
@@ -58,13 +62,27 @@ export default async function InquiryPage({ searchParams }: InquiryPageProps) {
       if (!point) {
         noClarificationNeeded = true;
       } else {
-        const letter = buildRequestForClarificationLetter({
-          recipientName,
-          senderName,
-          propertyAddress,
-          clarificationPoints: [point],
+        // Track 2 is free, and it is audited on the same terms as Track 1. The
+        // reason to record is the compliance basis an artefact was prepared
+        // under, which does not change with the price.
+        const audit = await recordGeneration({
+          letterType: 'request-for-clarification',
+          stateCompliance: getStateCompliance(state),
+          ruleSet: analysis.ruleSet,
+          firedRule: analysis.firedRule ?? undefined,
         });
-        letterText = renderLetterAsPlainText(letter);
+        if (!audit.ok) {
+          auditBlocked = AUDIT_BLOCKED_MESSAGE;
+        } else {
+          auditWarning = audit.warning;
+          const letter = buildRequestForClarificationLetter({
+            recipientName,
+            senderName,
+            propertyAddress,
+            clarificationPoints: [point],
+          });
+          letterText = renderLetterAsPlainText(letter);
+        }
       }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Unknown error';
@@ -126,6 +144,15 @@ export default async function InquiryPage({ searchParams }: InquiryPageProps) {
         </fieldset>
         <button type="submit">Generate letter</button>
       </form>
+
+      {auditBlocked && <p role="alert">{auditBlocked}</p>}
+
+      {/* Operator-facing. */}
+      {auditWarning && (
+        <p role="status">
+          <small>{auditWarning}</small>
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
       {noClarificationNeeded && (
