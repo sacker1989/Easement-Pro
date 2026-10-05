@@ -1,4 +1,9 @@
-import { classifyByRules, type RuleClaimType, type TieredResult } from './confidence-tiering';
+import {
+  classifyByRules,
+  type AdvisoryFraming,
+  type RuleClaimType,
+  type TieredResult,
+} from './confidence-tiering';
 // State-agnostic on purpose: this is the multi-state entry point, so its
 // result type must not be narrowed to one state's doctrine.
 import type { DurationDetermination } from './duration-basis';
@@ -26,6 +31,11 @@ export interface EasementAnalysisInput {
   duration: EasementDurationFacts;
 }
 
+/** An advisory, plus which rule supplied it. */
+export interface AdvisoryFinding extends AdvisoryFraming {
+  readonly ruleId: string;
+}
+
 export interface EasementAnalysisResult {
   readonly state: string;
   /** Why the rules ran, or why they did not. Carried so the UI and audit can branch. */
@@ -40,6 +50,18 @@ export interface EasementAnalysisResult {
    * where no rule ran at all.
    */
   readonly firedRule: { readonly id: string; readonly claimType: RuleClaimType } | null;
+  /**
+   * A general proposition and the question to take to an attorney, where the
+   * answer depends on doctrine this product may not apply.
+   *
+   * SEPARATE FIELD FROM `duration` ON PURPOSE. It is not a weaker
+   * determination — it is not a determination at all, and `duration` still
+   * reports flagged-ambiguous alongside it. A caller that renders only
+   * `duration` is unchanged and still correct; one that renders this too
+   * tells the user something useful. Folding the two together would have let
+   * an advisory reach a surface built to display findings.
+   */
+  readonly advisory: AdvisoryFinding | null;
 }
 
 /** The rule id the UI and the audit trail branch on. Distinct on purpose. */
@@ -124,7 +146,39 @@ export function analyzeEasementAt(
           state,
           ruleSet,
           duration: result,
+          advisory: null,
           firedRule: fired === undefined ? null : { id: fired.id, claimType: fired.claimType },
+        };
+      }
+
+      /*
+       * NO OBSERVATION RULE MATCHED, SO THE ANSWER DEPENDS ON DOCTRINE — and
+       * this is where the product used to stop and say nothing useful.
+       *
+       * It still offers no DETERMINATION. What it offers now is the general
+       * proposition and the question to take to an attorney, which is a
+       * different speech act and the one a free tool is for. See
+       * AdvisoryFraming in confidence-tiering.ts for why the three categories
+       * are not interchangeable.
+       *
+       * The doctrine rule is evaluated to find WHICH advisory applies — an
+       * easement in gross and an appurtenant one raise different questions —
+       * and its tiered VALUE is then discarded. Only the framing is returned.
+       * That discard is deliberate and load-bearing: the rule's own summary
+       * says "presumed perpetual", which is category 3, and letting it through
+       * would undo the whole distinction.
+       */
+      const advisoryRules = entry.durationRules.filter(
+        (r) => r.claimType === 'state-doctrine' && r.advisory !== undefined,
+      );
+      for (const rule of advisoryRules) {
+        if (rule.evaluate(input.duration) === null) continue;
+        return {
+          state,
+          ruleSet,
+          duration: unavailableResult(state, ruleSet.reason),
+          advisory: { ruleId: rule.id, ...rule.advisory! },
+          firedRule: null,
         };
       }
     }
@@ -132,6 +186,7 @@ export function analyzeEasementAt(
       state,
       ruleSet,
       duration: unavailableResult(state, ruleSet.reason),
+      advisory: null,
       firedRule: null,
     };
   }
@@ -146,6 +201,10 @@ export function analyzeEasementAt(
     state,
     ruleSet,
     duration,
+    // A reviewed state produces determinations. An advisory is what stands in
+    // for one when none may be made, so it is absent precisely when the gate
+    // is satisfied.
+    advisory: null,
     firedRule: fired === undefined ? null : { id: fired.id, claimType: fired.claimType },
   };
 }

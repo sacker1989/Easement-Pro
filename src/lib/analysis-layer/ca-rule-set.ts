@@ -67,6 +67,20 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   {
     id: 'ca-appurtenant-default-presumption',
     claimType: 'state-doctrine',
+    advisory: {
+      generalPosition:
+        'California courts generally treat an appurtenant easement — one attached to a ' +
+        'neighbouring parcel rather than to a person — as running with the land indefinitely, ' +
+        'unless the document that created it says otherwise.',
+      askYourAttorney:
+        'Does anything in my chain of title limit the duration of this easement, and is the ' +
+        'appurtenant presumption actually the one that applies to my parcel?',
+      whyNotDetermined:
+        'This is a general rule about how such easements are usually treated, not a reading of ' +
+        'your document — your document did not state a duration, which is why the question ' +
+        'arises at all. Whether the presumption applies to you depends on the full recorded ' +
+        'chain of title, which this tool has not seen.',
+    },
     evaluate(facts) {
       if (facts.easementType === 'appurtenant') {
         return {
@@ -90,6 +104,20 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   {
     id: 'ca-prescriptive-default-presumption',
     claimType: 'state-doctrine',
+    advisory: {
+      generalPosition:
+        'Once a prescriptive easement has been established, California courts generally treat it ' +
+        'as continuing indefinitely unless something ends it — abandonment being the usual ' +
+        'example.',
+      askYourAttorney:
+        'Has a prescriptive easement actually been established here, and if so has anything ' +
+        'since occurred that would have terminated it?',
+      whyNotDetermined:
+        'A prescriptive easement arises from years of use rather than from a recorded document, ' +
+        'so there is nothing for this tool to read. Whether one exists at all is a factual ' +
+        'question about what has happened on the ground, and it has to come before any question ' +
+        'about how long it lasts.',
+    },
     evaluate(facts) {
       if (facts.easementType === 'prescriptive') {
         return {
@@ -112,6 +140,19 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
   {
     id: 'ca-in-gross-default-presumption',
     claimType: 'state-doctrine',
+    advisory: {
+      generalPosition:
+        'An easement in gross is personal to the holder rather than attached to neighbouring ' +
+        'land. It is not presumed to run with the land, and may end with the original holder ' +
+        'unless the document extends it to heirs and assigns.',
+      askYourAttorney:
+        'Does the instrument extend this easement to the holder’s heirs, successors or ' +
+        'assigns — and if it does not, has it already ended?',
+      whyNotDetermined:
+        'This one turns almost entirely on specific words in the instrument that this tool did ' +
+        'not find. Their absence from what was read is not proof they are absent from the ' +
+        'document, and this is the easement type where that difference matters most.',
+    },
     evaluate(facts) {
       if (facts.easementType === 'in-gross') {
         return {

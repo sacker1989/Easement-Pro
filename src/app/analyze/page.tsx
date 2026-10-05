@@ -88,7 +88,60 @@ export default async function AnalyzePage({ searchParams }: AnalyzePageProps) {
       </form>
 
       {error && <p role="alert">{error}</p>}
-      {result && <pre>{JSON.stringify(result, null, 2)}</pre>}
+
+      {result?.duration.tier === 'clear' && (
+        <div className="panel">
+          <h2 style={{ marginTop: 0 }}>What your document says</h2>
+          <p>{result.duration.value.summary}</p>
+          <p className="muted">
+            <small>
+              This is a reading of the document you described, not an opinion about your legal
+              position. It holds whatever state you are in.
+            </small>
+          </p>
+        </div>
+      )}
+
+      {/*
+        THE ADVISORY PANEL. This is what a free analysis can offer when the
+        answer depends on doctrine nobody has reviewed: the general rule, the
+        question, and a plain statement that it has not been applied to this
+        user. The heading says "could" and the closing line says to check with
+        an attorney, because the whole panel is a pointer to a conversation
+        rather than a finding.
+      */}
+      {result?.advisory && (
+        <div className="undetermined">
+          <h2 style={{ marginTop: 0 }}>What this could turn on</h2>
+          <p>
+            <strong>Your document did not state a duration</strong>, so the answer depends on what
+            the law presumes. This tool does not apply law to your situation. Here is the general
+            position and the question worth putting to an attorney.
+          </p>
+          <h3>The general rule</h3>
+          <p>{result.advisory.generalPosition}</p>
+          <h3>Ask an attorney</h3>
+          <p>
+            <em>&ldquo;{result.advisory.askYourAttorney}&rdquo;</em>
+          </p>
+          <h3>Why this is not an answer</h3>
+          <p>{result.advisory.whyNotDetermined}</p>
+          <p className="muted">
+            <small>
+              Nothing above is legal advice and no attorney has reviewed it. An attorney licensed
+              in your state can tell you whether the general rule applies to your parcel; this tool
+              cannot, and does not try.
+            </small>
+          </p>
+        </div>
+      )}
+
+      {result && (
+        <details>
+          <summary>Raw analysis output (JSON)</summary>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </details>
+      )}
     </main>
   );
 }
