@@ -1,5 +1,6 @@
 import type { StateComplianceEntry } from '@/lib/gating/state-tier-config';
 import { basisSummary } from '@/lib/gating/regulatory-basis';
+import { evaluateAdvocacyWizardAccess } from '@/lib/gating/advocacy-wizard-access';
 import { COMMERCE_ENABLED } from './commerce-mode';
 import { CURRENT_DISCLAIMER } from './disclaimer-copy';
 import type { AttorneyReviewDecision } from './attorney-review';
@@ -40,6 +41,23 @@ export interface SendAuditRecord {
   state: string;
   stateTier: StateComplianceEntry['tier'];
   complianceBasis: string | null;
+  /**
+   * Whether a counsel UPL review authorised this send, or an accepted risk did.
+   *
+   * ADDED 2026-10-05, WITH THE GATE THAT MAKES IT ANSWERABLE. The record
+   * already carried the tier and the basis, which say what the product
+   * CLAIMED. Neither says whether an attorney had actually looked. Those
+   * produce identical behaviour and are the first thing anyone reviewing a
+   * letter months later would want distinguished — and, before this, the
+   * record could not distinguish them because nothing consulted the review.
+   */
+  uplAuthorisation: {
+    /** 'authorised' | the refusal reason that was overridden. */
+    readonly basis: string;
+    readonly reviewId: string | null;
+    /** The gap id carrying the dated acceptance, when running on one. */
+    readonly acceptedUnderGapId: string | null;
+  } | null;
   disclaimerVersion: string;
   attorneyReviewDecision: AttorneyReviewDecision | null;
   generatedAt: string;
@@ -93,6 +111,7 @@ export function buildSendAuditRecord(input: {
     // operative is the fact a later reader needs and it is not recoverable
     // from the citation alone. See regulatory-basis.ts.
     complianceBasis: basisSummary(input.stateCompliance.basis, COMMERCE_ENABLED),
+    uplAuthorisation: buildUplAudit(input.stateCompliance),
     disclaimerVersion: CURRENT_DISCLAIMER.version,
     attorneyReviewDecision: input.attorneyReviewDecision ?? null,
     generatedAt: (input.now ?? new Date()).toISOString(),
@@ -123,5 +142,46 @@ function buildAnalysisAudit(
     reviewedOn: null,
     ruleId: firedRule?.id ?? null,
     ruleClaimType: firedRule?.claimType ?? null,
+  };
+}
+
+/**
+ * The UPL half of the record.
+ *
+ * Re-runs the gate rather than taking a decision as a parameter. That looks
+ * redundant and is not: every caller already has a decision in hand, and
+ * passing it would let a caller record an authorisation it did not actually
+ * obtain. The record should say what the gate says, and the only way to be
+ * sure of that is to ask the gate.
+ */
+function buildUplAudit(entry: StateComplianceEntry): SendAuditRecord['uplAuthorisation'] {
+  const decision = evaluateAdvocacyWizardAccess(entry);
+
+  if (!decision.available) {
+    return {
+      basis: decision.upl.status === 'refused' ? decision.upl.reason : 'unavailable',
+      reviewId: null,
+      acceptedUnderGapId: null,
+    };
+  }
+
+  if (!decision.operatingUnderAcceptedRisk) {
+    return {
+      basis: 'authorised',
+      reviewId: decision.upl.status === 'authorised' ? decision.upl.review.id : null,
+      acceptedUnderGapId: null,
+    };
+  }
+
+  return {
+    // The REFUSAL REASON, not the word "accepted". A later reader needs to
+    // know what the gate objected to, because "never reviewed" and "review
+    // expired" are overridden on quite different reasoning.
+    basis:
+      decision.upl.status === 'refused'
+        ? `accepted-risk:${decision.upl.reason}`
+        : 'accepted-risk:unknown',
+    reviewId: null,
+    acceptedUnderGapId: decision.acceptedUnderGapId,
   };
 }

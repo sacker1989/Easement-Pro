@@ -10,6 +10,7 @@
  */
 
 import type { RegulatoryBasis } from './regulatory-basis';
+import type { ProductOwnerDirection, UplReviewRecord } from './upl-review';
 
 declare const stateTierBrand: unique symbol;
 
@@ -53,8 +54,22 @@ export interface StateComplianceEntry {
    * lapsed basis is good news and still needs recording.
    */
   basis: readonly RegulatoryBasis[] | null;
-  /** ISO date of last counsel review, or null if this state has never been reviewed. */
-  lastReviewedDate: string | null;
+  /**
+   * The counsel review of the unauthorized-practice question, or null.
+   *
+   * REPLACED `lastReviewedDate: string | null` ON 2026-10-05. That field was
+   * read by no code — the gap registry's words, "a compliance control that is
+   * never consulted is not a control" — and a bare date could not say what the
+   * opinion PERMITTED. See upl-review.ts: reporting records, open-ended
+   * research, advice and position-asserting letters are four different claims
+   * about not practising law, and an opinion can approve some and not others.
+   */
+  uplReview: UplReviewRecord | null;
+  /**
+   * What the product owner expects counsel to approve, where that is known
+   * before the opinion exists. READ BY NOTHING — see upl-review.ts.
+   */
+  uplDirection?: ProductOwnerDirection;
   notes?: string;
 }
 
@@ -74,7 +89,7 @@ export function unclassifiedState(stateCode: string): StateComplianceEntry {
     track1RequiredFlow: 'unavailable',
     track2Available: true,
     basis: null,
-    lastReviewedDate: null,
+    uplReview: null,
     notes:
       'Not yet reviewed by counsel. Gates the same as Tier C (Track 1 unavailable), ' +
       'but this is an absence-of-review default, not a legal determination that the ' +

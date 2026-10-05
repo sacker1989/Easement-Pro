@@ -196,6 +196,51 @@ function track1Check(state: string): ReadinessCheck {
   };
 }
 
+function uplReviewCheck(state: string): ReadinessCheck {
+  const entry = getStateCompliance(state);
+  const decision = evaluateAdvocacyWizardAccess(entry);
+
+  if (decision.available && !decision.operatingUnderAcceptedRisk) {
+    return {
+      id: 'upl-review',
+      what: `An attorney licensed in ${state} has given an opinion on the practice-of-law question.`,
+      status: 'met',
+      detail:
+        decision.upl.status === 'authorised'
+          ? `Review ${decision.upl.review.id} by ${decision.upl.review.reviewedBy} ` +
+            `(bar ${decision.upl.review.barNumber}), given ${decision.upl.review.reviewedOn}, ` +
+            `expires ${decision.upl.review.expiresOn}.`
+          : 'Authorised.',
+      fix: null,
+    };
+  }
+
+  const direction = entry.uplDirection;
+  return {
+    id: 'upl-review',
+    what: `An attorney licensed in ${state} has given an opinion on the practice-of-law question.`,
+    // Accepted where a dated acceptance is carrying it, open otherwise. Never
+    // blocking: Track 2 and Track 3 run regardless, and taking Track 1 dark is
+    // a product decision rather than something a readiness check performs.
+    status: decision.available && decision.operatingUnderAcceptedRisk ? 'accepted' : 'open',
+    detail:
+      (decision.upl.status === 'refused' ? `No authorisation (${decision.upl.reason}). ` : '') +
+      (decision.available
+        ? `Track 1 is running on the acceptance recorded in ` +
+          `${decision.available ? decision.acceptedUnderGapId : ''}. The gate consults the review ` +
+          'and is overridden by a dated decision, rather than not checking.'
+        : 'Track 1 is not offered.') +
+      (direction === undefined
+        ? ''
+        : ` PRODUCT OWNER DIRECTION ${direction.on}: ${direction.statedAs} Nothing reads it.`),
+    fix:
+      direction === undefined
+        ? `A written opinion from a ${state}-admitted attorney, recorded as a UplReviewRecord.`
+        : `Supply the ${direction.missing.length} outstanding facts and this becomes an ` +
+          `authorisation: ${direction.missing.join(' ')}`,
+  };
+}
+
 function basisCheck(state: string): ReadinessCheck {
   const entry = getStateCompliance(state);
   const lapsed = basisFullyLapsed(entry.basis, COMMERCE_ENABLED);
@@ -300,6 +345,7 @@ export function assessDeploymentReadiness(
     commerceCheck(),
     disclaimerCheck(),
     track1Check(normalized),
+    uplReviewCheck(normalized),
     basisCheck(normalized),
     analysisCheck(normalized),
     ...gapChecks(normalized),

@@ -38,7 +38,7 @@ describe('the marked gaps describe reality, not a worry', () => {
     // the marker cannot rot into a stale warning about a gap that was closed.
     const ca = getStateCompliance('CA');
     expect(ca.tier).toBe('A');
-    expect(ca.lastReviewedDate).toBeNull();
+    expect(ca.uplReview).toBeNull();
   });
 
   it('Track 1 really is offered in CA despite that', () => {

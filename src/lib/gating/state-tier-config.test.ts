@@ -14,7 +14,7 @@ const testMatrix: StateComplianceMatrix = {
     track1RequiredFlow: 'licensed-pathway',
     track2Available: true,
     basis: FIXTURE_BASES,
-    lastReviewedDate: '2026-01-01',
+    uplReview: null,
   },
 };
 

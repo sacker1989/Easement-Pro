@@ -81,7 +81,68 @@ export const STATE_COMPLIANCE_MATRIX: StateComplianceMatrix = {
      * the two became relevant and it is the order the audit records read in.
      */
     basis: [CA_LDA_BASIS, CA_UPL_BASIS],
-    lastReviewedDate: null,
+
+    /*
+     * STILL NULL ON 2026-10-05, AND THE REASON IS THE SAME ONE THE ANALYSIS
+     * LAYER GIVES FOR CA_RULE_SET.review.
+     *
+     * The product owner directed on this date that counsel for California
+     * allows open-ended research and advice from the product. That direction
+     * is recorded below, in full, because it tells whoever commissions the
+     * opinion what is expected and it changes what this product is being built
+     * toward.
+     *
+     * IT CANNOT BE WRITTEN HERE, and the obstruction is structural rather than
+     * procedural. A UplReviewRecord requires `reviewedBy`, `barNumber` and
+     * `reviewedOn`. Those are facts about a specific California attorney on a
+     * specific day, and nobody has supplied them. Filling them with plausible
+     * values would manufacture the exact artifact this gate exists to demand,
+     * and the gate would then be satisfied by its own forgery — in a record
+     * that lands in the audit trail of every letter, where a regulator or a
+     * court would read it as a representation that a named lawyer signed off.
+     *
+     * SO THE DIRECTION IS NOT BEING REFUSED, IT IS BEING ROUTED. Everything
+     * the direction implies is built: the scope type carries
+     * `openEndedResearch` and `advice` as first-class fields, the gate reads
+     * them, and `uplDirection` below states exactly which four facts turn this
+     * into an authorisation. Supplying them is a data edit in this file.
+     */
+    uplReview: null,
+
+    uplDirection: {
+      on: '2026-10-05',
+      expectedScope: {
+        reportsPublicRecords: true,
+        openEndedResearch: true,
+        advice: true,
+        /*
+         * NOT SET TRUE, AND IT IS THE ONE THE DIRECTION DID NOT NAME.
+         *
+         * "Open-ended research and advice" are statements made TO the user.
+         * A Track 1 letter is different in kind: it is correspondence sent to
+         * a utility or an agency, asserting a position on the homeowner's
+         * behalf. Advice that turns out to be wrong leaves the homeowner
+         * where they started; a letter that asserts a wrong position has
+         * already been sent, and it is the artefact a §6125 complaint would
+         * attach.
+         *
+         * Reading it in from the two that were named would widen the scope
+         * beyond what the direction said, in the direction that is hardest to
+         * undo. Left false until an opinion addresses it specifically.
+         */
+        positionAssertingLetters: false,
+      },
+      statedAs:
+        'Product owner, 2026-10-05: "Assume the counsel for California allows for open ended ' +
+        'research and advice from the product."',
+      missing: [
+        'The reviewing attorney\'s name.',
+        'Their California bar number.',
+        'The date the opinion was given.',
+        'Whether the opinion addresses position-asserting correspondence (Track 1 letters), ' +
+          'which the direction did not mention and which is not implied by research or advice.',
+      ],
+    },
     notes:
       "Phase 1 MVP's only Tier A entry. lastReviewedDate must be set once counsel " +
       'sign-off is actually recorded — do not treat this entry as reviewed until then. ' +

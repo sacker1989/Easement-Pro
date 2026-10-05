@@ -12,7 +12,7 @@ const caCompliance: StateComplianceEntry = {
   track1RequiredFlow: 'licensed-pathway',
   track2Available: true,
   basis: FIXTURE_BASES,
-  lastReviewedDate: null,
+  uplReview: null,
 };
 
 describe('buildSendAuditRecord', () => {
@@ -30,6 +30,14 @@ describe('buildSendAuditRecord', () => {
       complianceBasis:
         'Test Code §1 (fixture) [document-assistant; not operative (compensation is an element and ' +
         'this product is free)]; Test Code §2 (fixture) [unauthorized-practice; operative]',
+      // The fixture entry is Tier A with no review and state 'CA', so the gate
+      // finds the recorded acceptance and the record says so — naming the
+      // refusal it overrode rather than just "accepted".
+      uplAuthorisation: {
+        basis: 'accepted-risk:never-reviewed',
+        reviewId: null,
+        acceptedUnderGapId: 'LASTREVIEWEDDATE-NOT-ENFORCED',
+      },
       disclaimerVersion: CURRENT_DISCLAIMER.version,
       attorneyReviewDecision: { requiredFlow: 'licensed-pathway', choice: 'declined', status: 'not-required' },
       generatedAt: '2026-01-15T12:00:00.000Z',

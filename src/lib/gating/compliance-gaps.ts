@@ -185,17 +185,31 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     appliesTo: ['CA'],
     location: 'src/lib/gating/advocacy-wizard-access.ts — evaluateAdvocacyWizardAccess',
     current:
-      'Track 1 availability branches only on track1RequiredFlow. lastReviewedDate is declared, ' +
-      'documented as required, and read by no code. isTrack1Available() in state-tier-config.ts ' +
-      'has no non-test caller at all.',
+      'HALF OF THIS CLOSED ON 2026-10-05, and the remaining half is what the acceptance below ' +
+      'covers. ' +
+      'WAS: Track 1 availability branched only on track1RequiredFlow; lastReviewedDate was ' +
+      'declared, documented as required, and read by no code. ' +
+      'NOW: lastReviewedDate is gone, replaced by a UplReviewRecord carrying a bar number, an ' +
+      'expiry and a per-activity SCOPE, and evaluateAdvocacyWizardAccess consults it on every ' +
+      'call. California has no review, so the gate REFUSES — and Track 1 stays available solely ' +
+      'because this entry carries a dated acceptance, which the gate looks up by id. Delete the ' +
+      'acceptance and California goes dark on the next request. ' +
+      'WHAT IS STILL OPEN: California is operating Track 1 without a counsel opinion. That was ' +
+      'always the real gap and it is unchanged. What changed is that the product now knows it, ' +
+      'the audit record of every letter says so, and the override has an owner and a date ' +
+      'attached rather than being the absence of a check.',
     required:
       'A control that records whether counsel review happened should gate the feature that ' +
       'depends on it. A compliance control that is never consulted is not a control.',
     closedBy:
-      'One branch in evaluateAdvocacyWizardAccess returning unavailable when lastReviewedDate ' +
-      'is null. It was written and reverted deliberately: fail-closed is correct for a ' +
-      'compliance control, but it takes CA Track 1 dark, and that is a business decision to ' +
-      'take knowingly rather than one to arrive at as a side effect of a refactor.',
+      'A UPL review for California — see CA-TRACK1-UNREVIEWED, which is now the only half left. ' +
+      'The enforcement half is done: the gate consults the review and is overridden by a named, ' +
+      'dated acceptance rather than by nothing. ' +
+      'HOW THE ORIGINAL FIX WAS AVOIDED: the obvious implementation was one branch returning ' +
+      'unavailable when no review exists. It was written and reverted once, because fail-closed ' +
+      'is correct for a compliance control and it takes CA Track 1 dark, which the product owner ' +
+      'declined. Routing the override through a recorded acceptance gives the control its teeth ' +
+      'without taking that decision away from the person entitled to make it.',
     owner: 'product',
     markedOn: '2026-08-16',
     riskAccepted: {
