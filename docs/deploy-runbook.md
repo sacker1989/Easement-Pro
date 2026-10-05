@@ -167,22 +167,31 @@ request that would have succeeded.
 On Hobby, either upgrade or lower `totalBudgetMs` in `resilient-fetch.ts` to
 around 8 seconds and accept that slow counties fail faster.
 
-### 2. The request cache and concurrency limiter are per-instance
+### 2. The concurrency limiter is per-instance — partly addressed
 
 `resilient-fetch.ts` holds a module-level cache (60s TTL) and a per-host
 concurrency limiter (4 concurrent). Both are singletons **within one Node
-instance**. Vercel runs many instances, so:
+instance**, so on Vercel the limiter is 4-per-instance rather than 4 globally.
+Twenty warm instances can mean up to eighty concurrent requests at LA County.
 
-- the cache hit rate approaches zero on cold starts, and every report is a
-  fresh set of county requests
-- the limiter is 4-per-instance, not 4 globally. Fifty simultaneous users can
-  mean far more than four concurrent requests at LA County's ArcGIS endpoint.
+**What was fixed (2026-10-05): in-flight request coalescing.** Identical
+concurrent GETs now share one origin call instead of each making their own. The
+cache only ever helped the request *after* one completed; it said nothing about
+the ones already in the air, so a burst of users on the same ZIP produced a
+burst of identical county requests. Ten simultaneous callers now produce one.
 
-Nothing breaks today at low traffic. It becomes a problem at exactly the moment
-the free tier succeeds, and the failure mode is a public county GIS service
-rate-limiting or blocking the deployment — which takes out the product's core
-value, not a side feature. If traffic grows, the fix is a shared cache
-(Vercel KV, Redis) in front of the county calls rather than a bigger limiter.
+That cuts origin traffic by whatever share of load is duplicate, which for a
+free tool whose users cluster on popular ZIP codes is most of it — and it works
+across the fan-out, since each instance independently dedupes its own burst.
+
+**What is still true.** A genuine global concurrency cap needs shared state and
+is not pretended at. If traffic grows enough that coalescing is not sufficient,
+the fix is a shared cache in front of the county calls — Vercel KV, Redis, or
+Next's Data Cache — not a smaller per-instance limit, which cannot help.
+
+Watch for it: `f.stats()` reports `{ hits, misses, retries, coalesced }`.
+Rising `misses` with flat `coalesced` and `hits` means instances are cold and
+each is doing its own work — that is the signal to add the shared cache.
 
 ## Post-deploy smoke test
 

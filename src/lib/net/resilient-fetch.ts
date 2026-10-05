@@ -128,7 +128,28 @@ export function backoffDelay(
   return Math.floor(random() * exponential);
 }
 
-/** Per-host gate. Module-scoped so every provider shares one budget per host. */
+/**
+ * Per-host gate. Module-scoped so every provider shares one budget per host.
+ *
+ * WITHIN ONE PROCESS, WHICH IS THE LIMIT OF WHAT THIS CAN PROMISE. On a single
+ * server that is a real global cap. On a serverless host each instance has its
+ * own module scope, so the cap is per instance: twenty warm Vercel instances
+ * means up to twenty times `maxConcurrentPerHost` at the county, and no amount
+ * of tuning this number changes that.
+ *
+ * REQUEST COALESCING IS THE PART THAT DOES CROSS-CUT IT, which is why that was
+ * built rather than a smaller limit. Deduplicating identical in-flight requests
+ * cuts origin traffic by whatever share of load is duplicate — and for a free
+ * tool whose users cluster on the same hot ZIP codes, that share is most of it.
+ * Fewer requests reduces the fan-out even though the per-instance ceiling is
+ * unchanged.
+ *
+ * A TRUE GLOBAL LIMIT NEEDS SHARED STATE and is not pretended at here. The
+ * honest options are a shared cache in front of the county calls (Vercel KV,
+ * Redis, or Next's own Data Cache) or a distributed semaphore. Both are
+ * infrastructure decisions rather than code ones, and docs/deploy-runbook.md
+ * records when they start to matter.
+ */
 const inFlight = new Map<string, number>();
 const waiters = new Map<string, (() => void)[]>();
 
@@ -162,7 +183,7 @@ export function resetResilientFetchState(): void {
 export interface ResilientFetch {
   (input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
   /** Cache statistics, for a diagnostics panel or a test. */
-  readonly stats: () => { hits: number; misses: number; retries: number };
+  readonly stats: () => { hits: number; misses: number; retries: number; coalesced: number };
   readonly clearCache: () => void;
 }
 
@@ -182,26 +203,44 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
   const random = options.random ?? Math.random;
 
   const cache = new Map<string, CacheEntry>();
+  /**
+   * URLs with an origin request already running, and the result everyone
+   * waiting on it will share.
+   *
+   * THE DEFECT THIS CLOSES. The cache was checked, then the request was made.
+   * Two callers arriving before the first response landed both missed, both
+   * passed the concurrency gate, and both hit the county — the cache can only
+   * help the request AFTER one completes, and says nothing about the ones
+   * already in the air.
+   *
+   * That is the common case rather than an edge one. A single report render
+   * fans out several queries, and the whole point of a free tool is that many
+   * people use it at once, frequently for the same hot ZIP codes. The limiter
+   * bounded how many ran at a time; it never questioned whether they were the
+   * same request.
+   */
+  const inFlightByUrl = new Map<string, Promise<CacheEntry>>();
   let hits = 0;
   let misses = 0;
   let retries = 0;
+  let coalesced = 0;
 
-  const wrapped = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    const method = (init?.method ?? 'GET').toUpperCase();
-    const cacheable = cfg.cacheTtlMs > 0 && method === 'GET';
-    const startedAt = now();
+  const responseFrom = (entry: CacheEntry): Response =>
+    new Response(entry.body, { status: entry.status, headers: entry.headers });
 
-    if (cacheable) {
-      const entry = cache.get(url);
-      if (entry !== undefined && entry.expiresAt > startedAt) {
-        hits += 1;
-        return new Response(entry.body, { status: entry.status, headers: entry.headers });
-      }
-      if (entry !== undefined) cache.delete(url);
-      misses += 1;
-    }
-
+  /**
+   * One actual trip to the origin, with the concurrency gate and the retries.
+   *
+   * Split out so exactly one caller per URL runs it — see `wrapped`. It is
+   * unchanged from when it was inline apart from taking its inputs as
+   * parameters.
+   */
+  const originRequest = async (
+    url: string,
+    init: RequestInit | undefined,
+    startedAt: number,
+    cacheable: boolean,
+  ): Promise<Response> => {
     const host = hostOf(url);
     await acquire(host, cfg.maxConcurrentPerHost);
 
@@ -300,8 +339,87 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
     }
   };
 
+  const wrapped = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const method = (init?.method ?? 'GET').toUpperCase();
+    const cacheable = cfg.cacheTtlMs > 0 && method === 'GET';
+    const startedAt = now();
+
+    if (!cacheable) return originRequest(url, init, startedAt, false);
+
+    const entry = cache.get(url);
+    if (entry !== undefined && entry.expiresAt > startedAt) {
+      hits += 1;
+      return responseFrom(entry);
+    }
+    if (entry !== undefined) cache.delete(url);
+    misses += 1;
+
+    const pending = inFlightByUrl.get(url);
+    if (pending !== undefined) {
+      coalesced += 1;
+      /*
+       * A FAILURE PROPAGATES TO EVERY WAITER, deliberately.
+       *
+       * The alternative is for each waiter to fall through and try the origin
+       * itself, which turns one failed request into N against a service that
+       * has just demonstrated it is struggling — the stampede this exists to
+       * prevent, triggered by exactly the condition where it does most harm.
+       * These callers asked for the same thing at the same moment; the honest
+       * answer is the one answer that came back.
+       */
+      return responseFrom(await pending);
+    }
+
+    /*
+     * MATERIALISED BEFORE IT IS SHARED. A Response body is a stream and can be
+     * read once, so waiters cannot be handed the leader's Response — they get
+     * their own, built from the bytes. This is also why the leader reads
+     * `text()` rather than handing out `clone()`: see the undici tee note in
+     * the success path above, which cost a round of live San Diego failures.
+     */
+    const leader = (async (): Promise<CacheEntry> => {
+      const response = await originRequest(url, init, startedAt, true);
+      const cached = cache.get(url);
+      // The success path has already cached and rebuilt; reuse that entry
+      // rather than reading the rebuilt Response a second time.
+      if (cached !== undefined) return cached;
+      return {
+        /*
+         * NOT CACHED, AND NOT BECAUSE OF THIS FIELD.
+         *
+         * Reaching here means the success path did not cache, so the status
+         * was not ok. What keeps a 503 from being served to the next caller a
+         * minute later is that nothing below writes this entry to `cache` —
+         * it is handed to the callers waiting right now and then dropped.
+         * `expiresAt` is required by the type and is read by nobody on this
+         * path; a value was chosen that would also be harmless if someone
+         * later did cache it, rather than one that merely looks deliberate.
+         */
+        expiresAt: 0,
+        body: await response.text(),
+        status: response.status,
+        headers: [...response.headers.entries()],
+      };
+    })();
+
+    inFlightByUrl.set(url, leader);
+    // Attached immediately so a rejection with no waiters yet is never an
+    // unhandled rejection. The real handling is the await below.
+    leader.catch(() => undefined);
+
+    try {
+      return responseFrom(await leader);
+    } finally {
+      inFlightByUrl.delete(url);
+    }
+  };
+
   return Object.assign(wrapped, {
-    stats: () => ({ hits, misses, retries }),
-    clearCache: () => cache.clear(),
+    stats: () => ({ hits, misses, retries, coalesced }),
+    clearCache: () => {
+      cache.clear();
+      inFlightByUrl.clear();
+    },
   }) as ResilientFetch;
 }
