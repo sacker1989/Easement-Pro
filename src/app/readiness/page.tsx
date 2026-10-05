@@ -4,6 +4,13 @@ import { operatorPagesEnabled } from '@/lib/deployment/operator-access';
 import { notFound } from 'next/navigation';
 
 /**
+ * NOINDEX as well as the production 404. The gate and the crawler directive
+ * answer different questions — the gate decides whether it is served at all,
+ * this decides what happens if it ever is.
+ */
+export const metadata = { robots: { index: false, follow: false } };
+
+/**
  * EVALUATED PER REQUEST, NOT AT BUILD.
  *
  * Without this the page prerenders: `notFound()` runs once during the build

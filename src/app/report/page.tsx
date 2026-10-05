@@ -52,6 +52,18 @@ import {
 } from '@/lib/handoff';
 
 /**
+ * NOINDEX, AS A HEADER RATHER THAN ONLY A ROBOTS.TXT LINE.
+ *
+ * This route is reached by a GET form, so its URL carries the homeowner's
+ * street address. robots.txt asks well-behaved crawlers not to index it;
+ * this emits an X-Robots-Tag that is considerably harder to ignore. Neither
+ * substitutes for the other, and the thing being protected is a real
+ * residential address attached to a page about a dispute over someone's land.
+ */
+export const metadata = { robots: { index: false, follow: false } };
+
+
+/**
  * THE APP'S OWN FETCH BUDGET IS 25 SECONDS, so the function must outlive it.
  *
  * `resilient-fetch.ts` allows three attempts with backoff against a county
