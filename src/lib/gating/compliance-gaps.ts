@@ -24,6 +24,15 @@
 export interface ComplianceGap {
   /** Stable id, safe to grep and to reference in a ticket. */
   readonly id: string;
+  /**
+   * Which states this gap bears on, or 'all'.
+   *
+   * ADDED FOR THE PER-STATE READINESS QUESTION. The readiness report needs to
+   * answer "what stands between California and production", and deriving that
+   * from the `location` string by substring match was the alternative — which
+   * would have silently mis-sorted a gap the day someone reworded a path.
+   */
+  readonly appliesTo: readonly string[] | 'all';
   /** Where the gap lives. */
   readonly location: string;
   /** What the product does today. */
@@ -53,11 +62,35 @@ export interface ComplianceGap {
     /** The event that should reopen the decision rather than a date to forget. */
     readonly revisitWhen: string;
   };
+  /**
+   * Present when the gap's question was actually ANSWERED.
+   *
+   * ADDED 2026-10-05, WHEN THE FIRST ONE CLOSED. Until then the only way to
+   * retire an entry was to delete it, and deleting it loses the two things
+   * worth keeping: that the gap existed, and what it took to close it. An
+   * entry that vanishes reads, to a later auditor, exactly like an entry that
+   * was never written.
+   *
+   * DISTINCT FROM `riskAccepted` FOR THE REASON THAT FIELD ALREADY STATES. An
+   * accepted gap still has its question open and now has a dated decision to
+   * proceed anyway. A closed gap has the answer. Collapsing them would let
+   * "we decided to live with it" wear the badge of "we fixed it", which is the
+   * single most useful distinction in this file.
+   */
+  readonly closed?: {
+    readonly on: string;
+    readonly by: string;
+    /** The artifact that answered the question, not a note saying it is fine. */
+    readonly artifact: string;
+    /** What re-opens it. A closed gap can come back; data goes stale. */
+    readonly reopensWhen: string;
+  };
 }
 
 export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
   {
     id: 'CA-TRACK1-UNREVIEWED',
+    appliesTo: ['CA'],
     location: 'src/config/state-tiers.ts — STATE_COMPLIANCE_MATRIX.CA',
     current:
       'California is Tier A with track1RequiredFlow "licensed-pathway", so Track 1 — the ' +
@@ -105,6 +138,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
   },
   {
     id: 'CA-FLOW-DESCRIBES-LAPSED-REGIME',
+    appliesTo: ['CA'],
     location: 'src/config/state-tiers.ts — STATE_COMPLIANCE_MATRIX.CA.track1RequiredFlow',
     current:
       'California carries track1RequiredFlow "licensed-pathway", meaning Track 1 must run ' +
@@ -148,6 +182,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
   },
   {
     id: 'LASTREVIEWEDDATE-NOT-ENFORCED',
+    appliesTo: ['CA'],
     location: 'src/lib/gating/advocacy-wizard-access.ts — evaluateAdvocacyWizardAccess',
     current:
       'Track 1 availability branches only on track1RequiredFlow. lastReviewedDate is declared, ' +
@@ -188,6 +223,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
   },
   {
     id: 'CA-DURATION-RULES-UNREVIEWED',
+    appliesTo: ['CA'],
     location: 'src/lib/analysis-layer/ca-rule-set.ts',
     current:
       'CA_DURATION_RULE_SET drives user-facing duration findings, including three legal ' +
@@ -204,6 +240,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
   },
   {
     id: 'SCREENING-BANDS-UNCITED',
+    appliesTo: 'all',
     location: 'src/lib/valuation/encumbrance-factors.ts — UNCITED_SCREENING_RANGES',
     current:
       'Four percentage bands with no citation anyone has verified drive the dollar range shown to ' +
@@ -240,29 +277,63 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
 
   {
     id: 'LA-FALLBACK-UNVERIFIED',
+    appliesTo: ['CA'],
     location: 'src/lib/document-retrieval/la-county-fallback.ts',
     current:
       'Recorder office addresses, hours, search rooms and copy fees are served to users from ' +
       'hardcoded Phase 1 content.',
     required:
-      'needsLiveVerificationBeforeLaunch is set true on the record itself, described in the file ' +
-      'as "a deliberate flag, not decoration".',
+      'needsLiveVerificationBeforeLaunch was set true on the record itself, described in the ' +
+      'file as "a deliberate flag, not decoration".',
     closedBy:
       'Confirming each figure against the Registrar-Recorder\'s current published fees, hours ' +
       'and addresses, then clearing the flag.',
     owner: 'product',
     markedOn: '2026-08-16',
+    closed: {
+      on: '2026-10-05',
+      by: 'engineering, against lavote.gov',
+      artifact:
+        'Every figure checked against the Registrar-Recorder\'s own pages; the URLs read are ' +
+        'recorded in LA_COUNTY_FALLBACK_DATA.verifiedAgainst. THREE THINGS WERE WRONG, and the ' +
+        'gap was right to exist: (1) the record implied a homeowner\'s first copy was free, ' +
+        'which is a recording-time benefit this product\'s users never get — they pay $5 plain ' +
+        'or $6 certified; (2) viewing is now by appointment up to two weeks ahead, where the ' +
+        'record told people to walk into a search room, so someone would have driven to Norwalk ' +
+        'and been turned away; (3) lower-level coverage starts 1851 not 1850, and the $0.50 ' +
+        'per-name-per-year search fee was absent entirely. The Norwalk address, the hours, Room ' +
+        '2207 and both certified-copy figures were correct, which is why nothing about the ' +
+        'record looked wrong for two months. ' +
+        'THE FLAG WAS REPLACED RATHER THAN CLEARED. A literal `true` could say verification was ' +
+        'outstanding and could not say it had happened, so clearing it meant deleting it — and a ' +
+        'deleted flag records nothing about when anyone last looked. It is now a verifiedOn date ' +
+        'with a twelve-month horizon, so this goes stale by itself.',
+      reopensWhen:
+        'Automatically, when needsLiveVerification() passes twelve months from verifiedOn — the ' +
+        'record reports its own staleness rather than waiting for this entry. Immediately on any ' +
+        'user report that a fee, an address or the appointment rule is wrong.',
+    },
   },
 ];
 
+/** Gaps whose question was answered. Kept in the array as history. */
+export function closedGaps(): readonly ComplianceGap[] {
+  return COMPLIANCE_GAPS.filter((g) => g.closed !== undefined);
+}
+
+/** Everything still open — accepted or not. Closed entries drop out here. */
+export function openGaps(): readonly ComplianceGap[] {
+  return COMPLIANCE_GAPS.filter((g) => g.closed === undefined);
+}
+
 /** Gaps someone with authority chose to operate with. Still open. */
 export function acceptedGaps(): readonly ComplianceGap[] {
-  return COMPLIANCE_GAPS.filter((g) => g.riskAccepted !== undefined);
+  return openGaps().filter((g) => g.riskAccepted !== undefined);
 }
 
 /** Gaps nobody has examined or accepted. The ones that are simply outstanding. */
 export function unexaminedGaps(): readonly ComplianceGap[] {
-  return COMPLIANCE_GAPS.filter((g) => g.riskAccepted === undefined);
+  return openGaps().filter((g) => g.riskAccepted === undefined);
 }
 
 /** Gaps at a given location, for a test or a pre-launch check to assert against. */
@@ -270,7 +341,17 @@ export function gapsAt(locationSubstring: string): readonly ComplianceGap[] {
   return COMPLIANCE_GAPS.filter((g) => g.location.includes(locationSubstring));
 }
 
-/** True when any gap is open — every entry here is open by construction. */
+/**
+ * True when any gap is still open.
+ *
+ * READS `openGaps()` RATHER THAN THE ARRAY LENGTH. It used to return
+ * `COMPLIANCE_GAPS.length > 0` on the stated ground that "every entry here is
+ * open by construction" — true until 2026-10-05, when the first entry closed
+ * and the array started holding history as well as outstanding work. Left
+ * alone it would have reported open gaps forever, including after the last one
+ * closed, which is the kind of control that gets ignored because it is always
+ * red.
+ */
 export function hasOpenComplianceGaps(): boolean {
-  return COMPLIANCE_GAPS.length > 0;
+  return openGaps().length > 0;
 }

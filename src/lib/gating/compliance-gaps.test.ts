@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMPLIANCE_GAPS, gapsAt, hasOpenComplianceGaps , acceptedGaps, unexaminedGaps } from './compliance-gaps';
+import { closedGaps, COMPLIANCE_GAPS, gapsAt, hasOpenComplianceGaps , acceptedGaps, unexaminedGaps } from './compliance-gaps';
 import { getStateCompliance } from '@/config/state-tiers';
 import { evaluateAdvocacyWizardAccess } from './advocacy-wizard-access';
 
@@ -85,7 +85,8 @@ describe('accepted is a distinct state from closed', () => {
       'LASTREVIEWEDDATE-NOT-ENFORCED',
       'SCREENING-BANDS-UNCITED',
     ]);
-    expect(unexaminedGaps().length).toBe(COMPLIANCE_GAPS.length - 3);
+    // Three accepted, one closed, so the array is larger than the open set.
+    expect(unexaminedGaps().length).toBe(COMPLIANCE_GAPS.length - 3 - closedGaps().length);
   });
 
   it('leaves the genuinely unexamined gaps unexamined', () => {
@@ -93,10 +94,10 @@ describe('accepted is a distinct state from closed', () => {
     // operating without the review, which is this gap rather than the
     // date-enforcement one it was recorded against.
     const ids = unexaminedGaps().map((g) => g.id).sort();
-    expect(ids).toEqual([
-      'CA-DURATION-RULES-UNREVIEWED',
-      'CA-TRACK1-UNREVIEWED',
-      'LA-FALLBACK-UNVERIFIED',
-    ]);
+    expect(ids).toEqual(['CA-DURATION-RULES-UNREVIEWED', 'CA-TRACK1-UNREVIEWED']);
+    // LA-FALLBACK-UNVERIFIED left this list on 2026-10-05 by being ANSWERED,
+    // not accepted — the figures were checked against lavote.gov and three of
+    // them were wrong. It stays in the array as history.
+    expect(closedGaps().map((g) => g.id)).toEqual(['LA-FALLBACK-UNVERIFIED']);
   });
 });
