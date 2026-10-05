@@ -16,6 +16,11 @@ import {
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
 import { EXPECTATIONS, NO_LIST_NO_FEE } from '@/lib/referral-network/what-to-expect';
+import {
+  RESPONSIBILITIES_DISCLOSURE,
+  responsibilitiesFor,
+  type Party,
+} from '@/lib/easements/responsibilities';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
 import { legalReviewDisclosure } from '@/lib/compliance/legal-review-disclosure';
 import {
@@ -46,6 +51,20 @@ function param(value: string | string[] | undefined): string {
  * end" the strategy doc describes. Not the UX Agent's polished risk card
  * (real lot diagram, expandable methodology panel) — this is a harness.
  */
+/**
+ * Badge text for who typically bears a duty.
+ *
+ * "USUALLY" on every one of them, including the two that look definite. The
+ * badge is the part a skimming reader takes away, so it has to carry the
+ * hedge that the surrounding prose carries.
+ */
+const PARTY_LABEL: Record<Party, string> = {
+  holder: 'USUALLY THE HOLDER',
+  owner: 'USUALLY YOU',
+  shared: 'USUALLY SHARED',
+  'depends-on-document': 'DEPENDS ON THE DOCUMENT',
+};
+
 export default async function ReportPage({ searchParams }: ReportPageProps) {
   const street = param(searchParams.street);
   const city = param(searchParams.city);
@@ -515,6 +534,54 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             developer harness. On a page a homeowner reads, a raw JSON dump
             between two prose sections reads as a malfunction.
           */}
+          {/*
+            WHO IS RESPONSIBLE FOR WHAT. Placed directly after the restriction
+            checklist because the two are halves of one question: that section
+            says what the homeowner may not do, this one says what they are
+            owed and what falls to them. The restrictions alone read as pure
+            bad news, which is both discouraging and incomplete — most of what
+            matters financially here is on this side.
+          */}
+          <h2>Who is responsible for what</h2>
+          <p>
+            These are the arrangements usual for this kind of easement. Use them to work out which
+            questions are worth asking about your own.
+          </p>
+          {(() => {
+            const resp = responsibilitiesFor(easementType);
+            return (
+              <>
+                <div className="panel">
+                  <h3 style={{ marginTop: 0 }}>{resp.heading}</h3>
+                  {resp.responsibilities.map((r) => (
+                    <div key={r.question} style={{ marginBottom: '1.1rem' }}>
+                      <strong>{r.question}</strong>
+                      <br />
+                      <span className="badge badge-warn" style={{ marginRight: '0.5rem' }}>
+                        {PARTY_LABEL[r.typically]}
+                      </span>
+                      <small>{r.answer}</small>
+                      <br />
+                      <small className="muted">
+                        <strong>What would change it:</strong> {r.whatWouldChangeIt}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+                <div className="panel">
+                  <h3 style={{ marginTop: 0 }}>What this means for your property</h3>
+                  <p>{resp.valueAndProtection}</p>
+                  <p>
+                    <strong>Worth doing now, at no cost:</strong> {resp.freeNextStep}
+                  </p>
+                </div>
+                <p className="muted">
+                  <small>{RESPONSIBILITIES_DISCLOSURE}</small>
+                </p>
+              </>
+            );
+          })()}
+
           <details>
             <summary>Raw report data (JSON)</summary>
             <pre>{JSON.stringify(report, null, 2)}</pre>
