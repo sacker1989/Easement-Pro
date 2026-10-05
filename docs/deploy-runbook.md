@@ -226,26 +226,41 @@ set on the project — remove it and redeploy.
 Every upstream call writes one JSON line to stdout, which Vercel, Cloud Run and
 any container platform already collect and parse into structured fields:
 
+```json
+{"evt":"upstream","ts":"...","service":"census-geocoder","durationMs":478,"result":"ok","state":"CA"}
+{"evt":"upstream","ts":"...","service":"fema-nfhl","durationMs":325,"result":"ok","state":"CA"}
+```
 
+`service` is one of `county-parcel`, `census-geocoder`, `fema-nfhl`,
+`assessor-valuation`. `result` is `ok`, `degraded` or `failed`.
 
- is one of , , ,
-.  is ,  or .
+## What to watch
 
-**What to watch.** This product degrades politely at every upstream — a county
-lookup that fails falls back to national benchmarks and says so, a FEMA outage
-drops the flood panel. That is right for the homeowner and invisible to you. If
-San Diego started refusing every query, the product would keep serving plausible
-reports built on national averages and nobody would notice for weeks.
+This product degrades politely at every upstream — a county lookup that fails
+falls back to national benchmarks and says so, a FEMA outage drops the flood
+panel, a geocode miss drops it too. That is right for the homeowner and
+invisible to you. If San Diego started refusing every query, the product would
+keep serving plausible reports built on national averages and nobody would
+notice for weeks.
 
-So the signal is a **rising  or  rate for one **, not
-an error count — there will be no errors.
+**So the signal is a rising `degraded` or `failed` rate for one `service`, not
+an error count** — there will be no errors.
 
-**No address is ever logged, and that is structural rather than a convention.**
-The geocoder is called with the user's address in the URL, so an upstream error
-message routinely quotes it.  is a closed union rather than a
-string, which means  does not compile. There is no ZIP field
-either — county answers every operational question this is for.
+A Vercel log drain or a saved query grouping by `service` and `result` is
+enough. There is nothing to instrument beyond reading these lines.
 
- lines come from the error boundary and carry only
+## No address is ever logged
+
+This is structural rather than a convention. The geocoder is called with the
+user's address **in the URL**, so an upstream error message routinely quotes it,
+and the obvious `catch (err) { log(err.message) }` would write a residential
+address into your log aggregator.
+
+`Outcome.reason` is a closed union rather than a string, so that line does not
+compile. There is no ZIP field either — county answers every operational
+question this is for, and a ZIP plus a timestamp plus a parcel-shaped query
+narrows further than is worth it.
+
+`{"evt":"render-error",...}` lines come from the error boundary and carry only
 Next's digest hash, for correlating with a stack trace in the platform's own
 error reporting.
