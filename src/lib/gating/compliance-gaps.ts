@@ -60,8 +60,10 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     id: 'CA-TRACK1-UNREVIEWED',
     location: 'src/config/state-tiers.ts — STATE_COMPLIANCE_MATRIX.CA',
     current:
-      'California is Tier A with track1RequiredFlow "licensed-pathway", so Track 1 — the paid ' +
-      'Maintenance Request Letter — is offered. lastReviewedDate is null.',
+      'California is Tier A with track1RequiredFlow "licensed-pathway", so Track 1 — the ' +
+      'Maintenance Request Letter — is offered. lastReviewedDate is null. ' +
+      'NO LONGER PAID as of 2026-10-04; this entry said "the paid Maintenance Request Letter" ' +
+      'for the two months after free mode shipped, which is the defect Phase 4 is clearing.',
     required:
       'The entry\'s own note says "do not treat this entry as reviewed until then", and ' +
       'docs/development-strategy-v2.md calls the tier matrix "a hypothesis pending real counsel ' +
@@ -85,9 +87,64 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       'TWO QUESTIONS, EASILY COLLAPSED AND DIFFERENT: (1) is the output "self-help service" ' +
       'within §6400(d), or does it cross into legal advice, which no registration authorises; ' +
       '(2) if it is within §6400(d), must this product register. §6401\'s exemption list has not ' +
-      'been fetched and is the specific next step.',
+      'been fetched and is the specific next step. ' +
+      'REWRITTEN 2026-10-04 FOR FREE MODE, AND THE QUESTION HAS NARROWED. Everything above is ' +
+      '§6400 reasoning, and §6400 no longer reaches this product: compensation is an element of ' +
+      'the §6400(c) definition and nothing is charged. Question (2) is therefore moot and ' +
+      'question (1) is moot in its §6400 form. ' +
+      'WHAT IS LEFT IS THE HARDER HALF. §6125 — "No person shall practice law in California ' +
+      'unless the person is an active licensee of the State Bar" — has no compensation element ' +
+      'and is untouched by going free. So this gap no longer asks "must we register"; it asks ' +
+      'whether the letter output is the practice of law at all. ' +
+      'DO NOT READ THE NARROWING AS A RELAXATION. The regime that lapsed is the one with a ' +
+      'compliance path — register, post a bond, operate. The regime that remains has no path ' +
+      'short of being a lawyer. Exposure went DOWN (one regime removed, the other unchanged) and ' +
+      'the remaining question got HARDER to answer. Both are true and they are usually confused.',
     owner: 'product-and-counsel',
     markedOn: '2026-08-16',
+  },
+  {
+    id: 'CA-FLOW-DESCRIBES-LAPSED-REGIME',
+    location: 'src/config/state-tiers.ts — STATE_COMPLIANCE_MATRIX.CA.track1RequiredFlow',
+    current:
+      'California carries track1RequiredFlow "licensed-pathway", meaning Track 1 must run ' +
+      'through a licensed or certified relationship. That value was chosen to describe LDA ' +
+      'registration under Cal. Bus. & Prof. Code §6400 et seq.',
+    required:
+      'A required flow should describe a requirement someone is actually under. §6400 stopped ' +
+      'reaching this product on 2026-10-04 because compensation is an element of its definition, ' +
+      'so no LDA registration is required of a free service and "licensed-pathway" now names a ' +
+      'pathway nobody must take.',
+    closedBy:
+      'A decision on what the flow should say for a free product whose only operative basis is ' +
+      '§6125. The candidates are not equivalent: "mandatory-review" would route every Track 1 ' +
+      'letter through attorney review, which is the conservative answer to a UPL question and ' +
+      'costs money and latency; "licensed-pathway" retained means the value is kept as a ' +
+      'deliberate conservative placeholder; "unavailable" takes California Track 1 dark, which ' +
+      'the product owner declined on 2026-08-22 and nothing since has changed. ' +
+      'ENGINEERING MUST NOT PICK THIS. Changing the value changes gating behaviour, and the ' +
+      'reason to change it would be a counsel opinion on §6125 rather than a pivot in the ' +
+      'business model. The value was therefore left exactly as it was and the discrepancy ' +
+      'recorded here instead.',
+    owner: 'product-and-counsel',
+    markedOn: '2026-10-04',
+    riskAccepted: {
+      by: 'product',
+      on: '2026-10-04',
+      rationale:
+        'Retaining "licensed-pathway" is the conservative option of the three, because it is the ' +
+        'one that does not loosen anything: it keeps whatever review flow Track 1 already runs. ' +
+        'The alternative that would loosen the gate is relaxing the flow on the reasoning that ' +
+        '§6400 lapsed, and that reasoning is wrong — the lapsed regime is the one with a ' +
+        'compliance path, not the one that was binding. Operating with the label inaccurate is ' +
+        'preferable to operating with the gate relaxed, and the inaccuracy is now written down in ' +
+        'the entry itself and in regulatory-basis.ts rather than left for a reader to discover.',
+      revisitWhen:
+        'On the first counsel opinion addressing §6125, which is the artifact that decides this; ' +
+        'immediately if commerce is re-enabled, since §6400 would reach the product again and the ' +
+        'label would become accurate without anyone editing it; or on any decision to add a ' +
+        'second Track 1 state, since the flow value would then be copied.',
+    },
   },
   {
     id: 'LASTREVIEWEDDATE-NOT-ENFORCED',
@@ -112,8 +169,12 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       rationale:
         'Decision: do NOT go dark. Track 1 stays available in California without a recorded ' +
         'review date, because obtaining the date is not presently feasible and the control would ' +
-        'take the only live paid product offline. To be revisited annually or semi-annually as ' +
+        'take the only live Track 1 product offline. To be revisited annually or semi-annually as ' +
         'feasible. This is the decision the reverted branch was left open for, taken knowingly. ' +
+        'SAID "the only live PAID product" when taken on 2026-08-22, which free mode made false ' +
+        'on 2026-10-04. Corrected in place rather than re-decided: the decision does not depend ' +
+        'on the product being paid, and if anything it binds less tightly now, since going dark ' +
+        'would no longer forgo revenue. ' +
         'ONE THING IT DOES NOT CHANGE: the hard part is not ascertaining the date — the date is ' +
         'simply when counsel signs off. What is hard is obtaining the review. So this accepts ' +
         'operating without the review itself, which is CA-TRACK1-UNREVIEWED, and that gap is now ' +

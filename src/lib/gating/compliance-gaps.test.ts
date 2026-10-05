@@ -77,10 +77,15 @@ describe('accepted is a distinct state from closed', () => {
     // differs is whether anyone looked, which is what the audit trail needs.
     expect(hasOpenComplianceGaps()).toBe(true);
     expect(acceptedGaps().map((g) => g.id).sort()).toEqual([
+      // Added 2026-10-04. Free mode lapsed the §6400 basis, so the flow value
+      // "licensed-pathway" names a pathway nobody is required to take. The
+      // value was retained because it is the conservative option and because
+      // changing it is a counsel decision, not an engineering one.
+      'CA-FLOW-DESCRIBES-LAPSED-REGIME',
       'LASTREVIEWEDDATE-NOT-ENFORCED',
       'SCREENING-BANDS-UNCITED',
     ]);
-    expect(unexaminedGaps().length).toBe(COMPLIANCE_GAPS.length - 2);
+    expect(unexaminedGaps().length).toBe(COMPLIANCE_GAPS.length - 3);
   });
 
   it('leaves the genuinely unexamined gaps unexamined', () => {

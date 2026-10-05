@@ -5,6 +5,9 @@ import type { DurationDetermination } from '@/lib/analysis-layer';
 import { gateWizardField } from '@/lib/advocacy-wizard/gate-wizard-field';
 import { resolveAttorneyReviewDecision } from '@/lib/compliance/attorney-review';
 import { normalizeAddress } from '@/lib/parcel-resolution';
+import { getStateCompliance, STATE_COMPLIANCE_MATRIX } from '@/config/state-tiers';
+import { evaluateAdvocacyWizardAccess } from '@/lib/gating/advocacy-wizard-access';
+import { codeOf } from '@/lib/test-support/source-text';
 import {
   BlockedFieldError,
   buildMaintenanceRequestLetter,
@@ -69,10 +72,52 @@ describe('buildMaintenanceRequestLetter', () => {
     ).toThrow(BlockedFieldError);
   });
 
-  it('rejects any state other than CA', () => {
+  it('rejects a state the compliance matrix does not enable', () => {
     expect(() => buildMaintenanceRequestLetter({ ...validInput, state: 'TX' })).toThrow(
       UnsupportedStateForTrackOneError,
     );
+  });
+
+  describe('the gate is the matrix, not a literal in this file', () => {
+    it('refuses every state the matrix leaves unclassified', () => {
+      // Not a sample of one. A hardcode that happened to agree with the matrix
+      // for California would pass a single TX case and fail the day a second
+      // state was added to the matrix and silently did nothing.
+      for (const state of ['TX', 'FL', 'NY', 'WY', 'ZZ']) {
+        expect(
+          evaluateAdvocacyWizardAccess(getStateCompliance(state)).available,
+          `${state} should not be Track 1 enabled`,
+        ).toBe(false);
+        expect(() => buildMaintenanceRequestLetter({ ...validInput, state })).toThrow(
+          UnsupportedStateForTrackOneError,
+        );
+      }
+    });
+
+    it('allows exactly the states the matrix enables', () => {
+      // Derived from the matrix rather than written out, so adding a Track 1
+      // state updates both sides of this at once. If a state is enabled and
+      // the builder still refuses it, the hardcode has come back.
+      const enabled = Object.keys(STATE_COMPLIANCE_MATRIX).filter(
+        (s) => evaluateAdvocacyWizardAccess(getStateCompliance(s)).available,
+      );
+      expect(enabled.length).toBeGreaterThan(0);
+      for (const state of enabled) {
+        expect(() =>
+          buildMaintenanceRequestLetter({ ...validInput, state }),
+        ).not.toThrow();
+      }
+    });
+
+    it('carries no state literal in the source', () => {
+      // The specific regression: `if (state !== 'CA') throw`. A second source
+      // of truth that agrees today is still a second source of truth, and its
+      // failure mode is silence. Comments are stripped — this file's own
+      // prose discusses the removed hardcode.
+      const code = codeOf(new URL('./maintenance-request.ts', import.meta.url));
+      expect(code).not.toMatch(/state\s*!==\s*['"]CA['"]/);
+      expect(code).toContain('evaluateAdvocacyWizardAccess');
+    });
   });
 
   it('rejects an empty maintenance description', () => {

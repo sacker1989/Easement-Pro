@@ -1,4 +1,6 @@
 import type { StateComplianceEntry } from '@/lib/gating/state-tier-config';
+import { basisSummary } from '@/lib/gating/regulatory-basis';
+import { COMMERCE_ENABLED } from './commerce-mode';
 import { CURRENT_DISCLAIMER } from './disclaimer-copy';
 import type { AttorneyReviewDecision } from './attorney-review';
 import type { RuleSetResolution } from '@/lib/analysis-layer/rule-set';
@@ -86,7 +88,11 @@ export function buildSendAuditRecord(input: {
     letterType: input.letterType,
     state: input.stateCompliance.state,
     stateTier: input.stateCompliance.tier,
-    complianceBasis: input.stateCompliance.basis,
+    // Rendered from the structured bases rather than copied, and rendered
+    // WITH the commerce mode that applied, because which statutes were
+    // operative is the fact a later reader needs and it is not recoverable
+    // from the citation alone. See regulatory-basis.ts.
+    complianceBasis: basisSummary(input.stateCompliance.basis, COMMERCE_ENABLED),
     disclaimerVersion: CURRENT_DISCLAIMER.version,
     attorneyReviewDecision: input.attorneyReviewDecision ?? null,
     generatedAt: (input.now ?? new Date()).toISOString(),

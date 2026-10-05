@@ -2,6 +2,7 @@ import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, expect, it } from 'vitest';
 import type { StateComplianceEntry } from '@/lib/gating/state-tier-config';
 import { buildSendAuditRecord } from './audit-record';
+import { FIXTURE_BASES } from '@/lib/test-support/regulatory-basis-fixture';
 import { resolveAttorneyReviewDecision } from './attorney-review';
 import { CURRENT_DISCLAIMER } from './disclaimer-copy';
 
@@ -10,7 +11,7 @@ const caCompliance: StateComplianceEntry = {
   tier: stateTier('A'),
   track1RequiredFlow: 'licensed-pathway',
   track2Available: true,
-  basis: 'Legal Document Assistant statute',
+  basis: FIXTURE_BASES,
   lastReviewedDate: null,
 };
 
@@ -26,7 +27,9 @@ describe('buildSendAuditRecord', () => {
       letterType: 'maintenance-request',
       state: 'CA',
       stateTier: 'A',
-      complianceBasis: 'Legal Document Assistant statute',
+      complianceBasis:
+        'Test Code §1 (fixture) [document-assistant; not operative (compensation is an element and ' +
+        'this product is free)]; Test Code §2 (fixture) [unauthorized-practice; operative]',
       disclaimerVersion: CURRENT_DISCLAIMER.version,
       attorneyReviewDecision: { requiredFlow: 'licensed-pathway', choice: 'declined', status: 'not-required' },
       generatedAt: '2026-01-15T12:00:00.000Z',

@@ -9,6 +9,8 @@
  * not a code change here.
  */
 
+import type { RegulatoryBasis } from './regulatory-basis';
+
 declare const stateTierBrand: unique symbol;
 
 /**
@@ -41,8 +43,16 @@ export interface StateComplianceEntry {
   track1RequiredFlow: Track1RequiredFlow;
   /** Track 2 (Request for Clarification) is available nationwide in MVP scope. */
   track2Available: true;
-  /** Statute or licensing program this classification rests on, for the audit trail. */
-  basis: string | null;
+  /**
+   * Statute or licensing program this classification rests on.
+   *
+   * STRUCTURED RATHER THAN FREE TEXT SINCE FREE MODE. A string could say
+   * "Cal. Bus. & Prof. Code §6400 et seq." and could not say that §6400 stops
+   * reaching a product that charges nothing, because compensation is an
+   * element of its definition. See regulatory-basis.ts — including why a
+   * lapsed basis is good news and still needs recording.
+   */
+  basis: readonly RegulatoryBasis[] | null;
   /** ISO date of last counsel review, or null if this state has never been reviewed. */
   lastReviewedDate: string | null;
   notes?: string;

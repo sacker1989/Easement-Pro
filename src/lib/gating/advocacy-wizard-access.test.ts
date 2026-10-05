@@ -1,3 +1,4 @@
+import { FIXTURE_BASES } from '@/lib/test-support/regulatory-basis-fixture';
 import { stateTier } from '@/lib/gating/state-tier-config';
 import { describe, expect, it } from 'vitest';
 import { evaluateAdvocacyWizardAccess } from './advocacy-wizard-access';
@@ -8,7 +9,7 @@ const tierAEntry: StateComplianceEntry = {
   tier: stateTier('A'),
   track1RequiredFlow: 'licensed-pathway',
   track2Available: true,
-  basis: 'test fixture',
+  basis: FIXTURE_BASES,
   lastReviewedDate: '2026-01-01',
 };
 
@@ -17,7 +18,7 @@ const tierBEntry: StateComplianceEntry = {
   tier: stateTier('B'),
   track1RequiredFlow: 'mandatory-review',
   track2Available: true,
-  basis: 'test fixture',
+  basis: FIXTURE_BASES,
   lastReviewedDate: '2026-01-01',
 };
 
