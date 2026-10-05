@@ -14,15 +14,27 @@ describe('assessDeploymentReadiness — California', () => {
     expect(blockingChecks(r)).toHaveLength(0);
   });
 
-  it('CANNOT deploy to production without an audit path, and that is the only blocker', () => {
-    // THE ANSWER THIS MODULE EXISTS TO GIVE. Every other open question in this
-    // product ships — unreviewed rule sets degrade, uncited bands carry their
-    // arithmetic, placeholder disclaimer copy still says the true thing. One
-    // config line stops the product working at all, and it is not a legal
-    // question.
+  it('CAN deploy to production without an audit path, because the analysis needs none', () => {
+    // CORRECTED 2026-10-05. This test previously asserted the opposite, on the
+    // reasoning that an unset AUDIT_LOG_PATH stops every send flow. That is
+    // true of ARTEFACTS and false of the analysis — /report imports no audit
+    // module, because nothing there is sent to anyone. Calling it blocking
+    // would have withheld a working free tier from every user while waiting
+    // on a storage decision only the letter paths need.
     const r = assessDeploymentReadiness('CA', PROD);
-    expect(r.canDeploy).toBe(false);
-    expect(blockingChecks(r).map((c) => c.id)).toEqual(['audit-store-configured']);
+    expect(r.canDeploy).toBe(true);
+    expect(blockingChecks(r)).toHaveLength(0);
+  });
+
+  it('nothing is blocking in any configuration today', () => {
+    // Worth asserting as its own fact. `blocking` is reserved for "the product
+    // does not work as configured", and after the correction above nothing
+    // currently meets that bar. If a check ever returns blocking again, it
+    // should be because something genuinely broke rather than because an open
+    // question was reclassified.
+    for (const env of [DEV, PROD, PROD_CONFIGURED]) {
+      expect(blockingChecks(assessDeploymentReadiness('CA', env))).toHaveLength(0);
+    }
   });
 
   it('can deploy to production once the audit path is set', () => {
@@ -31,13 +43,18 @@ describe('assessDeploymentReadiness — California', () => {
     expect(blockingChecks(r)).toHaveLength(0);
   });
 
-  it('names the fix for the blocker rather than only the problem', () => {
-    const blocker = blockingChecks(assessDeploymentReadiness('CA', PROD))[0]!;
-    expect(blocker.fix).toContain(AUDIT_PATH_ENV);
+  it('names the fix and says exactly what degrades without it', () => {
+    const check = assessDeploymentReadiness('CA', PROD).checks.find(
+      (c) => c.id === 'audit-store-configured',
+    )!;
+    expect(check.fix).toContain(AUDIT_PATH_ENV);
     // Serverless is the case where setting the variable is NOT enough, and a
     // fix line that omitted it would send someone to a silent data loss.
-    expect(blocker.fix).toMatch(/serverless/i);
-    expect(blocker.detail).toMatch(/no letters|refuse/i);
+    expect(check.fix).toMatch(/serverless/i);
+    expect(check.detail).toMatch(/refuse/i);
+    // It must ALSO say the analysis is fine, or an operator reading only this
+    // line draws the conclusion the old version drew.
+    expect(check.detail).toMatch(/analysis is unaffected/i);
   });
 
   it('does not let an open legal question masquerade as a blocker', () => {

@@ -1,4 +1,5 @@
 import { assessDeploymentReadiness, blockingChecks, type CheckStatus } from '@/lib/deployment/readiness';
+import { surfaceReadiness } from '@/lib/deployment/surfaces';
 
 interface ReadinessPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -29,6 +30,7 @@ export default async function ReadinessPage({ searchParams }: ReadinessPageProps
 
   const report = assessDeploymentReadiness(state, env);
   const blockers = blockingChecks(report);
+  const surfaces = surfaceReadiness(state, env);
 
   const badge: Record<CheckStatus, { label: string; className: string }> = {
     met: { label: 'MET', className: 'badge badge-ok' },
@@ -79,6 +81,48 @@ export default async function ReadinessPage({ searchParams }: ReadinessPageProps
           ))}
         </>
       )}
+
+      {/*
+        WHAT ACTUALLY WORKS, above the check list.
+        "Clear to deploy" and "everything works" are different statements, and
+        an operator who reads only the verdict should still learn which two
+        surfaces will refuse. This table is the answer the previous version of
+        this page collapsed into a single blocking flag.
+      */}
+      <h2>What works in this configuration</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Surface</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {surfaces.map((s) => (
+            <tr key={s.id}>
+              <td>
+                <code>{s.route}</code>
+                <br />
+                <small className="muted">{s.what}</small>
+              </td>
+              <td>
+                <span className={s.works ? 'badge badge-ok' : 'badge badge-warn'}>
+                  {s.works ? 'WORKS' : 'DEGRADED'}
+                </span>
+              </td>
+              <td>
+                <small>
+                  {s.degradedBecause ??
+                    (s.producesArtefact
+                      ? 'Produces a document the user sends themselves.'
+                      : 'Nothing leaves the product, so no audit record is required.')}
+                </small>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <h2>All checks</h2>
       <table>

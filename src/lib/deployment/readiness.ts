@@ -97,30 +97,39 @@ function auditStoreCheck(
   }
 
   /*
-   * THE ONE BLOCKING CHECK, and it is worth being precise about why.
+   * OPEN, NOT BLOCKING — AND THIS CHECK USED TO SAY BLOCKING, WRONGLY.
    *
    * Unconfigured in production, `resolveAuditStore` marks the store
-   * non-durable. `recordSend` refuses a non-durable store and
-   * `recordGeneration` returns not-ok, so every send flow withholds its
-   * artefact and shows the blocked message. A deploy in this condition is not
-   * a product with a missing log — it is a product that produces NO LETTERS
-   * AT ALL, for every user, while reporting no error to the operator.
+   * non-durable, `recordGeneration` returns not-ok, and every ARTEFACT flow
+   * withholds its document. That part was right and is unchanged.
    *
-   * That is a worse failure than it sounds, because it looks like low usage
-   * rather than an outage.
+   * What was wrong was the conclusion drawn from it. The old detail read "the
+   * product generates no letters for anyone", classified blocking, which an
+   * operator reads as "do not deploy". But the audit store gates artefacts —
+   * things that leave the product and go to a utility, an agency or a
+   * professional, which have to be answerable afterwards. It does not gate the
+   * ANALYSIS. /report imports no audit module at all: nothing is sent, nobody
+   * receives anything, and there is no artefact to account for later.
+   *
+   * So the free tier — whose entire surface is the analysis page — ships
+   * today. Treating this as blocking would have withheld a working product
+   * from every user while waiting on a storage decision only the letter paths
+   * need. See surfaces.ts for exactly which two degrade.
    */
   return {
     id: 'audit-store-configured',
     what: `${AUDIT_PATH_ENV} points at storage that survives a restart.`,
-    status: 'blocking',
+    status: 'open',
     detail:
-      `Not set. In production the store is marked non-durable, which makes every send flow ` +
-      'refuse to produce its artefact. Deployed like this the product generates no letters for ' +
-      'anyone, and reports no error while doing it.',
+      'Not set. In production the store is marked non-durable, so the two artefact surfaces — ' +
+      'the Track 1 letter and the Track 2 clarification request — will load and then refuse to ' +
+      'produce their document. THE ANALYSIS IS UNAFFECTED: /report depends on no audit module, ' +
+      'because nothing there is sent to anyone. The free tier is deployable in this state.',
     fix:
-      `Set ${AUDIT_PATH_ENV} to a path on a mounted volume. On a serverless host a file path is ` +
-      'not sufficient at all — replace the adapter in src/lib/compliance/audit-store.ts with a ' +
-      'database-backed one. The AuditStore interface exists so that is a drop-in.',
+      `Set ${AUDIT_PATH_ENV} to a path on a mounted volume before the letter surfaces are ` +
+      'relied on. On a serverless host a file path is not sufficient at all — replace the ' +
+      'adapter in src/lib/compliance/audit-store.ts with a database-backed one. The AuditStore ' +
+      'interface exists so that is a drop-in.',
   };
 }
 
