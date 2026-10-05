@@ -21,6 +21,13 @@ import {
   responsibilitiesFor,
   type Party,
 } from '@/lib/easements/responsibilities';
+import {
+  SHOULD_EXIST_DISCLOSURE,
+  THE_QUESTION_TO_ASK,
+  TRIGGER_LABEL,
+  whatShouldExist,
+  type Posture,
+} from '@/lib/easements/should-exist';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance/disclaimer-copy';
 import { legalReviewDisclosure } from '@/lib/compliance/legal-review-disclosure';
 import {
@@ -58,6 +65,19 @@ function param(value: string | string[] | undefined): string {
  * badge is the part a skimming reader takes away, so it has to carry the
  * hedge that the surrounding prose carries.
  */
+/**
+ * Which side of an undocumented arrangement the homeowner is on.
+ *
+ * "YOU ARE THE EXPOSED PARTY" is deliberately blunt for the benefited case.
+ * The neutral label would be "you benefit", which reads as good news and is
+ * precisely the misreading the module exists to correct.
+ */
+const POSTURE_LABEL: Record<Posture, string> = {
+  burdened: 'SOMETHING CROSSES YOUR LAND',
+  benefited: 'YOU ARE THE EXPOSED PARTY',
+  mutual: 'SHARED WITH A NEIGHBOUR',
+};
+
 const PARTY_LABEL: Record<Party, string> = {
   holder: 'USUALLY THE HOLDER',
   owner: 'USUALLY YOU',
@@ -581,6 +601,53 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </>
             );
           })()}
+
+          {/*
+            WHAT SHOULD EXIST. Follows responsibilities because the order is
+            what exists, what it means for you, and then what is missing. The
+            benefited-and-unrecorded item leads every list by construction —
+            see should-exist.ts for why that exposure is the one worth putting
+            first even though it is not what the reader came in asking about.
+          */}
+          <h2>What should be on record, and often isn&rsquo;t</h2>
+          <div className="undetermined">
+            <p style={{ marginTop: 0 }}>
+              <strong>Before the detail, the question worth asking:</strong>
+            </p>
+            <p>
+              <em>{THE_QUESTION_TO_ASK}</em>
+            </p>
+          </div>
+          {whatShouldExist(easementType).map((d) => (
+            <div className="panel" key={d.id}>
+              <h3 style={{ marginTop: 0 }}>{d.situation}</h3>
+              <p>
+                <span className="badge badge-warn" style={{ marginRight: '0.5rem' }}>
+                  {POSTURE_LABEL[d.posture]}
+                </span>
+                <span className="badge">{TRIGGER_LABEL[d.becomesUrgent]}</span>
+              </p>
+              <p>
+                <strong>What should exist:</strong> {d.whatShouldExist}
+              </p>
+              <p>
+                <small>{d.whyItMatters}</small>
+              </p>
+              <p>
+                <small className="muted">
+                  <strong>If nobody does anything:</strong> {d.ifYouDoNothing}
+                </small>
+              </p>
+              <p>
+                <small>
+                  <strong>Where to start, at no cost:</strong> {d.howToStart}
+                </small>
+              </p>
+            </div>
+          ))}
+          <p className="muted">
+            <small>{SHOULD_EXIST_DISCLOSURE}</small>
+          </p>
 
           <details>
             <summary>Raw report data (JSON)</summary>
