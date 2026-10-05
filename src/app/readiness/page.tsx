@@ -3,6 +3,20 @@ import { surfaceReadiness } from '@/lib/deployment/surfaces';
 import { operatorPagesEnabled } from '@/lib/deployment/operator-access';
 import { notFound } from 'next/navigation';
 
+/**
+ * EVALUATED PER REQUEST, NOT AT BUILD.
+ *
+ * Without this the page prerenders: `notFound()` runs once during the build
+ * and Next bakes a static 404. That is closed, which is the safe direction,
+ * and it is still wrong — the gate would then reflect the environment the
+ * BUILD ran in rather than the one serving traffic. On Vercel, where build and
+ * runtime environments are configured separately, that produces a control
+ * whose state nobody can reason about from the dashboard.
+ *
+ * A security gate should answer the question at the moment it is asked.
+ */
+export const dynamic = 'force-dynamic';
+
 interface ReadinessPageProps {
   searchParams: Record<string, string | string[] | undefined>;
 }

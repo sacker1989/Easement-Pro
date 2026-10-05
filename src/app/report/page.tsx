@@ -45,6 +45,22 @@ import {
   type ReferralPackage,
 } from '@/lib/handoff';
 
+/**
+ * THE APP'S OWN FETCH BUDGET IS 25 SECONDS, so the function must outlive it.
+ *
+ * `resilient-fetch.ts` allows three attempts with backoff against a county
+ * ArcGIS service, under a 25s total ceiling. A serverless function that dies
+ * at 10s kills the request mid-retry and the homeowner sees a failure for a
+ * lookup that would have succeeded — the worst case, because the retry logic
+ * exists precisely because these services are intermittently slow.
+ *
+ * 30 EXCEEDS VERCEL'S HOBBY LIMIT OF 10 and requires a Pro plan. On Hobby this
+ * value is ignored and the 10s cap applies, so either lower the fetch budget
+ * in resilient-fetch.ts to fit under it or accept that slow counties fail. The
+ * runbook says so; it is not a thing to discover from a user report.
+ */
+export const maxDuration = 30;
+
 interface ReportPageProps {
   searchParams: Record<string, string | string[] | undefined>;
 }

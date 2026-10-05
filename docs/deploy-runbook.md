@@ -58,7 +58,8 @@ Read that information by running the test suite instead.
 npm ci && npm run build && npm start
 ```
 
-Any host that runs a Next.js 14 app server works. Vercel needs no config file.
+Any host that runs a Next.js 14 app server works. For Vercel specifically, see
+the Vercel section below — it has two serverless-specific caveats.
 
 **Do not run `npm run build` while a dev server is running** — the build writes
 into `.next` and corrupts the dev server's chunks. Stop it first.
@@ -105,3 +106,90 @@ Against `next build` + `next start`, NODE_ENV=production, nothing configured:
 | `/checkout` | 200, free-mode message |
 
 1039 tests across 72 files, `tsc` clean, build clean.
+
+---
+
+# Vercel
+
+`vercel.json` sets the framework and security headers. Next.js App Router needs
+no build configuration beyond that.
+
+```bash
+vercel link        # once, to connect the repo to a project
+vercel --prod      # deploy
+```
+
+Or connect the GitHub repo in the Vercel dashboard and let pushes to `master`
+deploy themselves.
+
+## Environment variables to set in Vercel
+
+**None.** Set nothing and the free tier works correctly. The two variables that
+exist both default to the right behaviour, and on Vercel specifically one of
+them must stay unset.
+
+### `AUDIT_LOG_PATH` — leave it unset on Vercel
+
+Vercel's filesystem is ephemeral. A file path here would mean writes succeed,
+nothing errors, and every audit record is lost at the next cold start — a
+silent total loss of exactly the records that exist to stay answerable.
+
+Unset, the store is marked non-durable, `/advocacy` and `/inquiry` load and then
+refuse to produce their document with an explanation, and `/report` is
+unaffected. That is the correct state for a Vercel deploy of the free tier.
+
+To turn the letter surfaces on later, replace the adapter in
+`src/lib/compliance/audit-store.ts` with a database-backed one — Vercel Postgres,
+Neon, whatever — and point it at that. The `AuditStore` interface exists so this
+is a drop-in. **Do not** set a file path and assume it works.
+
+### `ENABLE_OPERATOR_PAGES` — never set it on the production project
+
+`/readiness` publishes server paths, every open compliance gap and every
+accepted-risk rationale. Unset, it returns 404. Verified at runtime in both
+states, not merely at build: the page is `force-dynamic` so the gate is
+evaluated per request rather than baked in by whichever environment ran the
+build.
+
+## Two things that bite on serverless specifically
+
+### 1. Function timeout versus the fetch budget — needs a Pro plan
+
+County lookups run through `resilient-fetch.ts`: three attempts with backoff,
+25-second total ceiling, because county ArcGIS services are intermittently slow
+and the retries are what make them usable.
+
+`/report` declares `maxDuration = 30` so the function outlives that budget.
+**Vercel Hobby caps functions at 10 seconds and ignores the value.** On Hobby, a
+slow county lookup is killed mid-retry and the homeowner sees a failure for a
+request that would have succeeded.
+
+On Hobby, either upgrade or lower `totalBudgetMs` in `resilient-fetch.ts` to
+around 8 seconds and accept that slow counties fail faster.
+
+### 2. The request cache and concurrency limiter are per-instance
+
+`resilient-fetch.ts` holds a module-level cache (60s TTL) and a per-host
+concurrency limiter (4 concurrent). Both are singletons **within one Node
+instance**. Vercel runs many instances, so:
+
+- the cache hit rate approaches zero on cold starts, and every report is a
+  fresh set of county requests
+- the limiter is 4-per-instance, not 4 globally. Fifty simultaneous users can
+  mean far more than four concurrent requests at LA County's ArcGIS endpoint.
+
+Nothing breaks today at low traffic. It becomes a problem at exactly the moment
+the free tier succeeds, and the failure mode is a public county GIS service
+rate-limiting or blocking the deployment — which takes out the product's core
+value, not a side feature. If traffic grows, the fix is a shared cache
+(Vercel KV, Redis) in front of the county calls rather than a bigger limiter.
+
+## Post-deploy smoke test
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://YOUR_HOST/
+curl -s -o /dev/null -w "%{http_code}\n" https://YOUR_HOST/readiness
+```
+
+`200` then **`404`**. A `200` on `/readiness` means `ENABLE_OPERATOR_PAGES` is
+set on the project — remove it and redeploy.
