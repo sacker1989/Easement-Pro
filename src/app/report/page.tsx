@@ -21,6 +21,8 @@ import {
   responsibilitiesFor,
   type Party,
 } from '@/lib/easements/responsibilities';
+import { analyzeEasement } from '@/lib/analysis-layer';
+import type { EasementLegalCharacter } from '@/lib/analysis-layer/duration-facts';
 import {
   SHOULD_EXIST_DISCLOSURE,
   THE_QUESTION_TO_ASK,
@@ -100,8 +102,38 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   const easementPurpose: EasementPurpose = typeMapping.purpose;
   const typedLotAreaSqFt = Number(param(searchParams.lotAreaSqFt) || '8000');
   const easementAreaSqFt = Number(param(searchParams.easementAreaSqFt) || '800');
+  /*
+   * DURATION FACTS, read separately from the physical easement type above.
+   *
+   * `legalCharacter` rather than reusing `easementType`: the two are
+   * orthogonal axes that were once both called "easement type" in this
+   * codebase, and a sewer easement (physical) may be appurtenant or in gross
+   * (legal). Sharing a query parameter would have silently merged them.
+   *
+   * ILLEGIBLE IS THE CHECKBOX, NOT LEGIBLE. An unchecked box is the default,
+   * and the default has to be the common case — most people can read their
+   * document. Asking "is it legible?" and defaulting to unchecked would make
+   * every untouched form claim an unreadable document and flag every report.
+   */
+  const legalCharacter = (param(searchParams.legalCharacter) || 'unknown') as EasementLegalCharacter;
+  const hasPerpetualLanguage = param(searchParams.hasPerpetualLanguage) === '1';
+  const hasTermOrConditionSubsequent = param(searchParams.hasTermOrConditionSubsequent) === '1';
+  const documentLegible = param(searchParams.documentIllegible) !== '1';
+
   const selectedAin = param(searchParams.ain);
   const submitted = searchParams.submitted === '1';
+
+  const durationAnalysis = submitted
+    ? analyzeEasement({
+        state,
+        duration: {
+          easementType: legalCharacter,
+          hasPerpetualLanguage,
+          hasTermOrConditionSubsequent,
+          documentLegible,
+        },
+      })
+    : null;
 
   let report: ReturnType<typeof buildRiskDisclosureReport> | null = null;
   let isLaCounty = false;
@@ -393,6 +425,73 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           </p>
         </fieldset>
 
+        {/*
+          ITS OWN FIELDSET, AND A DIFFERENT AXIS FROM THE ONE ABOVE. The
+          easement fieldset asks what the easement CARRIES — sewer, overhead
+          line, driveway. This one asks what the recorded DOCUMENT says. The
+          two were once both called "easement type" in this codebase and the
+          collision is documented at length in duration-facts.ts; keeping them
+          in separate fieldsets with different words is the user-facing half of
+          not repeating it.
+
+          Everything here is optional and defaults to "I don't know", because a
+          homeowner who has not dug out their deed should still get a report.
+        */}
+        <fieldset>
+          <legend>Your easement document (optional)</legend>
+          <p className="muted" style={{ marginTop: 0 }}>
+            If you have the recorded document in front of you, these three answers let the report
+            say more. Skip them if you don&rsquo;t — everything above still works.
+          </p>
+          <label>
+            Who holds it?
+            <select name="legalCharacter" defaultValue={legalCharacter}>
+              <option value="unknown">I don&rsquo;t know</option>
+              <option value="appurtenant">
+                A neighbouring property (appurtenant — it goes with their land)
+              </option>
+              <option value="in-gross">
+                A company or person (in gross — e.g. a utility, not tied to land)
+              </option>
+              <option value="prescriptive">
+                Nobody — it&rsquo;s been used for years with no document (prescriptive)
+              </option>
+            </select>
+          </label>
+          <label style={{ marginTop: '0.9rem' }}>
+            <input
+              type="checkbox"
+              name="hasPerpetualLanguage"
+              value="1"
+              defaultChecked={hasPerpetualLanguage}
+              style={{ width: 'auto', marginRight: '0.5rem' }}
+            />
+            It says &ldquo;perpetual&rdquo;, &ldquo;forever&rdquo; or &ldquo;runs with the
+            land&rdquo;
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="hasTermOrConditionSubsequent"
+              value="1"
+              defaultChecked={hasTermOrConditionSubsequent}
+              style={{ width: 'auto', marginRight: '0.5rem' }}
+            />
+            It states a time limit or an ending condition (&ldquo;for 20 years&rdquo;,
+            &ldquo;until X happens&rdquo;)
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              name="documentIllegible"
+              value="1"
+              defaultChecked={!documentLegible}
+              style={{ width: 'auto', marginRight: '0.5rem' }}
+            />
+            My copy is too poor to read reliably
+          </label>
+        </fieldset>
+
         <button type="submit">Generate report</button>
       </form>
 
@@ -601,6 +700,77 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </>
             );
           })()}
+
+          {/*
+            HOW LONG IT LASTS. Only rendered when the homeowner actually told
+            us something — an untouched form means legalCharacter 'unknown' and
+            no language flags, which produces a flag about a document nobody
+            described. Showing that would read as a finding about THEIR
+            easement rather than an absence of input, which is the worst of
+            both: alarming and uninformative.
+          */}
+          {durationAnalysis && (hasPerpetualLanguage || hasTermOrConditionSubsequent || legalCharacter !== 'unknown') && (
+            <>
+              <h2>How long does it last?</h2>
+              {durationAnalysis.duration.tier !== 'flagged-ambiguous' && (
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    <strong>{durationAnalysis.duration.value.summary}</strong>
+                  </p>
+                  {durationAnalysis.duration.tier === 'likely-with-caveat' && (
+                    <p>
+                      <small className="muted">{durationAnalysis.duration.caveat}</small>
+                    </p>
+                  )}
+                  <p className="muted">
+                    <small>
+                      This is a reading of what you told us the document says, not an opinion about
+                      your legal position. It would hold the same in any state.
+                    </small>
+                  </p>
+                </div>
+              )}
+
+              {/*
+                The advisory. This is the path that lets a free analysis say
+                something useful where the answer depends on doctrine nobody
+                has reviewed — a general proposition and the question, never a
+                determination. See confidence-tiering.ts for why those are
+                different speech acts.
+              */}
+              {durationAnalysis.advisory && (
+                <div className="undetermined">
+                  <p style={{ marginTop: 0 }}>
+                    <strong>Your document didn&rsquo;t state a duration</strong>, so the answer
+                    depends on what the law presumes. This tool does not apply law to your
+                    situation. Here is the general position and the question worth asking.
+                  </p>
+                  <h3>The general rule</h3>
+                  <p>{durationAnalysis.advisory.generalPosition}</p>
+                  <h3>Ask an attorney</h3>
+                  <p>
+                    <em>&ldquo;{durationAnalysis.advisory.askYourAttorney}&rdquo;</em>
+                  </p>
+                  <h3>Why this isn&rsquo;t an answer</h3>
+                  <p>{durationAnalysis.advisory.whyNotDetermined}</p>
+                  <p className="muted">
+                    <small>
+                      Nothing above is legal advice and no attorney has reviewed it. An attorney
+                      licensed in your state can tell you whether the general rule applies to your
+                      parcel; this tool cannot, and does not try.
+                    </small>
+                  </p>
+                </div>
+              )}
+
+              {durationAnalysis.duration.tier === 'flagged-ambiguous' &&
+                !durationAnalysis.advisory && (
+                  <div className="undetermined">
+                    <p style={{ marginTop: 0 }}>{durationAnalysis.duration.flagReason}</p>
+                  </div>
+                )}
+            </>
+          )}
 
           {/*
             WHAT SHOULD EXIST. Follows responsibilities because the order is

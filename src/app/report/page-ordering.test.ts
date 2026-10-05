@@ -71,3 +71,56 @@ describe('the screening figure never renders without its disclosures', () => {
     expect(PAGE).toContain("screening.status === 'insufficient-data'");
   });
 });
+
+/**
+ * The duration analysis is a FINDING about the document, so it must sit with
+ * the other findings and above the limits, like everything else here.
+ *
+ * It also must not drift below "What should be on record" — that section is
+ * about documents the homeowner does NOT have, and reading it before the
+ * analysis of the document they DO have inverts the narrative: it opens on
+ * what is missing before saying anything about what exists.
+ */
+describe('the duration analysis sits in the right place', () => {
+  it('renders above the limits section, like every other finding', () => {
+    const duration = headingIndex('How long does it last?');
+    const limits = headingIndex('What this report does not tell you');
+    expect(duration).toBeGreaterThan(-1);
+    expect(limits).toBeGreaterThan(-1);
+    expect(duration).toBeLessThan(limits);
+  });
+
+  it('renders before the what-should-exist section', () => {
+    const duration = headingIndex('How long does it last?');
+    const shouldExist = PAGE.indexOf('What should be on record');
+    expect(shouldExist).toBeGreaterThan(-1);
+    expect(duration).toBeLessThan(shouldExist);
+  });
+
+  it('is gated on the homeowner having told us something', () => {
+    // An untouched form means legalCharacter 'unknown' and no language flags,
+    // which produces a flag about a document nobody described. Rendering that
+    // reads as a finding about THEIR easement rather than an absence of
+    // input — alarming and uninformative at once.
+    expect(PAGE).toMatch(
+      /hasPerpetualLanguage \|\| hasTermOrConditionSubsequent \|\| legalCharacter !== 'unknown'/,
+    );
+  });
+
+  it('asks whether the document is ILLEGIBLE, not whether it is legible', () => {
+    // An unchecked box is the default and the default has to be the common
+    // case. Asking "is it legible?" and defaulting to unchecked would make
+    // every untouched form claim an unreadable document.
+    expect(PAGE).toContain('name="documentIllegible"');
+    expect(PAGE).not.toContain('name="documentLegible"');
+  });
+
+  it('keeps the legal character on its own query parameter', () => {
+    // `easementType` is the PHYSICAL taxonomy on this page — sewer, overhead
+    // line, driveway. The legal character is orthogonal and was once called
+    // the same thing, which is documented at length in duration-facts.ts.
+    // Sharing a parameter would silently merge the two axes.
+    expect(PAGE).toContain('searchParams.legalCharacter');
+    expect(PAGE).toContain('name="legalCharacter"');
+  });
+});
