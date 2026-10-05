@@ -23,6 +23,7 @@ import {
 } from '@/lib/easements/responsibilities';
 import { analyzeEasement } from '@/lib/analysis-layer';
 import { GEOCODE_DISCLOSURE, geocodeAddress } from '@/lib/proximity/geocode';
+import { observe } from '@/lib/observability/outcome-log';
 import {
   FLOOD_ZONE_DISCLOSURE,
   floodImplication,
@@ -171,12 +172,29 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    */
   const geocoded =
     submitted && street.trim() !== '' && zip.trim() !== ''
-      ? await geocodeAddress({ street, city, state, zip })
+      ? await observe(
+          'census-geocoder',
+          (r) => ({
+            result: r.kind === 'matched' ? 'ok' : r.kind === 'no-match' ? 'degraded' : 'failed',
+            reason: r.kind === 'no-match' ? 'no-match' : r.kind === 'lookup-failed' ? 'http-error' : undefined,
+            state,
+          }),
+          () => geocodeAddress({ street, city, state, zip }),
+        )
       : null;
 
   const floodZone =
     geocoded?.kind === 'matched'
-      ? await lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon })
+      ? await observe(
+          'fema-nfhl',
+          (r) => ({
+            result: r.kind === 'found' ? 'ok' : r.kind === 'no-map-coverage' ? 'degraded' : 'failed',
+            reason:
+              r.kind === 'no-map-coverage' ? 'no-coverage' : r.kind === 'lookup-failed' ? 'http-error' : undefined,
+            state,
+          }),
+          () => lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon }),
+        )
       : null;
 
   const durationAnalysis = submitted

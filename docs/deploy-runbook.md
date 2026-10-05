@@ -218,3 +218,34 @@ curl -s -o /dev/null -w "%{http_code}\n" https://YOUR_HOST/readiness
 
 `200` then **`404`**. A `200` on `/readiness` means `ENABLE_OPERATOR_PAGES` is
 set on the project — remove it and redeploy.
+
+---
+
+# Watching it once it is live
+
+Every upstream call writes one JSON line to stdout, which Vercel, Cloud Run and
+any container platform already collect and parse into structured fields:
+
+
+
+ is one of , , ,
+.  is ,  or .
+
+**What to watch.** This product degrades politely at every upstream — a county
+lookup that fails falls back to national benchmarks and says so, a FEMA outage
+drops the flood panel. That is right for the homeowner and invisible to you. If
+San Diego started refusing every query, the product would keep serving plausible
+reports built on national averages and nobody would notice for weeks.
+
+So the signal is a **rising  or  rate for one **, not
+an error count — there will be no errors.
+
+**No address is ever logged, and that is structural rather than a convention.**
+The geocoder is called with the user's address in the URL, so an upstream error
+message routinely quotes it.  is a closed union rather than a
+string, which means  does not compile. There is no ZIP field
+either — county answers every operational question this is for.
+
+ lines come from the error boundary and carry only
+Next's digest hash, for correlating with a stack trace in the platform's own
+error reporting.
