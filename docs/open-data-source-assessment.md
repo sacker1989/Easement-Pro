@@ -250,3 +250,66 @@ uniform but sparser and lower quality. Before shipping any benchmark:
 5. **Maintenance costs** from BLS + permits. Drop "liability" or source it separately.
 6. **Do not build utility/drainage/access likelihood scores** until a source of recorded easements
    exists. That source is a title-data vendor, not an open-data portal.
+
+---
+
+## NHD infrastructure classification — checked 2026-10-05, not usable
+
+The specced infrastructure proximity scan wants to say *"there is a pipeline across
+your land."* USGS NHD is the obvious national candidate and it **answers distance
+queries correctly** — a point query near a Los Angeles address with
+`distance=400&units=esriSRUnit_Foot` returns features in ~1s.
+
+**It cannot be classified.** Layer 6 (`Flowline - Large Scale`) returns bare numeric
+`ftype` and `fcode` and nothing else:
+
+```
+460/46007 | gnis_name: null
+428/42823 | gnis_name: null
+```
+
+- no coded domain on `ftype` (checked the layer metadata)
+- no description or type-name field (checked `outFields=*`)
+- no lookup table anywhere in the service (checked the service root: 13 layers,
+  **zero tables**)
+
+Turning `428` into "pipeline" means asserting the NHD code standard from memory,
+which is the thing this project does not do with facts it shows users — and the
+stakes are specific here: NHD is a *hydrography* dataset, so a 428 is a water
+conveyance, and presenting one as a gas transmission line would be both wrong and
+alarming.
+
+**Status: not built.** Reopen when a fetchable FCode domain is found, or when a
+jurisdiction's own utility layer is wired instead.
+
+## FEMA NFHL — built 2026-10-05
+
+The opposite case, and the reason it shipped. Layer 28 returns values that describe
+themselves:
+
+```
+FLD_ZONE: "X"
+ZONE_SUBTY: "AREA WITH REDUCED FLOOD RISK DUE TO LEVEE"
+SFHA_TF: "F"
+STATIC_BFE: -9999
+```
+
+`ZONE_SUBTY` is prose from the service, and `SFHA_TF` is FEMA's own
+Special-Flood-Hazard-Area flag — so neither the meaning nor the regulatory
+consequence has to be inferred. `STATIC_BFE: -9999` is a no-value sentinel and is
+mapped to null at the boundary.
+
+Verified live against Los Angeles (minimal hazard) and New Orleans (levee). The
+levee subtype is handled as its own case: outside the SFHA, and not the same as
+minimal risk.
+
+## US Census geocoder — built 2026-10-05
+
+Free, no key, national. `geocoding.geo.census.gov/geocoder/locations/onelineaddress`
+with `benchmark=Public_AR_Current` returned `{x: -118.476, y: 34.083}` for a real
+Los Angeles address.
+
+**It interpolates along a street's address range — it is not a rooftop geocoder.**
+The point lands on the street segment, which can be tens of metres from the
+building. That is disclosed to the user along with the matched address, because a
+point near a flood-zone boundary can fall on the wrong side of it.

@@ -22,6 +22,12 @@ import {
   type Party,
 } from '@/lib/easements/responsibilities';
 import { analyzeEasement } from '@/lib/analysis-layer';
+import { GEOCODE_DISCLOSURE, geocodeAddress } from '@/lib/proximity/geocode';
+import {
+  FLOOD_ZONE_DISCLOSURE,
+  floodImplication,
+  lookupFloodZone,
+} from '@/lib/proximity/flood-zone';
 import type { EasementLegalCharacter } from '@/lib/analysis-layer/duration-facts';
 import {
   SHOULD_EXIST_DISCLOSURE,
@@ -138,6 +144,28 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
   const selectedAin = param(searchParams.ain);
   const submitted = searchParams.submitted === '1';
+
+  /*
+   * FLOOD ZONE, FROM THE ADDRESS ALONE.
+   *
+   * Two sequential upstream calls, and both are allowed to fail without
+   * affecting anything else on the page — geocode, then FEMA. Neither throws;
+   * the result types carry the degraded states. Run only on submit, and only
+   * when there is an address to work from.
+   *
+   * NATIONAL, which is the point. Live parcel data exists for three counties.
+   * This answers something real for every address in the country, which is the
+   * difference between a product for Los Angeles and a product.
+   */
+  const geocoded =
+    submitted && street.trim() !== '' && zip.trim() !== ''
+      ? await geocodeAddress({ street, city, state, zip })
+      : null;
+
+  const floodZone =
+    geocoded?.kind === 'matched'
+      ? await lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon })
+      : null;
 
   const durationAnalysis = submitted
     ? analyzeEasement({
@@ -677,6 +705,50 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             bad news, which is both discouraging and incomplete — most of what
             matters financially here is on this side.
           */}
+          {/*
+            FLOOD, placed with the other value-and-protection facts rather than
+            with the easement findings. It is not an easement and is never
+            presented as one — it sits here because it is the same KIND of
+            thing the responsibilities section is: money and risk a homeowner
+            can act on, and it connects directly to the drainage questions.
+          */}
+          {floodZone?.kind === 'found' && geocoded?.kind === 'matched' && (
+            <>
+              <h2>Flood risk, and what it costs</h2>
+              <div className="panel">
+                <p style={{ marginTop: 0 }}>
+                  <span
+                    className={
+                      floodZone.inSpecialFloodHazardArea ? 'badge badge-stop' : 'badge badge-ok'
+                    }
+                    style={{ marginRight: '0.5rem' }}
+                  >
+                    ZONE {floodZone.zone}
+                  </span>
+                  {floodZone.description && <small>{floodZone.description}</small>}
+                </p>
+                <p>{floodImplication(floodZone)}</p>
+                {floodZone.baseFloodElevationFt !== null && (
+                  <p>
+                    <small className="muted">
+                      FEMA publishes a base flood elevation of{' '}
+                      <strong>{floodZone.baseFloodElevationFt} ft</strong> here. That is the level
+                      local rules generally measure against when they say how low you may build.
+                    </small>
+                  </p>
+                )}
+                <p className="muted" style={{ marginBottom: 0 }}>
+                  <small>
+                    Matched to <strong>{geocoded.matchedAddress}</strong>. {GEOCODE_DISCLOSURE}
+                  </small>
+                </p>
+              </div>
+              <p className="muted">
+                <small>{FLOOD_ZONE_DISCLOSURE}</small>
+              </p>
+            </>
+          )}
+
           <h2>Who is responsible for what</h2>
           <p>
             These are the arrangements usual for this kind of easement. Use them to work out which
