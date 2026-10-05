@@ -19,9 +19,18 @@
  * land.
  *
  * SO `blocking` IS RESERVED FOR ONE THING: the product does not work, or works
- * wrongly, if you deploy as configured. Today exactly one check can return it,
- * and it is a config line rather than a legal question — see
- * `audit-store-configured` below.
+ * wrongly, if you deploy as configured.
+ *
+ * ONE CHECK CAN RETURN IT, AND IT IS NOT THE ONE YOU WOULD GUESS.
+ * `audit-store-configured` was blocking and was wrong to be — an unset audit
+ * path degrades the two artefact surfaces and leaves the analysis, which is
+ * the whole free tier, working. `operator-pages-closed` is the real one, and
+ * it is the mirror image: nothing is broken, everything works, and that is
+ * precisely the problem, because what works is serving the compliance gap
+ * registry to the public.
+ *
+ * The pair is worth keeping in mind when adding a check. "A surface refuses"
+ * is usually open. "The product does something it should not" is blocking.
  */
 
 import { resolveAuditStore, AUDIT_PATH_ENV } from '@/lib/compliance/audit-store-config';
@@ -32,6 +41,7 @@ import { evaluateAdvocacyWizardAccess } from '@/lib/gating/advocacy-wizard-acces
 import { basisFullyLapsed, operativeBases } from '@/lib/gating/regulatory-basis';
 import { COMPLIANCE_GAPS, type ComplianceGap } from '@/lib/gating/compliance-gaps';
 import { registeredRuleSet, resolveStateRuleSet } from '@/lib/analysis-layer/registry';
+import { operatorPagesEnabled, OPERATOR_PAGES_ENV } from './operator-access';
 
 export type CheckStatus =
   /** True, nothing to do. */
@@ -130,6 +140,46 @@ function auditStoreCheck(
       'relied on. On a serverless host a file path is not sufficient at all — replace the ' +
       'adapter in src/lib/compliance/audit-store.ts with a database-backed one. The AuditStore ' +
       'interface exists so that is a drop-in.',
+  };
+}
+
+function operatorPagesCheck(
+  env: Readonly<Record<string, string | undefined>>,
+  isProduction: boolean,
+): ReadinessCheck {
+  const open = operatorPagesEnabled(env);
+
+  if (!isProduction || !open) {
+    return {
+      id: 'operator-pages-closed',
+      what: 'Operator-only pages are not reachable by the public.',
+      status: 'met',
+      detail: isProduction
+        ? `Closed. ${OPERATOR_PAGES_ENV} is not set to 1, so /readiness returns 404.`
+        : 'Open in development, which is the intended behaviour on a local machine.',
+      fix: null,
+    };
+  }
+
+  /*
+   * THE ONLY CHECK THAT CAN RETURN BLOCKING TODAY, and it is a genuine case of
+   * what the word is reserved for: deployed like this, the product publishes
+   * something it should not. Unlike the audit-store check this one is not
+   * about a surface refusing to work — everything works, and that is the
+   * problem.
+   */
+  return {
+    id: 'operator-pages-closed',
+    what: 'Operator-only pages are not reachable by the public.',
+    status: 'blocking',
+    detail:
+      `${OPERATOR_PAGES_ENV}=1 in production, so /readiness is being served to anyone who ` +
+      'requests it. That page publishes the server’s filesystem paths, every open compliance ' +
+      'gap in full, and every accepted-risk rationale with its owner and date — including that ' +
+      'Track 1 operates without a counsel opinion, in the product’s own words.',
+    fix:
+      `Unset ${OPERATOR_PAGES_ENV}, or set it only on a deployment the public cannot reach. The ` +
+      'same information is available from the test suite without serving it to anyone.',
   };
 }
 
@@ -350,6 +400,7 @@ export function assessDeploymentReadiness(
   const isProduction = env.NODE_ENV === 'production';
 
   const checks: readonly ReadinessCheck[] = [
+    operatorPagesCheck(env, isProduction),
     auditStoreCheck(env, isProduction),
     commerceCheck(),
     disclaimerCheck(),

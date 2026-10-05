@@ -1,5 +1,7 @@
 import { assessDeploymentReadiness, blockingChecks, type CheckStatus } from '@/lib/deployment/readiness';
 import { surfaceReadiness } from '@/lib/deployment/surfaces';
+import { operatorPagesEnabled } from '@/lib/deployment/operator-access';
+import { notFound } from 'next/navigation';
 
 interface ReadinessPageProps {
   searchParams: Record<string, string | string[] | undefined>;
@@ -24,6 +26,16 @@ function param(value: string | string[] | undefined): string {
  * by this page at all.
  */
 export default async function ReadinessPage({ searchParams }: ReadinessPageProps) {
+  /*
+   * CLOSED IN PRODUCTION UNLESS EXPLICITLY OPENED. notFound() rather than a
+   * message, because an explanatory page would itself confirm that an operator
+   * surface exists here and is merely switched off. See operator-access.ts for
+   * what this page publishes if left reachable.
+   */
+  if (!operatorPagesEnabled()) {
+    notFound();
+  }
+
   const state = (param(searchParams.state) || 'CA').toUpperCase();
   const envOverride = param(searchParams.env);
   const env = envOverride ? { ...process.env, NODE_ENV: envOverride } : process.env;
