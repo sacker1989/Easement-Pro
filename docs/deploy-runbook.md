@@ -124,9 +124,25 @@ deploy themselves.
 
 ## Environment variables to set in Vercel
 
-**None.** Set nothing and the free tier works correctly. The two variables that
-exist both default to the right behaviour, and on Vercel specifically one of
-them must stay unset.
+**None.** Set nothing and the free tier works correctly. Every variable that
+exists defaults to the right behaviour on Vercel — one of them must stay unset,
+and the site origin derives itself from Vercel's own environment.
+
+### `SITE_URL` — leave it unset unless you add a custom domain
+
+Vercel injects `VERCEL_PROJECT_PRODUCTION_URL`, and the app builds the origin
+from it, so canonical metadata and `robots.txt`'s `Sitemap:` line are correct
+with nothing configured. Set `SITE_URL` only when a custom domain should be the
+canonical one; a trailing slash is stripped for you.
+
+It is deliberately **not** `NEXT_PUBLIC_SITE_URL`. That prefix inlines the value
+at build time, so setting it on a live project does nothing until a redeploy —
+silently. `robots.txt` and `sitemap.xml` are `force-dynamic`, so the value is
+read per request and takes effect immediately.
+
+The app uses the PRODUCTION url rather than `VERCEL_URL`: the latter is unique
+per deployment, so every preview would publish a sitemap advertising itself as
+the authoritative copy of the site.
 
 ### `AUDIT_LOG_PATH` — leave it unset on Vercel
 

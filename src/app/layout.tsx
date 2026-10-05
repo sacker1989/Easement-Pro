@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { SITE_URL } from '@/lib/site';
+import { siteUrl } from '@/lib/site';
 import './globals.css';
 
 /**
@@ -20,7 +20,7 @@ import './globals.css';
  * and `metadataBase` so relative OG images and canonicals resolve.
  */
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: 'What the easement on your property means',
     template: '%s · Easement Report',

@@ -1,5 +1,19 @@
 import type { MetadataRoute } from 'next';
-import { SITE_URL } from '@/lib/site';
+import { siteUrl } from '@/lib/site';
+
+/**
+ * EVALUATED PER REQUEST.
+ *
+ * Without this Next prerenders both files and bakes in whatever SITE_URL was
+ * set when the BUILD ran — which silently defeats the point of dropping the
+ * NEXT_PUBLIC_ prefix, since the whole reason for that was to let the value
+ * change without a redeploy. Verified: before this line, starting the server
+ * with SITE_URL set still served the build-time value.
+ *
+ * The cost is a function invocation for a response of a few hundred bytes,
+ * which is not a cost.
+ */
+export const dynamic = 'force-dynamic';
 
 /**
  * What crawlers may index.
@@ -51,6 +65,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }
