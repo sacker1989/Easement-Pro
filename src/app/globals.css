@@ -394,3 +394,13 @@ svg {
   max-width: 100%;
   height: auto;
 }
+
+/* ---------- site footer ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}

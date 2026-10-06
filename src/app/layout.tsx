@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { siteUrl } from '@/lib/site';
 import './globals.css';
 
@@ -52,7 +53,20 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/*
+          THE SITE FOOTER, such as it is. One line, muted, on every page via
+          the root layout: the Learn guides and the Privacy page are the two
+          links a trust-based product cannot do without. A homeowner deciding
+          whether to type their address in should not have to hunt for either.
+        */}
+        <footer className="site-footer">
+          <Link href="/learn">Learn</Link>
+          {' · '}
+          <Link href="/privacy">Privacy</Link>
+        </footer>
+      </body>
     </html>
   );
 }
