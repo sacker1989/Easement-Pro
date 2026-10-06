@@ -57,7 +57,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         {children}
         <Analytics />
+        {/*
+          THE SITE FOOTER, such as it is. One line, muted, on every page via
+          the root layout: the Learn guides and the Privacy page are the two
+          links a trust-based product cannot do without. A homeowner deciding
+          whether to type their address in should not have to hunt for either.
+        */}
         <footer className="site-footer">
+          <Link href="/learn">Learn</Link>
+          {' · '}
           <Link href="/privacy">Privacy</Link>
         </footer>
       </body>
