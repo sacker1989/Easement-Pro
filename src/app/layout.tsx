@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { Analytics } from '@vercel/analytics/react';
 import { siteUrl } from '@/lib/site';
 import './globals.css';
 
@@ -22,18 +24,18 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: 'What the easement on your property means',
-    template: '%s · Easement Report',
+    default: 'SafeHomeValue — know what your home is worth and what keeps it safe',
+    template: '%s · SafeHomeValue',
   },
   description:
     'Free. Enter your address and find out what an easement on your property restricts, who is ' +
     'responsible for maintaining and repairing it, how long it lasts, and what should be on ' +
     'record but often is not. Not legal advice.',
-  applicationName: 'Easement Report',
+  applicationName: 'SafeHomeValue',
   openGraph: {
     type: 'website',
-    siteName: 'Easement Report',
-    title: 'What the easement on your property means',
+    siteName: 'SafeHomeValue',
+    title: 'SafeHomeValue — know what your home is worth and what keeps it safe',
     description:
       'Free. What an easement restricts, who maintains and repairs it, how long it lasts, and ' +
       'what should be on record but often is not.',
@@ -52,7 +54,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+        <footer className="site-footer">
+          <Link href="/privacy">Privacy</Link>
+        </footer>
+      </body>
     </html>
   );
 }
