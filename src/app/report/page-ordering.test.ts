@@ -73,14 +73,44 @@ describe('the screening figure never renders without its disclosures', () => {
 });
 
 /**
- * The duration analysis is a FINDING about the document, so it must sit with
- * the other findings and above the limits, like everything else here.
- *
- * It also must not drift below "What should be on record" — that section is
- * about documents the homeowner does NOT have, and reading it before the
- * analysis of the document they DO have inverts the narrative: it opens on
- * what is missing before saying anything about what exists.
+ * The flood-vulnerability section is a FINDING about how the easement
+ * changes what water does, so it sits with the other findings, above the
+ * limits — and it must reuse the single FEMA query rather than adding
+ * another upstream call.
  */
+describe('the flood-vulnerability section sits in the right place', () => {
+  // The heading renders via the FLOOD_VULNERABILITY_HEADING constant, so
+  // ordering is asserted on the constant's JSX use site in the page source.
+  // (The import line has no braces around the name; only the use site does.)
+  const floodUseSite = () => PAGE.indexOf('{FLOOD_VULNERABILITY_HEADING}');
+
+  it('renders above the limits section, like every other finding', () => {
+    const flood = floodUseSite();
+    const limits = headingIndex('What this report does not tell you');
+    expect(flood).toBeGreaterThan(-1);
+    expect(limits).toBeGreaterThan(-1);
+    expect(flood).toBeLessThan(limits);
+  });
+
+  it('renders after the flood-zone panel, not before it', () => {
+    const vuln = floodUseSite();
+    const panel = headingIndex('Flood risk, and what it costs');
+    expect(panel).toBeGreaterThan(-1);
+    expect(vuln).toBeGreaterThan(panel);
+  });
+
+  it('makes exactly one FEMA query — the section reuses the existing result', () => {
+    // A second lookupFloodZone( call would double the FEMA latency on every
+    // report. The builder takes the already-fetched result as an argument.
+    const calls = PAGE.match(/lookupFloodZone\(/g) ?? [];
+    expect(calls).toHaveLength(1);
+  });
+
+  it('never leads its headline with the word "easement"', () => {
+    expect(PAGE).toContain('FLOOD_VULNERABILITY_HEADING');
+    expect(PAGE).not.toContain('<h2>Easement');
+  });
+});
 describe('the duration analysis sits in the right place', () => {
   it('renders above the limits section, like every other finding', () => {
     const duration = headingIndex('How long does it last?');

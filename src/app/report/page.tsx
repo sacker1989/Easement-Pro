@@ -36,6 +36,10 @@ import {
   type FireSeverityResult,
 } from '@/lib/proximity/fire-severity';
 import {
+  buildFloodVulnerabilityContent,
+  FLOOD_VULNERABILITY_HEADING,
+} from '@/lib/proximity/flood-vulnerability';
+import {
   engineEstimate,
   type EngineEstimateResult,
 } from '@/lib/valuation/engine-estimate';
@@ -899,6 +903,54 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </>
             );
           })()}
+
+          {/*
+            FLOOD VULNERABILITY WHERE EASEMENTS MEET WATER. The panel above
+            says what FEMA mapped. This one says how the easement on this
+            property changes what water does — a blocked storm drain or a
+            failed lateral floods homes far from any river, which is exactly
+            the flooding a zone map does not price. Reuses the FEMA result
+            fetched above: no new upstream query. Renders only for the five
+            flood-relevant types; the builder returns null otherwise, so a
+            non-relevant type never duplicates the zone panel.
+          */}
+          {floodZone !== null &&
+            (() => {
+              const vuln = buildFloodVulnerabilityContent(easementType, floodZone);
+              if (!vuln) return null;
+              return (
+                <>
+                  <h2>{FLOOD_VULNERABILITY_HEADING}</h2>
+                  <div className="panel">
+                    {vuln.zoneFraming && <p style={{ marginTop: 0 }}>{vuln.zoneFraming}</p>}
+                    {vuln.zoneUnknownNote && (
+                      <p style={{ marginTop: 0 }} className="muted">
+                        <small>{vuln.zoneUnknownNote}</small>
+                      </p>
+                    )}
+                    <p>
+                      <strong>{vuln.typeAngle.whatItIs}</strong>
+                    </p>
+                    <p>{vuln.typeAngle.whyItMatters}</p>
+                    <p>
+                      <strong>Who maintains what:</strong> {vuln.typeAngle.whoMaintains}
+                    </p>
+                  </div>
+                  <div className="panel">
+                    <h3 style={{ marginTop: 0 }}>Free things you can do</h3>
+                    <ul>
+                      {vuln.freeThingsYouCanDo.map((step) => (
+                        <li key={step}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="muted">
+                    <small>{vuln.disclosure}</small>
+                  </p>
+                </>
+              );
+            })()}
+>>>>>>> 5389e8730255b704a7a171f16ac4c287a28b80e8
 
           <h2>Who is responsible for what</h2>
           <p>
