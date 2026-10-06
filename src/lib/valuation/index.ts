@@ -71,3 +71,13 @@ export {
   type JurisdictionalConfidenceLevel,
   type JurisdictionalValuationContext,
 } from './jurisdiction-valuation-bridge';
+export {
+  engineEstimate,
+  ENGINE_FEDERAL_NOTE,
+  ENGINE_TIER_BY_TYPE,
+  type EngineEstimateInputs,
+  type EngineEstimateResult,
+  type EngineInsufficientData,
+  type EngineRange,
+  type EngineRefused,
+} from './engine-estimate';

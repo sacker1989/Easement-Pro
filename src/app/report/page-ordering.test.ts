@@ -124,3 +124,52 @@ describe('the duration analysis sits in the right place', () => {
     expect(PAGE).toContain('name="legalCharacter"');
   });
 });
+
+describe('the engine section obeys the same ordering rule', () => {
+  const ENGINE_HEADING = 'The same question, worked a second way';
+
+  it('renders below the limits, never above them', () => {
+    const at = headingIndex(ENGINE_HEADING);
+    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(headingIndex('What this report does not tell you'));
+  });
+
+  it('is never called compensation, market value, or an appraisal in the page', () => {
+    // The conflict notice forbids presenting matrix output as any of these.
+    // The page renders the engine only through the orientation banner and the
+    // federal note; a literal claim would be a defect.
+    const idx = PAGE.indexOf(`<h2>${ENGINE_HEADING}</h2>`);
+    const section = PAGE.slice(idx, idx + 4000);
+    expect(section.toLowerCase()).not.toMatch(/this is (your )?compensation/);
+    expect(section.toLowerCase()).not.toMatch(/market value of your (property|home)/);
+  });
+});
+
+describe('the fire section sits with the value-and-protection findings', () => {
+  it('is wired between the flood panel and the limits', () => {
+    // The heading itself renders from the content builder, so the placement
+    // assertion is on source anchors: the fire block must sit after the flood
+    // panel and before the limits section.
+    const floodAt = PAGE.indexOf('FLOOD_ZONE_DISCLOSURE');
+    const fireAt = PAGE.indexOf('buildFireSafetyContent(easementType, fireSeverity)');
+    const limitsAt = PAGE.indexOf('<h2>What this report does not tell you</h2>');
+    expect(floodAt).toBeGreaterThan(-1);
+    expect(fireAt).toBeGreaterThan(-1);
+    expect(limitsAt).toBeGreaterThan(-1);
+    expect(fireAt).toBeGreaterThan(floodAt);
+    expect(fireAt).toBeLessThan(limitsAt);
+  });
+
+  it('runs the CAL FIRE lookup in parallel with the FEMA query', () => {
+    // One Promise.all for the two lookups: worst case adds max(FEMA, CAL
+    // FIRE), not the sum. A future sequential rewrite would slow every
+    // report and should break this test first.
+    expect(PAGE).toContain("observe(\n            'calfire-fhsz',");
+    const allIdx = PAGE.indexOf('await Promise.all([');
+    const fireIdx = PAGE.indexOf("'calfire-fhsz'");
+    const femaIdx = PAGE.indexOf("'fema-nfhl'");
+    expect(allIdx).toBeGreaterThan(-1);
+    expect(fireIdx).toBeGreaterThan(allIdx);
+    expect(femaIdx).toBeGreaterThan(allIdx);
+  });
+});
