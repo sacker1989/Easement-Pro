@@ -950,7 +950,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 </>
               );
             })()}
->>>>>>> 5389e8730255b704a7a171f16ac4c287a28b80e8
 
           <h2>Who is responsible for what</h2>
           <p>
