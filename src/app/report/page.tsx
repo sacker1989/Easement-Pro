@@ -29,6 +29,21 @@ import {
   floodImplication,
   lookupFloodZone,
 } from '@/lib/proximity/flood-zone';
+import {
+  FIRE_SEVERITY_DISCLOSURE,
+  buildFireSafetyContent,
+  lookupFireSeverity,
+  type FireSeverityResult,
+} from '@/lib/proximity/fire-severity';
+import {
+  engineEstimate,
+  type EngineEstimateResult,
+} from '@/lib/valuation/engine-estimate';
+import {
+  mapJurisdictionToConfidence,
+  valuationConfidenceToTieredResult,
+} from '@/lib/valuation/jurisdiction-valuation-bridge';
+import { dispatchToAgent } from '@/lib/jurisdiction/dispatch-orchestrator';
 import type { EasementLegalCharacter } from '@/lib/analysis-layer/duration-facts';
 import {
   SHOULD_EXIST_DISCLOSURE,
@@ -183,19 +198,47 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         )
       : null;
 
-  const floodZone =
+  /*
+   * FIRE HAZARD SEVERITY, FROM THE ADDRESS ALONE — CAL FIRE FHSZ, run in
+   * PARALLEL with the FEMA query. Both are additive panels: an upstream
+   * failure in either must not affect the other or anything else on the page.
+   * The two lookups share only the geocoded coordinates, so running them
+   * together adds max(FEMA, CAL FIRE), not the sum.
+   */
+  const [floodZone, fireSeverity] =
     geocoded?.kind === 'matched'
-      ? await observe(
-          'fema-nfhl',
-          (r) => ({
-            result: r.kind === 'found' ? 'ok' : r.kind === 'no-map-coverage' ? 'degraded' : 'failed',
-            reason:
-              r.kind === 'no-map-coverage' ? 'no-coverage' : r.kind === 'lookup-failed' ? 'http-error' : undefined,
-            state,
-          }),
-          () => lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon }),
-        )
-      : null;
+      ? await Promise.all([
+          observe(
+            'fema-nfhl',
+            (r) => ({
+              result:
+                r.kind === 'found' ? 'ok' : r.kind === 'no-map-coverage' ? 'degraded' : 'failed',
+              reason:
+                r.kind === 'no-map-coverage'
+                  ? 'no-coverage'
+                  : r.kind === 'lookup-failed'
+                    ? 'http-error'
+                    : undefined,
+              state,
+            }),
+            () => lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon }),
+          ),
+          observe(
+            'calfire-fhsz',
+            (r) => ({
+              result:
+                r.kind === 'in-hazard-zone' || r.kind === 'not-in-hazard-zone'
+                  ? 'ok'
+                  : r.kind === 'no-map-coverage'
+                    ? 'degraded'
+                    : 'failed',
+              reason: r.kind === 'lookup-failed' ? 'http-error' : undefined,
+              state,
+            }),
+            () => lookupFireSeverity({ lat: geocoded.lat, lon: geocoded.lon }),
+          ),
+        ])
+      : [null, null];
 
   const durationAnalysis = submitted
     ? analyzeEasement({
@@ -226,6 +269,8 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let referral: ReferralPackage | null = null;
   let referralText: string | null = null;
   let screening: ScreeningResult | null = null;
+  let engine: EngineEstimateResult | null = null;
+  let engineCounty: string | null = null;
   let remedy: RemedyPlan | null = null;
   const acquisitionPending = searchParams.acquisitionPending === '1';
 
@@ -242,6 +287,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       // unsupported/not-found distinction exists to prevent.
       const resolvedCounty =
         addressResult.normalized.county ?? zipHeuristicCountyResolver.resolve(addressResult.normalized);
+      engineCounty = resolvedCounty ?? null;
 
       // Every supported county goes through one dispatch. A lookup failure
       // must not sink the report — Track 3 is free nationwide, so it degrades
@@ -380,6 +426,20 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             assessmentVintageUnknown: unified === null || unified.landBaseYear === null,
           });
 
+          /*
+           * The IRWA engine, computed alongside the screening range. The
+           * jurisdictional confidence wrapper is applied at render time: a
+           * flagged jurisdiction shows the flag reason with NO number, per
+           * the bridge's structural rule. Engine output is rendered on this
+           * page only — it is never fed to buildReferralPackage.
+           */
+          engine = engineEstimate({
+            easementType,
+            landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
+            easementAreaSqFt,
+            totalPropertyAreaSqFt: lotAreaSqFt,
+          });
+
           remedy = buildRemedyPlan({
             easementType,
             instrumentInHand: false,
@@ -419,6 +479,22 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     });
     return `/report?${q}`;
   }
+
+  /*
+   * The engine range wrapped in jurisdictional confidence. A flagged
+   * jurisdiction carries NO number — the flag reason renders instead, per the
+   * bridge's structural rule. Computed once here so the JSX below can narrow
+   * on plain values rather than closures.
+   */
+  const engineTiered =
+    engine !== null && engine.status === 'range'
+      ? valuationConfidenceToTieredResult(
+          { low: engine.low, high: engine.high },
+          mapJurisdictionToConfidence(
+            dispatchToAgent({ county: engineCounty ?? 'Unknown', state }),
+          ),
+        )
+      : null;
 
   return (
     <main>
@@ -779,6 +855,51 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             </>
           )}
 
+          {/*
+            FIRE, placed with the other value-and-protection facts rather than
+            with the easement findings — the same reasoning as the flood
+            panel. It renders only for overhead-utility easements in a mapped
+            hazard zone; buildFireSafetyContent returns null for every other
+            combination, so there is no placeholder and no hedging paragraph.
+          */}
+          {(() => {
+            const fire =
+              fireSeverity !== null ? buildFireSafetyContent(easementType, fireSeverity) : null;
+            if (fire === null) return null;
+            return (
+              <>
+                <h2>{fire.headline}</h2>
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    <span
+                      className={
+                        fire.severity === 'Very High'
+                          ? 'badge badge-stop'
+                          : fire.severity === 'High'
+                            ? 'badge badge-warn'
+                            : 'badge badge-ok'
+                      }
+                      style={{ marginRight: '0.5rem' }}
+                    >
+                      {fire.severity.toUpperCase()} FIRE HAZARD SEVERITY
+                    </span>
+                  </p>
+                  <p>{fire.whatItIs}</p>
+                  <p>{fire.whyItMatters}</p>
+                  <p>
+                    <strong>Who is responsible for what:</strong> {fire.whoIsResponsible}
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    <strong>Worth doing now, at no cost:</strong> {fire.freeNextStep}
+                  </p>
+                </div>
+                <p className="muted">
+                  <small>{FIRE_SEVERITY_DISCLOSURE}</small>
+                </p>
+              </>
+            );
+          })()}
+
           <h2>Who is responsible for what</h2>
           <p>
             These are the arrangements usual for this kind of easement. Use them to work out which
@@ -1046,6 +1167,78 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                   {screening.missing.join('; ')}.
                 </p>
               )}
+            </>
+          )}
+
+          {/*
+            The IRWA engine section renders AFTER the open-questions panel,
+            never before it — the same ordering rule as the screening range.
+            Engine output appears here only; it is never fed to the referral
+            package, and it is never called compensation, market value, or an
+            appraisal.
+          */}
+          {engine !== null && engine.status === 'range' && (
+            <>
+              <h2>The same question, worked a second way</h2>
+              {engineTiered !== null && engineTiered.tier === 'flagged-ambiguous' ? (
+                <p role="note">
+                  <strong>No second figure is shown.</strong> {engineTiered.flagReason}
+                </p>
+              ) : (
+                <>
+                  {engineTiered !== null && engineTiered.tier === 'likely-with-caveat' && (
+                    <p role="note">
+                      <strong>{engineTiered.caveat}</strong>
+                    </p>
+                  )}
+                  <p role="note">
+                    <strong>{ORIENTATION_ONLY_BANNER}</strong>
+                  </p>
+                  <div className="panel">
+                    <p style={{ fontSize: '1.35rem', margin: '0 0 0.5rem' }}>
+                      <strong>
+                        $
+                        {(engineTiered !== null ? engineTiered.value.low : engine.low).toLocaleString()}{' '}
+                        – $
+                        {(engineTiered !== null ? engineTiered.value.high : engine.high).toLocaleString()}
+                      </strong>
+                    </p>
+                    <p className="muted" style={{ marginBottom: '0.75rem' }}>
+                      {engine.lowPercent}–{engine.highPercent}% of the strip&apos;s land value
+                      (IRWA {engine.tierName} tier)
+                    </p>
+                    <p style={{ marginBottom: 0 }}>
+                      <strong>How this was calculated:</strong> {engine.derivation}
+                    </p>
+                  </div>
+                  {engine.caveats
+                    .filter((c) => c !== ORIENTATION_ONLY_BANNER)
+                    .map((c) => (
+                      <p key={c} role="note" className="muted">
+                        {c}
+                      </p>
+                    ))}
+                </>
+              )}
+            </>
+          )}
+
+          {engine !== null && engine.status === 'refused' && (
+            <>
+              <h2>The same question, worked a second way</h2>
+              <p role="note">
+                <strong>No second figure is offered for this easement type.</strong> {engine.reason}
+              </p>
+            </>
+          )}
+
+          {engine !== null && engine.status === 'insufficient-data' && (
+            <>
+              <h2>The same question, worked a second way</h2>
+              <p role="note">
+                <strong>No second figure could be produced.</strong> {engine.reason} Missing:{' '}
+                {engine.missing.join('; ')}.
+              </p>
             </>
           )}
 

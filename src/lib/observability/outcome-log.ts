@@ -38,6 +38,7 @@ export type UpstreamService =
   | 'county-parcel'
   | 'census-geocoder'
   | 'fema-nfhl'
+  | 'calfire-fhsz'
   | 'assessor-valuation';
 
 /**
