@@ -1,156 +1,56 @@
-# Easement Pro
+# SafeHomeValue
 
-**LA County Property Easement & Advocacy Tool — Phase 1 MVP**
+**A tool to maximize your value and increase your home safety.**
 
-Easement Pro helps a property owner understand what easements exist on their
-land, how much risk those easements carry, and — where the platform is legally
-able to — generate correspondence to act on that information. Phase 1 ships as
-an LA County–focused MVP with a nationwide address-intake path, built to
-expand state-by-state without a rework of the core gating logic.
+SafeHomeValue is a free proptech analysis tool for homeowners. Enter an
+address and get a plain-language report on the easements affecting the
+property — what they restrict, who maintains what, and how they bear on the
+home's value and safety. No accounts, no email, no payment.
 
----
+Live: **https://www.safehomevalue.com**
 
-## How the product is organized
+## The two pillars
 
-The app is structured around three "tracks," each with a different risk
-profile and a different payment status:
+1. **Homeowner value.** Most homeowners don't know what easements exist on
+   their property. The tool surfaces them and explains their valuation impact
+   in plain language — including the IRWA-grounded valuation engine wired into
+   the report.
+2. **Home safety.** Neglected utility-easement maintenance is a real disaster
+   risk (the Eaton and Palisades fires are the motivating examples). The
+   report includes wildfire and flood vulnerability sections tied to the
+   easement types on the parcel, plus who is responsible for maintaining what.
 
-| Track | What it does | Availability | Payment |
-|---|---|---|---|
-| **Track 3 — Risk Disclosure** | Lot diagram, restriction checklist, and economic-impact estimate (lost buildable area, value at risk, rework cost) | Nationwide | Free |
-| **Track 2 — Request for Clarification** | Generates a clarification letter, no legal gating required | Nationwide | Free |
-| **Track 1 — Advocacy Wizard** | Generates document-specific correspondence (e.g. Maintenance Request Letter), gated per field | **California only** in MVP | Paid — the only checkout path in the product |
-
-Track 1 is restricted to California because it's the only state currently
-classified as **Tier A** (licensed non-attorney pathway exists) in the state
-compliance matrix at `src/config/state-tiers.ts`. Every other state defaults
-to Track 2/3 only until it's individually reviewed by counsel — see
-[`docs/development-strategy-v2.md`](docs/development-strategy-v2.md) for the
-full three-tier model (A / B / C) and the reasoning behind it.
-
-For the full product/legal strategy and the six-step MVP build scope, read:
-
-- [`docs/development-strategy-v2.md`](docs/development-strategy-v2.md) — agent roles, state-tier model, build order, and explicit out-of-scope items
-- [`docs/tech-stack-and-structure.md`](docs/tech-stack-and-structure.md) — stack rationale and folder-to-feature mapping
-
----
+Everything is educational information only — not a survey, not an appraisal,
+not legal advice. See `/privacy` on the live site.
 
 ## Tech stack
 
-| Layer | Choice |
+- **Next.js 14** (App Router) + React 18 + TypeScript
+- **Vercel** hosting with GitHub auto-deploy; Vercel Analytics
+- **Vitest** — 1100+ tests; `npm run typecheck` for `tsc --noEmit`
+- No database, no auth, no accounts — reports are generated in the moment
+
+## Repo map
+
+| Path | What lives there |
 |---|---|
-| Framework | [Next.js](https://nextjs.org) 14 (App Router) + TypeScript |
-| UI | React 18 |
-| Payments | [Stripe](https://stripe.com) — wired into the Track 1 flow only |
-| Testing | [Vitest](https://vitest.dev) |
-| Deployment target | Vercel (or similar) |
+| `src/app/` | Routes: `/` (address intake), `/report`, `/privacy`, `/learn` |
+| `src/lib/easements/` | Easement type taxonomy, restriction data, maintenance-responsibility records |
+| `src/lib/valuation/` | IRWA valuation engine and jurisdiction confidence bridge |
+| `src/lib/proximity/` | Flood-zone and fire-severity lookups |
+| `src/lib/parcel-lookup/` | Parcel resolution and county dispatch |
+| `docs/` | Specs and runbooks (historical; the product vision in this README is current) |
 
-> Note: `docs/tech-stack-and-structure.md` also specifies Postgres (via
-> Prisma) and S3-compatible file storage for parcel/document data. Those
-> aren't wired up in the codebase yet — check current `package.json` and
-> `prisma/` before assuming they're live.
-
----
-
-## Project structure
-
-```
-Easement-Pro/
-├── docs/
-│   ├── development-strategy-v2.md      # product & legal strategy, source of truth
-│   └── tech-stack-and-structure.md     # stack rationale, folder-to-feature map
-│
-├── src/
-│   ├── app/
-│   │   ├── search/                     # Step 1: address/APN input + resolution
-│   │   ├── analyze/                    # Analysis Layer output display
-│   │   ├── report/                     # Step 3: Track 3 risk-disclosure report
-│   │   ├── inquiry/                    # Step 4: Track 2 clarification letter flow
-│   │   ├── advocacy/                   # Step 5: Track 1 wizard (gated, CA only)
-│   │   └── checkout/                   # Step 6: Stripe checkout — Track 1 only
-│   │
-│   ├── lib/
-│   │   ├── parcel-resolution/          # address → APN
-│   │   ├── document-retrieval/         # LA County fallback + general fallback data
-│   │   ├── analysis-layer/             # confidence-tiering (Clear/Likely/Flagged), CA rule set
-│   │   ├── gating/                     # state-tier config + required-flow branching
-│   │   ├── letters/                    # letter templates (clarification, maintenance request)
-│   │   ├── checkout/                   # Stripe payment provider
-│   │   ├── compliance/                 # disclaimer + compliance logic
-│   │   ├── risk-disclosure/            # Track 3 report logic
-│   │   └── valuation/                  # economic-impact estimates
-│   │
-│   └── config/
-│       └── state-tiers.ts              # state compliance matrix — CA is the only Tier A entry
-│
-└── tests/ (via vitest)
-```
-
----
-
-## Getting started
-
-### Prerequisites
-
-- Node.js (version matching `next@14` / `typescript@5.5` requirements — Node 18+ recommended)
-- npm
-
-### Setup
+## Dev commands
 
 ```bash
-git clone https://github.com/sacker1989/Easement-Pro.git
-cd Easement-Pro
 npm install
+npm run dev        # local dev server
+npm run typecheck  # tsc --noEmit
+npm test           # vitest run
+npm run build      # production build
 ```
 
-### Environment variables
-
-Create a `.env.local` file in the project root:
-
-```bash
-STRIPE_SECRET_KEY=sk_test_...
-```
-
-`STRIPE_SECRET_KEY` powers the Track 1 checkout flow
-(`src/lib/checkout/stripe-payment-provider.ts`). It's optional for working on
-anything outside `checkout/` or `advocacy/`.
-
-### Run the dev server
-
-```bash
-npm run dev
-```
-
-Visit `http://localhost:3000`.
-
-### Other scripts
-
-```bash
-npm run build       # production build
-npm run start        # run the production build
-npm run test          # run the vitest suite once
-npm run test:watch    # run vitest in watch mode
-npm run typecheck     # tsc --noEmit
-```
-
----
-
-## Working on this repo
-
-A few structural rules the codebase depends on — see
-`docs/tech-stack-and-structure.md` for the full reasoning:
-
-- **`src/config/state-tiers.ts` is the single source of truth for state
-  gating.** Adding a state should mean adding an entry there, not touching
-  gating logic elsewhere.
-- **`checkout/` is only ever referenced from the `advocacy/` route tree.**
-  Track 2 and Track 3 have no checkout entry point anywhere in the product,
-  by design — don't wire up payment on a feature that's supposed to be free.
-- **`document-retrieval/` is split into LA-County-specific and general
-  fallback logic** — keep that distinction rather than merging them, since
-  LA County ships with detailed reference data (fees, hours, addresses) that
-  no other county has yet.
-
-## License
-
-Private / all rights reserved (update this section once a license is decided).
+Pushes to `master` auto-deploy to production via the Vercel GitHub
+integration. See `RELEASE_CHECKLIST.md` (when present on a release branch)
+for the pre- and post-deploy gates.

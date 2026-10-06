@@ -361,6 +361,20 @@ button {
   margin-top: 0.25rem;
 }
 
+/* ---------- site footer ---------- */
+
+.site-footer {
+  max-width: 74ch;
+  margin: 0 auto;
+  padding: 0 1.25rem 2.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.site-footer a {
+  color: var(--ink-faint);
+}
+
 /* ---------- misc ---------- */
 
 details {
