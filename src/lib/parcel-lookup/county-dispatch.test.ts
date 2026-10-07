@@ -90,8 +90,21 @@ describe('unsupported is not the same as not-found', () => {
     if (r.status === 'not-found') expect(r.serviceUrl).toContain('ocgis.com');
   });
 
-  it('names exactly the three counties it covers', () => {
-    expect(SUPPORTED_COUNTIES).toEqual(['Los Angeles County', 'Orange County', 'San Diego County']);
+  it('names exactly the counties it covers', () => {
+    // Cook County added 2026-10-07, after launch — the first outside
+    // California, and the first on an assessment regime other than
+    // Proposition 13.
+    expect(SUPPORTED_COUNTIES).toEqual([
+      'Los Angeles County',
+      'Orange County',
+      'San Diego County',
+      'Cook County',
+    ]);
+  });
+
+  it('matches Cook by either spelling', () => {
+    expect(normaliseCountyName('Cook')).toBe('Cook County');
+    expect(normaliseCountyName('Cook County')).toBe('Cook County');
   });
 });
 

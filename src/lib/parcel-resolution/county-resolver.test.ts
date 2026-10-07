@@ -86,3 +86,44 @@ describe('the three counties with live providers are all reachable', () => {
     expect(at('78701', 'TX')).toBeNull();
   });
 });
+
+describe('Illinois, added with Cook County', () => {
+  const resolve = (zip: string, state = 'IL') =>
+    zipHeuristicCountyResolver.resolve({
+      street: '1 Test St',
+      city: 'Chicago',
+      state,
+      zip,
+    } as never);
+
+  it('routes Chicago ZIPs to Cook', () => {
+    for (const zip of ['60601', '60614', '60707']) {
+      expect(resolve(zip), zip).toBe('Cook');
+    }
+  });
+
+  it('routes suburban Cook ZIPs to Cook', () => {
+    for (const zip of ['60005', '60302', '60805']) {
+      expect(resolve(zip), zip).toBe('Cook');
+    }
+  });
+
+  it('returns null for an Illinois ZIP outside the ranges', () => {
+    // A collar-county address gets the national-benchmark path rather than a
+    // neighbouring county's figures. Null is the honest answer, not a gap.
+    for (const zip of ['60540', '61820', '62701']) {
+      expect(resolve(zip), zip).toBeNull();
+    }
+  });
+
+  it('does not let an Illinois ZIP resolve under a California state code', () => {
+    // The branch is keyed on state, so a 606xx typed with state CA must not
+    // fall through to the LA ranges and claim a Chicago parcel.
+    expect(resolve('60601', 'CA')).toBeNull();
+  });
+
+  it('leaves California resolution unchanged', () => {
+    expect(resolve('90049', 'CA')).toBe('Los Angeles');
+    expect(resolve('92651', 'CA')).toBe('Orange');
+  });
+});

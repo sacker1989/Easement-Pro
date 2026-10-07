@@ -41,6 +41,19 @@ const SAN_DIEGO_ZIP_RANGES: ReadonlyArray<readonly [number, number]> = [
   [92003, 92199], // San Diego city, North County, East County
 ];
 
+/** Cook County, Illinois. Approximate, like the California ranges above. */
+const COOK_COUNTY_ZIP_RANGES: ReadonlyArray<readonly [number, number]> = [
+  [60004, 60025],
+  [60053, 60078],
+  [60090, 60107],
+  [60130, 60163],
+  [60171, 60209],
+  [60301, 60305],
+  [60401, 60480],
+  [60601, 60707],
+  [60803, 60827],
+];
+
 function inRanges(zip: string, ranges: ReadonlyArray<readonly [number, number]>): boolean {
   const numericZip = Number(zip);
   return ranges.some(([low, high]) => numericZip >= low && numericZip <= high);
@@ -59,6 +72,20 @@ export const zipHeuristicCountyResolver: CountyResolver = {
   resolve(address) {
     if (address.county) {
       return address.county;
+    }
+    /*
+     * ILLINOIS, ADDED 2026-10-07 WITH COOK COUNTY. The first non-California
+     * branch, and the ranges are approximate for the same reason the
+     * California ones are: this is a ZIP heuristic standing in for a geocoder,
+     * not an authoritative boundary.
+     *
+     * Cook is unusually tractable — Chicago's 606xx block sits almost entirely
+     * inside the county, and the suburban bands cover most of the rest. It
+     * misses collar-county edges, which resolve to null and get the
+     * national-benchmark path rather than a neighbouring county's figures.
+     */
+    if (address.state === 'IL') {
+      return inRanges(address.zip, COOK_COUNTY_ZIP_RANGES) ? 'Cook' : null;
     }
     if (address.state !== 'CA') return null;
     // Orange and San Diego before LA: both carry ranges that sit inside the

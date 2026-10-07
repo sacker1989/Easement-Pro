@@ -264,3 +264,37 @@ narrows further than is worth it.
 `{"evt":"render-error",...}` lines come from the error boundary and carry only
 Next's digest hash, for correlating with a stack trace in the platform's own
 error reporting.
+
+---
+
+# Open after launch
+
+## `SITE_URL` is not set, and the canonical host is wrong
+
+**Found 2026-10-07, on the live site.** Not urgent, not a code change.
+
+The serving host is `https://www.safehomevalue.com` (200). The apex
+`https://safehomevalue.com` 308-redirects to it. But `siteUrl()` falls back to
+`VERCEL_PROJECT_PRODUCTION_URL`, which Vercel has set to the apex — so:
+
+```
+sitemap.xml  →  <loc>https://safehomevalue.com</loc>
+robots.txt   →  Sitemap: https://safehomevalue.com/sitemap.xml
+```
+
+Every URL handed to a crawler redirects. Google follows it, so nothing is
+broken — but the canonical signal is muddled, which matters most on a site with
+no history.
+
+**Fix:** set `SITE_URL=https://www.safehomevalue.com` in the Vercel project.
+**No redeploy.** `robots.ts` and `sitemap.ts` are `force-dynamic` and the
+variable deliberately has no `NEXT_PUBLIC_` prefix, so it is read per request.
+
+Verify:
+
+```bash
+curl -s https://www.safehomevalue.com/sitemap.xml | grep loc
+```
+
+The alternative is to make the apex primary in Vercel and redirect www to it.
+Do one or the other, not both.

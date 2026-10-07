@@ -37,6 +37,7 @@ import {
   createSanDiegoAssessorProvider,
   ORANGE_COUNTY_STALENESS_CAVEAT,
 } from '@/lib/risk-disclosure';
+import { createCookCountyAssessorProvider } from '@/lib/risk-disclosure/cook-county-assessor-provider';
 import { COUNTY_AGENT_ROUTES } from '@/lib/jurisdiction/county-database';
 import { createResilientFetch } from '@/lib/net/resilient-fetch';
 import type { NormalizedAddress } from '@/lib/parcel-resolution/types';
@@ -80,7 +81,21 @@ export type CountyLookupResult =
   | { readonly status: 'service-error'; readonly county: string; readonly message: string };
 
 /** Counties with a live provider. Three, and the list is the honest scope. */
-export const SUPPORTED_COUNTIES = ['Los Angeles County', 'Orange County', 'San Diego County'] as const;
+/**
+ * Cook County joined on 2026-10-07, after launch.
+ *
+ * The build brief froze new geography "until post-launch" and the site went
+ * live on 2026-10-07, so the condition is met rather than waived. It is the
+ * first county outside California and the first on an assessment regime other
+ * than Proposition 13 — see cook-county-assessor-provider.ts for what that
+ * changes about the figures.
+ */
+export const SUPPORTED_COUNTIES = [
+  'Los Angeles County',
+  'Orange County',
+  'San Diego County',
+  'Cook County',
+] as const;
 export type SupportedCounty = (typeof SUPPORTED_COUNTIES)[number];
 
 function routeFor(county: string): { fipsCode: string | null; serviceUrl: string } {
@@ -103,6 +118,7 @@ export function normaliseCountyName(county: string | undefined): SupportedCounty
   if (c === 'los angeles') return 'Los Angeles County';
   if (c === 'orange') return 'Orange County';
   if (c === 'san diego') return 'San Diego County';
+  if (c === 'cook') return 'Cook County';
   return null;
 }
 
@@ -193,6 +209,56 @@ export async function lookupParcel(
           landBaseYear: v.landBaseYear,
           rollYear: v.rollYear,
           caveats: [],
+          serviceUrl,
+          queriedOn,
+        },
+      };
+    }
+
+    if (county === 'Cook County') {
+      /*
+       * THE FIRST COUNTY OUTSIDE CALIFORNIA, and the first on an assessment
+       * regime other than Proposition 13. `landBaseYear` comes back null from
+       * the provider because Illinois has no base year — Cook reassesses on a
+       * three-year township cycle, so the roll year already approximates the
+       * market year. That is a real difference in what the figure MEANS, and
+       * it is carried rather than papered over with a placeholder.
+       */
+      const provider = createCookCountyAssessorProvider({ fetchImpl });
+      const found = await provider.findByAddress(address.street, address.zip);
+      if (found.status === 'ambiguous') {
+        return {
+          status: 'ambiguous',
+          county,
+          candidates: found.candidates.map((c) => ({
+            apn: c.ain,
+            situsAddress: c.situsFullAddress,
+            zip: null,
+          })),
+        };
+      }
+      if (found.status !== 'found') return { status: 'not-found', county, serviceUrl };
+      const v = found.valuation;
+      return {
+        status: 'found',
+        valuation: {
+          apn: v.apn,
+          county,
+          state: 'IL',
+          fipsCode,
+          situsAddress: v.situsFullAddress,
+          zip: address.zip,
+          lotAreaSqFt: v.lotAreaSqFt,
+          landValue: v.landValue,
+          improvementValue: v.improvementValue,
+          landValuePerSqFt: v.landValuePerSqFt,
+          landBaseYear: v.landBaseYear,
+          rollYear: v.rollYear,
+          caveats: [
+            'Illinois assesses most property at a statutory fraction of market value rather than ' +
+              'at it. This land value is the assessed figure as published, not scaled up — so it ' +
+              'understates market value, by a ratio that varies with property class.',
+          ],
           serviceUrl,
           queriedOn,
         },
