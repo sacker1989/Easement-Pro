@@ -1,183 +1,201 @@
 import Link from 'next/link';
-import { EASEMENT_TYPES } from '@/lib/easements/easement-types';
+import { CONTACT_EMAIL, PRODUCT_NAME } from '@/components/site-footer';
 import { SUPPORTED_COUNTIES } from '@/lib/parcel-lookup/county-dispatch';
 
 /**
- * The front door.
+ * The marketing homepage.
  *
- * WHAT IT REPLACED, which is the point of this file existing. Until now `/`
- * read "Easement MVP — Phase 1 build in progress. Start at /search." Every
- * visitor to a product whose whole purpose is reaching homeowners was met with
- * a developer's placeholder and a path to a debug harness. The report page had
- * been built, rebuilt and verified a dozen times; nobody could get to it.
+ * THE ADDRESS INPUT IS THE CALL TO ACTION. It posts straight into the existing
+ * report flow — no account, no interstitial, no rebuild of anything
+ * downstream. Everything else on this page exists to get someone to type into
+ * that one field and to tell them honestly what they will get.
  *
- * THE FORM IS HERE RATHER THAN BEHIND A LINK. A landing page that explains and
- * then asks for a click loses people at the click. The address fields are the
- * first thing below the sentence that says what this is, and submitting goes
- * straight to the finished report — there is no step in between and no account.
+ * "EASEMENT" NEVER APPEARS IN A HEADING, deliberately. Most homeowners do not
+ * know the word, and a headline built on it asks the reader to already
+ * understand the problem before they are allowed to care about it. The
+ * headings describe what is at stake — what is hiding, what it costs, who is
+ * meant to maintain it — and the word is explained in body copy where it can
+ * carry its own definition.
  *
- * WHAT IT DOES NOT ASK. Lot area and easement area have sensible defaults and
- * a homeowner does not know either of them. Asking on the front door would
- * trade the one thing they definitely know — their address — for two they do
- * not. Both remain editable on the report itself, where the context makes the
- * question answerable.
+ * THE TYPE PICKER IS NOT HERE, and that is a change from the plain front door
+ * this replaces. It asked for an easement type before showing anything, which
+ * is a question most arrivals cannot answer and the single biggest reason to
+ * leave. The report page still has the picker, with every type and plain
+ * labels, so the choice is made in context after there is something on screen
+ * to change.
  *
- * THE TYPE PICKER IS THE ONE PIECE OF REAL FRICTION and is handled rather than
- * hidden. Every section downstream is keyed by easement type, so it cannot be
- * optional — but plenty of people genuinely do not know which they have. The
- * copy says to pick the closest and that it can be changed, because a wrong
- * first guess that produces a report beats a right answer nobody reaches.
+ * NO NEW DEPENDENCIES. The FAQ is native `details`/`summary`, the nav is
+ * sticky by CSS, and the scroll-to-hero is an anchor. Nothing here ships
+ * JavaScript.
  */
 
-const TYPE_LABELS: Record<(typeof EASEMENT_TYPES)[number], string> = {
-  'utility-overhead': 'Power or phone lines overhead',
-  'utility-underground': 'Power or phone lines buried',
-  sewer: 'A sewer line',
-  'storm-drain': 'A storm drain',
-  'water-line': 'A water line',
-  pipeline: 'A gas or petroleum pipeline',
-  'access-ingress-egress': 'A shared driveway or access road',
-  'public-right-of-way': 'A public right of way along the road',
-  drainage: 'A drainage channel or ditch',
-  slope: 'A slope or embankment',
-  conservation: 'A conservation restriction',
-  prescriptive: 'Someone has just always used part of my land',
+export const metadata = {
+  title: {
+    absolute: `${PRODUCT_NAME} — what's hiding in your property?`,
+  },
+  description:
+    'Free. Hidden utility rights-of-way and maintenance obligations affect your home’s value ' +
+    'and its safety. Enter your address and see what the public record says. Not legal advice.',
 };
+
+const WAITLIST_SUBJECT = encodeURIComponent('County waitlist');
 
 export default function HomePage() {
   return (
-    <main>
-      <h1>What does the easement on your property actually mean?</h1>
-      <p className="lede">
-        Enter your address. You&rsquo;ll get what public records say about your parcel, who is
-        responsible for maintaining and repairing what, how long the easement lasts, what should be
-        on record and often isn&rsquo;t, and a rough sense of the money involved.
-      </p>
-      <p className="muted">
-        Free. No account, nothing to buy, and nothing is sent to anyone on your behalf.
-      </p>
+    <>
+      {/* 1. Sticky nav */}
+      <nav className="site-nav">
+        <a className="wordmark" href="#top">
+          {PRODUCT_NAME}
+        </a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#why-it-matters">Why it matters</a>
+        <a className="nav-cta" href="#address">
+          Check your address
+        </a>
+      </nav>
 
-      <form action="/report">
-        <input type="hidden" name="submitted" value="1" />
-        <fieldset>
-          <legend>Your property</legend>
+      <main className="marketing" id="top">
+        {/* 2. Hero */}
+        <h1>What&rsquo;s hiding in your property?</h1>
+        <p className="hero-sub">
+          Hidden utility rights-of-way and maintenance obligations affect your home&rsquo;s value —
+          and its safety. Most homeowners never see them. Get your free report.
+        </p>
+
+        <form className="hero-form" action="/report" id="address">
+          <input type="hidden" name="submitted" value="1" />
           <div className="field-row">
-            <label style={{ flex: 2 }}>
+            <label style={{ gridColumn: '1 / -1' }}>
               Street address
-              <input name="street" placeholder="1200 Getty Center Dr" required />
-            </label>
-            <label>
-              City
-              <input name="city" placeholder="Los Angeles" required />
+              <input name="street" placeholder="12321 W Gorham Ave" required autoComplete="street-address" />
             </label>
           </div>
           <div className="field-row">
             <label>
+              City
+              <input name="city" placeholder="Los Angeles" required autoComplete="address-level2" />
+            </label>
+            <label>
               State
-              <input name="state" defaultValue="CA" maxLength={2} required />
+              <input name="state" defaultValue="CA" maxLength={2} required autoComplete="address-level1" />
             </label>
             <label>
               ZIP
-              <input name="zip" placeholder="90049" required />
+              <input name="zip" placeholder="90049" required inputMode="numeric" autoComplete="postal-code" />
             </label>
           </div>
-        </fieldset>
+          <button type="submit">Get my free report</button>
+        </form>
+        <p className="muted">
+          <small>Free. No account. We never log your address.</small>
+        </p>
 
-        <fieldset>
-          <legend>What&rsquo;s on the land?</legend>
-          <label>
-            Pick the closest — you can change it on the next page.
-            <select name="easementType" defaultValue="utility-overhead">
-              {EASEMENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <p className="muted" style={{ marginTop: '0.6rem' }}>
-            <small>
-              Not sure? Pick whatever is nearest to the truth. The report explains each kind, and
-              changing it takes one click.
-            </small>
-          </p>
-        </fieldset>
+        {/* 3. Two pillars */}
+        <h2 id="why-it-matters">Why it matters</h2>
+        <div className="pillars">
+          <div className="panel">
+            <h3 style={{ marginTop: 0 }}>Maximize your value</h3>
+            <p>
+              A strip of your land can carry someone else&rsquo;s legal right to use it — a power
+              line, a sewer main, a neighbour&rsquo;s driveway. That right is called an{' '}
+              <strong>easement</strong>, and it limits where you can build, what you can plant, and
+              what a buyer will pay. Most of it is on the public record and almost nobody looks.
+            </p>
+            <p style={{ marginBottom: 0 }}>
+              Your report shows what affects your parcel, a range for what it costs you, and what
+              you can do about it — including the documents that should exist and usually
+              don&rsquo;t.
+            </p>
+          </div>
+          <div className="panel">
+            <h3 style={{ marginTop: 0 }}>Protect your home</h3>
+            <p>
+              When a utility runs equipment across your neighbourhood, somebody is responsible for
+              keeping it clear and in repair. Often that is the utility, not you — and when it is
+              neglected, the risk lands on the people living there rather than the people who owned
+              the duty.
+            </p>
+            <p style={{ marginBottom: 0 }}>
+              Your report names who is normally responsible for maintenance, repair and putting
+              your land back after work — so you know whose job it is before it matters.
+            </p>
+          </div>
+        </div>
 
-        <button type="submit">Show me what it means</button>
-      </form>
+        {/* 4. How it works */}
+        <h2 id="how-it-works">How it works</h2>
+        <ol className="steps">
+          <li>
+            <strong>Enter your address.</strong> Nothing else — no account, no email.
+          </li>
+          <li>
+            <strong>We pull parcel, assessor and hazard data.</strong> County records where we have
+            them, national sources everywhere else, and we say which you got.
+          </li>
+          <li>
+            <strong>Get your free report.</strong> What affects the property, what it does to the
+            value, what you can and cannot do there, and who is responsible for maintenance.
+          </li>
+        </ol>
 
-      <h2>What you&rsquo;ll get</h2>
-      <div className="panel">
-        <ul>
+        {/* 5. Trust strip */}
+        <ul className="trust">
+          <li>Free for homeowners</li>
+          <li>No account needed</li>
+          <li>We never log your address</li>
           <li>
-            <strong>What you can and can&rsquo;t do</strong> on the easement area — fencing,
-            building, planting, paving.
-          </li>
-          <li>
-            <strong>Who is responsible for what.</strong> If a crew digs up your lawn, who puts it
-            back? If the pipe under your yard fails, who pays? These are the questions people
-            actually arrive with, and the answers are worth real money.
-          </li>
-          <li>
-            <strong>How long it lasts</strong>, if you can tell us what your document says.
-          </li>
-          <li>
-            <strong>What should be on record and often isn&rsquo;t.</strong> The exposure most
-            homeowners miss runs the opposite way from the one they worry about.
-          </li>
-          <li>
-            <strong>Your flood zone</strong>, from FEMA, with what it means for insurance and
-            building.
-          </li>
-          <li>
-            <strong>A rough scale of the money</strong> — enough to tell you whether this is worth a
-            professional&rsquo;s time, with the arithmetic shown.
+            Not legal advice — <Link href="/privacy">read the full disclaimer</Link>
           </li>
         </ul>
-      </div>
 
-      {/*
-        THE LIMITS, ON THE FRONT PAGE RATHER THAN THE LAST ONE.
-        Everything above is a promise, and a homeowner deciding whether to
-        trust this deserves the shape of what it cannot do before they spend
-        five minutes on it — not after. It is also the honest basis on which
-        this operates: a tool that reports what records say and refuses to
-        interpret rights.
-      */}
-      <h2>What this can&rsquo;t tell you</h2>
-      <div className="undetermined">
-        <p style={{ marginTop: 0 }}>
-          <strong>This is not legal advice and no attorney has reviewed it.</strong> It reports what
-          public records and general rules say. It cannot read your recorded easement document,
-          cannot tell you what your rights are, and cannot say whether a general rule applies to
-          your parcel. Only an attorney licensed in your state can do that.
-        </p>
-        <p>
-          <strong>It is not an appraisal.</strong> The money figure is an order-of-magnitude range
-          for orientation. A defensible number needs a licensed appraiser, and the report explains
-          what a good one produces so you can judge a quote.
-        </p>
-        <p style={{ marginBottom: 0 }}>
-          <strong>Nothing is sent for you.</strong> Any letter this prepares is handed to you, to
-          read, change and send yourself if you choose to.
-        </p>
-      </div>
-
-      <h2>Coverage</h2>
-      <p>
-        Live county parcel records for{' '}
-        <strong>{SUPPORTED_COUNTIES.join(", ")}</strong>. Every other address
-        in the country still produces a report — it uses national benchmarks instead of your
-        county&rsquo;s own figures, and says so wherever it does. The flood zone and the easement
-        guidance work everywhere.
-      </p>
-
-      <p className="muted">
-        <small>
-          Looking for the single-step tools? <Link href="/search">Address lookup</Link> ·{' '}
-          <Link href="/analyze">Duration analysis</Link>
-        </small>
-      </p>
-    </main>
+        {/* 6. FAQ — native details, no JavaScript */}
+        <h2>Questions people ask</h2>
+        <div className="faq">
+          <details>
+            <summary>What is an easement, in plain English?</summary>
+            <p>
+              It is someone else&rsquo;s legal right to use part of your land for a specific
+              purpose — running a power line, maintaining a sewer, crossing to reach their own
+              property. You still own the land. They have a right to use that part of it, and you
+              generally cannot build over it or block their access.
+            </p>
+          </details>
+          <details>
+            <summary>Is this legal advice?</summary>
+            <p>
+              No. This is educational information drawn from public records and general rules. It
+              is not a survey, not an appraisal, and not a legal opinion, and no attorney has
+              reviewed it. For anything that matters — buying, selling, building, or a dispute —
+              talk to a licensed professional in your state.
+            </p>
+          </details>
+          <details>
+            <summary>Do you store my address?</summary>
+            <p>
+              No. It is used once to build your report and is never written to our logs — the
+              system is built so it structurally can&rsquo;t be, not merely so we promise not to.{' '}
+              <Link href="/privacy">The privacy page explains how.</Link>
+            </p>
+          </details>
+          <details>
+            <summary>Which areas are covered?</summary>
+            <p>
+              Full county records for {SUPPORTED_COUNTIES.join(', ')} today. Any other address in
+              the country still produces a report — it uses national data instead of your
+              county&rsquo;s own figures and says so wherever it does.
+            </p>
+            <p>
+              Want your county next?{' '}
+              <a href={`mailto:${CONTACT_EMAIL}?subject=${WAITLIST_SUBJECT}`}>
+                Email us and say where you are.
+              </a>{' '}
+              There is no signup form here on purpose — we do not collect email addresses, so this
+              goes straight to a person instead.
+            </p>
+          </details>
+        </div>
+      </main>
+    </>
   );
 }

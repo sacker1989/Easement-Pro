@@ -394,3 +394,153 @@ svg {
   max-width: 100%;
   height: auto;
 }
+
+/* ---------- marketing homepage ----------
+   Scoped under .marketing so none of this leaks into the report, which is a
+   document and should keep reading like one. The tokens are the same; only
+   the arrangement differs. */
+
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.25rem;
+  padding: 0.7rem 1.25rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.9rem;
+}
+
+.site-nav .wordmark {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-right: auto;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.site-nav a {
+  color: var(--ink-soft);
+}
+
+/* The nav CTA is a link styled as the button it scrolls to, so it reads as
+   the same action rather than a second one. */
+.site-nav .nav-cta {
+  padding: 0.4rem 0.9rem;
+  color: var(--surface);
+  background: var(--accent);
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.marketing h1 {
+  font-size: 2.1rem;
+  line-height: 1.15;
+}
+
+.hero-sub {
+  font-size: 1.08rem;
+  color: var(--ink-soft);
+  max-width: var(--measure);
+}
+
+/* The hero form is the page's one job. Given its own surface so it reads as
+   the call to action rather than as another paragraph. */
+.hero-form {
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.hero-form button {
+  width: 100%;
+  margin-top: 0.9rem;
+  padding: 0.8rem 1.4rem;
+  font-size: 1rem;
+}
+
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.steps {
+  counter-reset: step;
+  list-style: none;
+  padding: 0;
+}
+
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 2.4rem;
+  margin-bottom: 1rem;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* Trust strip: short claims, wrapping to one per line on a phone. */
+.trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  padding: 0.9rem 1.1rem;
+  margin: 1.25rem 0;
+  list-style: none;
+  background: var(--ok-soft);
+  border: 1px solid var(--ok);
+  border-radius: var(--radius);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.88rem;
+}
+
+/* FAQ uses native <details>, so it works with no JavaScript at all and keeps
+   the no-new-dependencies constraint honestly rather than by bundling a
+   hand-rolled accordion. */
+.faq details {
+  border-bottom: 1px solid var(--rule);
+  padding: 0.85rem 0;
+}
+
+.faq summary {
+  cursor: pointer;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.faq details p {
+  margin: 0.7rem 0 0;
+}
+
+@media (max-width: 30rem) {
+  .marketing h1 {
+    font-size: 1.7rem;
+  }
+  .site-nav {
+    font-size: 0.85rem;
+  }
+}
