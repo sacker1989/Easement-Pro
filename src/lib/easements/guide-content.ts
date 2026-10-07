@@ -235,31 +235,52 @@ export const GUIDE_BY_TYPE = {
       caption: 'What a sewer repair looks like from the surface: a trench across the yard, then backfill.',
       credit: 'Robin Stott, CC BY-SA 2.0 via Wikimedia Commons',
     },
-    incident: {
-      title: 'The five-figure pipe nobody told you was yours',
+        incident: {
+      title: 'The $25,000 pipe nobody told you was yours',
       whatHappened:
-        'There is no single famous disaster here — there are hundreds of thousands of quiet ones. ' +
-        'National cost data puts the average homeowner sewer-lateral replacement around $3,300, ' +
-        'with a typical range of roughly $1,400 to $5,300, and jobs under driveways or streets ' +
-        'running to five figures once excavation and restoration are included. Standard homeowners ' +
-        'policies usually exclude failures from wear, age, roots, and ground settling — which ' +
-        'covers most lateral failures.',
+        'At a Beaver City council meeting, a property owner described a failed sewer lateral ' +
+        'connection that cost her $25,000–$45,000 to dig up and repair — enough to jeopardize ' +
+        'her business. She asked the city to consider an optional sewer-repair insurance ' +
+        'add-on. City staff replied that the city does not maintain private laterals: the ' +
+        'repair responsibility runs from the building to the city main and rests entirely ' +
+        'with the property owner.',
       whyItHappened:
-        'The mechanism is an information failure, not an engineering one: the homeowner sees a ' +
-        'sewer easement on the title report and assumes the agency owns everything underground. ' +
-        'The lateral fails — roots, age, settling — and the bill arrives with the homeowner’s name on it.',
+        'In most jurisdictions the sewer lateral — the pipe connecting a home to the municipal ' +
+        'main — is private property even where it crosses public ground. Fulton County’s ' +
+        'official service-lateral guidance states the owner is responsible for the lateral ' +
+        '"even if the blockage is located within a public road right-of-way (ROW) or within ' +
+        'a sewer easement." The pipe is out of sight, so it fails without warning, and ' +
+        'homeowner’s policies generally treat lateral repair as maintenance, not a covered loss.',
       couldItHappenToYou:
-        'If a sewer easement crosses your yard and you have never confirmed where the lateral ' +
-        'responsibility split sits, you are one backup away from the same bill. The pattern above ' +
-        'is the documented norm, and the one free protection is the phone call to your sewer agency ' +
-        'before anything fails.',
+        'If your parcel has a recorded sewer easement, the utility owns the main — but the ' +
+        'lateral from your house to that main is still yours, including the stretch under the ' +
+        'street or inside the easement corridor. When the utility needs to excavate for main ' +
+        'work, they are entitled to dig up the easement strip; restoring your landscaping ' +
+        'afterward is your problem. A sewer scope camera inspection before buying (or now) ' +
+        'is the check the guide recommends.',
       sources: [
         {
-          label: 'JMJ Plumbing: sewer lateral cost data (national averages via HomeAdvisor)',
-          url: 'https://jmjplumbing.com/2026/04/30/sewer-lateral-repair/',
+          label: 'CitizenPortal: Beaver City council on private lateral responsibility',
+          url: 'https://citizenportal.ai/articles/6488729/Utah/Resident-seeks-help-after-2500045000-lateral-repair-council-reiterates-private-lateral-responsibility',
+        },
+        {
+          /*
+           * ADDED ON REVIEW. The paragraph above quotes Fulton County's
+           * guidance verbatim and cited a brokerage blog and a news
+           * aggregator for it. The quote is accurate — this is the county's
+           * own PDF, and it says exactly that — but a verbatim quote
+           * attributed to an official source has to link to the official
+           * source, or the reader has to take the quote on trust.
+           */
+          label: 'Fulton County: service lateral responsibility (official)',
+          url: 'https://fultoncountyga.gov/-/media/Water-and-Sewer-Service-Laterals-Flyer-6424.pdf',
+        },
+        {
+          label: 'The Agency Atlanta: sewer laterals and sewer scopes on older homes',
+          url: 'https://theagency-atlanta.com/blog/sewer-laterals-and-sewer-scopes-on-older-atlanta-homes',
         },
       ],
-      illustrative: true,
+      illustrative: false,
     },
   }),
 
@@ -296,24 +317,42 @@ export const GUIDE_BY_TYPE = {
       caption: 'When drainage fails, water goes where it has never been — often across someone’s property.',
       credit: 'Richard Webb, CC BY-SA 2.0 via Wikimedia Commons',
     },
-    incident: {
-      title: 'The drain that couldn’t keep up',
+        incident: {
+      title: 'When the drains couldn’t keep up — San Diego, January 2024',
       whatHappened:
-        'Illustrative pattern, not a single case: after an unusually heavy storm, a partially ' +
-        'blocked or undersized storm drain backs up and sends water across yards and into garages ' +
-        'that had never flooded before. The cleanup bill lands on the homeowners; the argument ' +
-        'about whose blockage it was takes months.',
+        'On January 22, 2024, an intense storm dropped nearly a year’s worth of rain on parts ' +
+        'of San Diego. Flood-control channels and storm drains were overwhelmed; millions of ' +
+        'gallons of runoff swept through Shelltown, Barrio Logan, Southcrest, and other ' +
+        'Chollas Creek neighborhoods. Hundreds of homes and apartments flooded, scores of cars ' +
+        'were washed away, thousands of residents were displaced, and two deaths were ' +
+        'investigated as flood-related. Nearly 2,000 victims are suing the city in more than ' +
+        '50 lawsuits.',
       whyItHappened:
-        'The mechanism is deferred maintenance meeting a big storm: sediment and debris narrow the ' +
-        'system over years, nobody reports it, and the first storm that exceeds the reduced ' +
-        'capacity finds the weak point — which is someone’s living room.',
+        'The failure was documented, not just weather. A city report published just before ' +
+        'the flood warned that "age, combined with deferred maintenance due to historic ' +
+        'underfunding of the storm drain system, poses a risk of flooding and catastrophic ' +
+        'failure." City records show nearly half of all channel segments hadn’t been ' +
+        'maintained in at least 15 years; a 2016 maintenance plan for the South Chollas ' +
+        'channel was never carried out. A similar 2018 flood had already produced a lawsuit ' +
+        'settled for just over $200,000 — without any channel improvements attached.',
       couldItHappenToYou:
-        'If a storm drain crosses or borders your lot, the same slow narrowing may be happening ' +
-        'unseen. The documented pattern is that the failure announces itself all at once, in the ' +
-        'worst storm of the decade — which is why the free protection is watching the first heavy ' +
-        'rain and reporting what you see.',
-      sources: [],
-      illustrative: true,
+        'Storm-drain easements carry a public pipe or channel across private land. The holder ' +
+        'maintains the infrastructure, but when it is undersized or unmaintained, the water ' +
+        'doesn’t respect the easement boundary — it finds the lowest point, which may be your ' +
+        'living room. Ask the city or county when the drain serving your parcel was last ' +
+        'cleaned or rebuilt; a channel that hasn’t been maintained in 15 years is a known ' +
+        'risk, not a surprise.',
+      sources: [
+        {
+          label: 'Stormwater: San Diego stormwater infrastructure crisis amid record rainfall',
+          url: 'https://www.stormwater.com/home/news/55359879/san-diego-faces-stormwater-infrastructure-crisis-amid-record-rainfall',
+        },
+        {
+          label: 'ProgramBusiness: legal claims against San Diego over January flooding',
+          url: 'https://programbusiness.com/news/new-legal-claims-against-san-diego-over-january-flooding-seek-class-action-status/',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
@@ -349,25 +388,40 @@ export const GUIDE_BY_TYPE = {
       caption: 'A water main repair: the utility’s pipe to fix, the homeowner’s yard to live through.',
       credit: 'Humphrey Bolton, CC BY-SA 2.0 via Wikimedia Commons',
     },
-    incident: {
-      title: 'The leak that found the foundation',
+        incident: {
+      title: 'The 90-year-old pipe under Sunset Boulevard',
       whatHappened:
-        'Illustrative pattern, not a single case: a water main under a residential yard develops ' +
-        'a slow leak. Months pass — a damp patch, a slightly soft spot in the lawn — before anyone ' +
-        'connects it to the main. By the time the utility excavates and repairs its pipe, water ' +
-        'has been finding the home’s foundation for a season, and the homeowner is left with ' +
-        'the secondary damage the repair itself doesn’t cover.',
+        'On July 29, 2014, a more than 90-year-old steel-riveted 30-inch water main burst ' +
+        'under Sunset Boulevard in Westwood, Los Angeles, sending a geyser about 30 feet into ' +
+        'the air. Between 8 and 20 million gallons of water poured out before crews could shut ' +
+        'it off three hours later. The flood inundated Bruin Walk, Pauley Pavilion, and two ' +
+        'UCLA parking garages, trapping more than 700 cars; several motorists had to be ' +
+        'rescued from flooded vehicles. UCLA submitted a $13 million damage claim to the ' +
+        'LADWP, which acknowledged responsibility.',
       whyItHappened:
-        'The mechanism is the split the easement creates: the utility owns the pipe, the homeowner ' +
-        'owns everything the leaking water touches. Small leaks are invisible until they are not, ' +
-        'and “the holder’s to repair” never meant “the holder’s consequences.”',
+        'The pipe was installed in 1921 — a century of aging trunk infrastructure still in ' +
+        'service. The LADWP had not flagged this segment for replacement, and once it ' +
+        'ruptured there was no fast way to isolate it: shutting the wrong valves would have ' +
+        'cut water to surrounding customers or stressed other old pipes into failing too.',
       couldItHappenToYou:
-        'If a water main crosses your yard, the same slow leak can run under your lawn today ' +
-        'without a visible sign. The documented pattern is that the repair is free to you and the ' +
-        'collateral damage is not — which is why knowing the alignment and watching for the early ' +
-        'signs is the protection.',
-      sources: [],
-      illustrative: true,
+        'A water-line easement gives the utility the right to run — and to excavate — a ' +
+        'pressurized main across your property. Trunk mains are the utility’s to maintain, ' +
+        'but your service line (house to meter or main) is typically yours, and it fails the ' +
+        'same way the big pipes do: corrosion plus age plus pressure. If your home was built ' +
+        'before the 1970s and the service line is original, assume it is on borrowed time. ' +
+        'And if a utility main crosses your lot, know where it is before you plant ' +
+        'deep-rooted trees or pour a driveway over it.',
+      sources: [
+        {
+          label: 'Daily Bruin: UCLA demands $13M for 2014 flood damages',
+          url: 'https://dailybruin.com/2015/07/09/ucla-officials-demand-13m-for-damages-from-2014-summer-flood',
+        },
+        {
+          label: 'UCLA IOES: is aging infrastructure to blame for the water main break',
+          url: 'https://www.ioes.ucla.edu/video/is-aging-infrastructure-to-blame-for-ucla-water-main-break/',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
@@ -463,23 +517,34 @@ export const GUIDE_BY_TYPE = {
       'Do not gate, narrow, or block the way without everyone’s written agreement. Gates are ' +
         'frequently fine when everyone has a key and nobody was surprised.',
     ],
-    incident: {
-      title: 'The driveway everyone uses and nobody maintains',
+        incident: {
+      title: 'The driveway that belonged to the neighbor — Romero v. Shih (2022)',
       whatHappened:
-        'Illustrative pattern, not a single case: three households share a long gravel driveway ' +
-        'with no written agreement. One paves their section; the other two refuse to split the ' +
-        'cost. Potholes deepen, someone’s car is damaged, and the argument that follows costs ' +
-        'more in attorney letters than the paving ever would have.',
+        'A California buyer purchased a home and discovered that the wall between the ' +
+        'properties and a portion of the neighbor’s driveway sat on the buyer’s side of the ' +
+        'property line. The buyer asked the court to order the encroachments removed so he ' +
+        'could enjoy his full property. The neighbor refused. The California Court of Appeal ' +
+        'held the neighbor was entitled to an equitable easement over the disputed strip — ' +
+        'removing the driveway and wall would have been an undue hardship that blocked the ' +
+        'neighbor’s access. The buyer got money damages for the lost strip but could not get ' +
+        'his land back. (Romero v. Shih (2022) 78 Cal.App.5th 326.)',
       whyItHappened:
-        'The mechanism is the missing document: without a recorded maintenance agreement, ' +
-        '“shared in proportion to use” is a custom, not an enforceable split — so every repair ' +
-        'becomes a fresh negotiation, and negotiations between neighbors go badly.',
+        'The driveway had been built and used across the line for years. Courts weigh ' +
+        'hardship: once a neighbor genuinely depends on a crossing for access, removal can be ' +
+        'refused even against the recorded owner, with damages substituted for the land itself.',
       couldItHappenToYou:
-        'If a shared way crosses your land and there is no recorded agreement, you are living ' +
-        'inside this exact pattern today — it only needs one expensive repair to activate. The ' +
-        'documented protection is the written agreement, proposed while everyone is still friendly.',
-      sources: [],
-      illustrative: true,
+        'This is exactly how an unrecorded access arrangement becomes permanent. If a ' +
+        'neighbor’s driveway, path, or gate has crossed your line — or if your driveway ' +
+        'crosses theirs — long enough and openly enough, a court can convert it into an ' +
+        'easement you can’t undo. Check the survey and the title report before you buy; and ' +
+        'if you already own, a licensed survey is cheaper than a lawsuit.',
+      sources: [
+        {
+          label: 'First Tuesday Journal: buyer subject to an encroachment (Romero v. Shih)',
+          url: 'https://journal.firsttuesday.us/is-the-buyer-of-a-property-subject-to-an-encroachment-able-to-remove-the-encroachment/85992/',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
@@ -559,23 +624,48 @@ export const GUIDE_BY_TYPE = {
       'If the easement holder is an agency, report blockages to them; the conveyance is ' +
         'generally theirs to keep working.',
     ],
-    incident: {
-      title: 'The low spot someone filled in',
+        incident: {
+      title: 'The inlet that buried a neighborhood — San Diego County, January 2024',
       whatHappened:
-        'Illustrative pattern, not a single case: a homeowner re-grades the backyard, filling a ' +
-        'soggy low spot to gain a flat lawn. The next heavy rain sends the water that used to ' +
-        'pond there straight into the neighbor’s garage. The neighbor’s insurer pays out — then ' +
-        'comes looking for the homeowner who moved the water.',
+        'During the January 22, 2024 storm, a privately owned storm-drain inlet at Murdock ' +
+        'Elementary School in Casa de Oro became overwhelmed and clogged with mud and debris. ' +
+        'The overflow triggered a slope failure, which then clogged the publicly maintained ' +
+        '36-inch storm-drain inlet downstream — burying it under 6 to 8 feet of sediment for ' +
+        'about 100 feet. Water and debris continued on into a private residence and its pool. ' +
+        'The County Flood Control District issued emergency repairs costing $350,041.67 just ' +
+        'to excavate and restore the public inlet, pipe, and channel. (County of San Diego ' +
+        'Flood Control District Board agenda, February 28, 2024 — a public government record.)',
       whyItHappened:
-        'The mechanism is the drainage easement’s core rule: the water had a legal path, and ' +
-        'removing it moved the problem downhill. Drainage disputes between neighbors are among ' +
-        'the most common property disputes there are, and they start exactly like this.',
+        'Drainage systems are chains: the private inlet upstream, the school’s slope, and the ' +
+        'public inlet downstream each had a different owner with a different maintenance duty. ' +
+        'When the first link failed, every link below it failed. The county’s record notes ' +
+        'further improvements were still pending on the school district’s slope repair — the ' +
+        'private failure point.',
       couldItHappenToYou:
-        'If a drainage path crosses your land, any re-grading, filling, or new hardscape you are ' +
-        'considering could be the start of this pattern. The documented rule is simple — don’t ' +
-        'move the water without asking first — and it is the whole protection.',
-      sources: [],
-      illustrative: true,
+        'Your drainage easement is almost never the whole system. Water arrives from uphill ' +
+        'properties and leaves through facilities maintained by different owners — a school, ' +
+        'an HOA, the city, a neighbor. Ask who owns and maintains each link above and below ' +
+        'your parcel, because the weakest link decides where the water ends up, and easements ' +
+        'don’t stop mud.',
+      sources: [
+        {
+          label: 'County of San Diego Flood Control District board agenda, Feb 28 2024',
+          url: 'https://sdcounty.legistar1.com/daystar.legistar6.sdk.ws/View.ashx?M=F&GovernmentGUID=SDCT&LogicalFileName=a6525741-066f-4fd9-810d-28c829d7710f.docx&From=Granicus',
+        },
+        /*
+         * REMOVED ON REVIEW: a citation to Yee v. City of Sausalito (1983)
+         * sat here and the narrative above never mentioned it. A reader
+         * following it would have found an unrelated 1983 case with no
+         * connection to the January 2024 inlet failure.
+         *
+         * In a file whose whole premise is that these incidents are
+         * documented, a citation that supports nothing undermines the ones
+         * that support something. It was not replaced with a guess at what it
+         * was meant to prove — the county board agenda above is a primary
+         * record and carries the account on its own.
+         */
+      ],
+      illustrative: false,
     },
   }),
 
@@ -614,25 +704,43 @@ export const GUIDE_BY_TYPE = {
       caption: 'What slope failure looks like: when graded ground moves, the damage is total, not cosmetic.',
       credit: 'Dave Gatley / FEMA, public domain via Wikimedia Commons',
     },
-    incident: {
-      title: 'The hillside nobody was watching',
+        incident: {
+      title: 'The hillside that kept moving — Rancho Palos Verdes, 2023–2024',
       whatHappened:
-        'Illustrative pattern, not a single case: after an unusually wet winter, a graded slope ' +
-        'above a row of homes begins to move — first a cracked patio, then a leaning retaining ' +
-        'wall, then soil against the back doors. The agency and the homeowners each point at the ' +
-        'other while the hill keeps creeping, and the instrument that would have settled it was ' +
-        'never read by anyone.',
+        'After the wet winters of 2023 and 2024, the ancient Portuguese Bend landslide ' +
+        'complex in Rancho Palos Verdes accelerated from inches per year to as much as 9–12 ' +
+        'inches per week. The ground movement broke water and gas distribution pipes, ' +
+        'displaced sanitary sewer lines (including a roughly 10,000-gallon sewer spill in ' +
+        'August 2024), and leaned utility poles. SoCalGas cut service to about 135 homes in ' +
+        'July 2024; Southern California Edison cut power to about 140 homes and 53 businesses ' +
+        'that September. Roughly 20 homes were red-tagged as uninhabitable; driveways dropped ' +
+        '6–10 feet below the houses they served. The governor declared a state of emergency. ' +
+        'Residents paid for repairs out of pocket — including retirement savings — because ' +
+        'standard homeowners policies exclude earth movement.',
       whyItHappened:
-        'The mechanism is the slope easement’s defining trait: responsibility genuinely ' +
-        'unpredictable without the document. Saturated ground fails; the failure was foreseeable; ' +
-        'but nobody established who owned the duty to watch it, so nobody watched it.',
+        'The slide plane is a bentonite clay layer hundreds of feet down — ancient volcanic ' +
+        'ash that loses strength when wet. It cannot be excavated or reinforced from above; ' +
+        'the city’s dewatering wells only slow it. Slope easements exist precisely because ' +
+        'graded hillsides need permanent cut-and-fill support and drainage control — and once ' +
+        'the ground starts moving, the structures on it go with it regardless of who ' +
+        'maintained what.',
       couldItHappenToYou:
-        'If your lot sits on, above, or below graded slopes, this ambiguity may already describe ' +
-        'your situation — the pattern activates the first wet winter after everyone stops paying ' +
-        'attention. The documented protection is unglamorous: read the instrument, photograph ' +
-        'seasonally, report early.',
-      sources: [],
-      illustrative: true,
+        'If your lot was graded — cut into a hill, filled at the edge, terraced — the slope ' +
+        'easement on your parcel marks where the hill is allowed to push. Look for the early ' +
+        'signs: doors that stop closing, cracks stepping through stucco, driveways separating ' +
+        'from garage floors, leaning retaining walls. And read your policy’s earth-movement ' +
+        'exclusion now, not after the hill moves.',
+      sources: [
+        {
+          label: 'ABC7: Rancho Palos Verdes landslide crisis and power shutoff',
+          url: 'https://abcotv.geo.hosted.abcotvs.com/post/backup-generators-bail-rancho-palos-verdes-amid-landslide-crisis-socal-edison-power-shutoff/15256403/',
+        },
+        {
+          label: 'WAMC: landslides trigger state of emergency in coastal California city',
+          url: 'https://www.wamc.org/2024-09-04/landslides-in-coastal-california-city-trigger-state-of-emergency',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
@@ -665,25 +773,40 @@ export const GUIDE_BY_TYPE = {
         'starts there.',
       'If the holder’s monitoring visit flags something, address it in writing and keep the thread.',
     ],
-    incident: {
-      title: 'The development potential that was already gone',
+        incident: {
+      title: 'The easement that turned out to be a tax shelter — the IRS crackdown',
       whatHappened:
-        'Illustrative pattern, not a single case: a buyer falls for a beautiful multi-acre parcel, ' +
-        'plans a second home or a subdivision — and discovers at closing (or after) that a ' +
-        'conservation easement permanently removed the development rights years ago. The price ' +
-        'gets renegotiated down, or the deal dies. Separately, the tax consequences of the ' +
-        'easement — which can cut either way — arrive as a surprise.',
+        'Since 2016 the IRS has called syndicated conservation easements "one of the worst ' +
+        'tax scams." In 2023 a federal jury convicted promoters Jack Fisher and James Sinnott ' +
+        'of conspiracy to defraud the United States and related offenses; in 2024 they were ' +
+        'sentenced to 25 and 23 years in prison and ordered to pay hundreds of millions in ' +
+        'restitution. Their scheme sold more than $1.3 billion in fraudulent tax deductions, ' +
+        'backed by appraisals often more than 10 times what they had actually paid for the ' +
+        'land, plus backdated documents and false filings. The IRS reports the fraud cost the ' +
+        'Treasury an estimated $36 billion since 2010. (irs.gov — official source.)',
       whyItHappened:
-        'The mechanism is that conservation easements trade an invisible asset: development ' +
-        'potential. It does not show up in photographs, and percentage rules of thumb are ' +
-        'useless here — the loss depends entirely on what could have been built.',
+        'A conservation easement permanently extinguishes development rights — that is its ' +
+        'whole purpose, and it is also where its dollar value lives. Promoters exploited ' +
+        'exactly that: they sold investors the deduction value of extinguished development ' +
+        'rights, then inflated the appraisals to multiply it.',
       couldItHappenToYou:
-        'If you own acreage and have never read the permitted-uses section of your easement ' +
-        'document, your plans for the land may already be narrower than you think. The ' +
-        'documented protection is reading the instrument and the baseline report before planning ' +
-        'anything — and taking the tax questions to your accountant, not the internet.',
-      sources: [],
-      illustrative: true,
+        'This case is the cautionary extreme — it involved investors, not typical homeowners. ' +
+        'The ordinary version: if your parcel carries a conservation easement (or one is ' +
+        'proposed), the development potential is already gone whether or not the paperwork’s ' +
+        'valuation was honest. That is the permanent, parcel-wide value impact the guide ' +
+        'describes. Always get an independent appraisal and independent counsel before signing ' +
+        'anything with "perpetual" in it.',
+      sources: [
+        {
+          label: 'IRS: conservation easements',
+          url: 'https://www.irs.gov/charities-non-profits/conservation-easements',
+        },
+        {
+          label: 'IRS Criminal Investigation: syndicated conservation easement convictions',
+          url: 'https://www.irs.gov/compliance/criminal-investigation/two-tax-shelter-promoters-found-guilty-in-billion-dollar-syndicated-conservation-easement-tax-scheme',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
@@ -720,25 +843,41 @@ export const GUIDE_BY_TYPE = {
       'This is the clearest case in the book for a conversation with an attorney licensed in ' +
         'your state before doing anything.',
     ],
-    incident: {
-      title: 'The path the title search never found',
+        incident: {
+      title: 'The driveway the title search never found — Kapner v. Meadowlark Ranch (2004)',
       whatHappened:
-        'Illustrative pattern, not a single case: a buyer closes on a house, and at the first ' +
-        'inspection walk-through notices the neighbors cutting across the side yard to reach ' +
-        'the street — something they have done daily for a decade. The title search found ' +
-        'nothing because nothing was ever recorded. The sale stalls while everyone argues about ' +
-        'what rights a decade of footsteps created.',
+        'In 1986 Sylvan Kapner bought a five-acre parcel plus a 1/80th interest in a ' +
+        '60-foot-wide roadway parcel in Riverside County. Within a year he built a house, ' +
+        'driveway, gate, and perimeter fence — portions of which encroached onto the roadway ' +
+        'parcel. A 2001 survey by the association administering the road revealed the ' +
+        'encroachments; Kapner refused to remove them or sign an encroachment agreement and ' +
+        'claimed a prescriptive easement. The California Court of Appeal rejected the claim: ' +
+        'his improvements were substantial structures that, "as a practical matter," ' +
+        'prevented the true owner from using the land at all, which California law does not ' +
+        'allow a prescriptive easement to do. The judgment required him to sign an agreement ' +
+        'to remove the improvements on demand — or remove them. (116 Cal.App.4th 1182.)',
       whyItHappened:
-        'The mechanism is the gap between the paper record and the ground: prescriptive rights ' +
-        'are made of use, not documents, so the entire apparatus buyers rely on — title search, ' +
-        'disclosure, inspection — is blind to them by design.',
+        'Use ripens into an easement only when it stays within the doctrine’s limits. ' +
+        'Building permanent structures over someone else’s corridor — even unknowingly, even ' +
+        'for 15 years — doesn’t create a right; it creates a removal order.',
       couldItHappenToYou:
-        'If anyone regularly crosses part of your land and you have never established what, ' +
-        'exactly, the arrangement is, you may already be inside this pattern — it only becomes ' +
-        'visible when someone sells, builds, or blocks. The documented protection is the written ' +
-        'record you start today: who, how, how often, since when.',
-      sources: [],
-      illustrative: true,
+        'This is the prescriptive easement in both directions. A neighbor’s long-used path ' +
+        'across your lot can become a permanent right you can’t remove (see Ditzian v. Unger ' +
+        '(2019), where five-plus years of pathway use won an easement). And your own fence, ' +
+        'shed, or driveway apron can turn out to sit on land that was never yours to build ' +
+        'on. Either way the fix is the same: a survey before you build, and a title search ' +
+        'that looks for use, not just paper.',
+      sources: [
+        {
+          label: 'CA Supreme Court merits brief summarizing Kapner v. Meadowlark Ranch',
+          url: 'https://supreme.courts.ca.gov/sites/default/files/supremecourt/default/documents/6-290-s275023-apps-answer-brief-merits-092722.pdf',
+        },
+        {
+          label: 'First Tuesday Journal: prescriptive easement for a pathway (Ditzian v. Unger)',
+          url: 'https://journal.firsttuesday.us/may-a-property-owner-obtain-a-private-easement-for-a-pathway-on-a-neighbors-property-that-the-owner-has-used-for-more-than-five-years/67335/',
+        },
+      ],
+      illustrative: false,
     },
   }),
 } satisfies Record<EasementType, GuideContent>;
