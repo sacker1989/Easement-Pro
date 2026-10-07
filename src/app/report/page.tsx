@@ -15,6 +15,11 @@ import {
   type ScreeningResult,
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import {
+  buildValuationEstimate,
+  STRIP_ONLY_WARNING,
+  type ValuationEstimate,
+} from '@/lib/valuation/build-valuation-estimate';
 import { EXPECTATIONS, NO_LIST_NO_FEE } from '@/lib/referral-network/what-to-expect';
 import {
   RESPONSIBILITIES_DISCLOSURE,
@@ -226,6 +231,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let referral: ReferralPackage | null = null;
   let referralText: string | null = null;
   let screening: ScreeningResult | null = null;
+  let irwa: ValuationEstimate | null = null;
   let remedy: RemedyPlan | null = null;
   const acquisitionPending = searchParams.acquisitionPending === '1';
 
@@ -378,6 +384,29 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             // LA publishes a base year; Orange and San Diego do not, and the
             // range inherits that uncertainty in full.
             assessmentVintageUnknown: unified === null || unified.landBaseYear === null,
+          });
+
+
+          /*
+           * THE IRWA ESTIMATE, alongside the screening range rather than
+           * replacing it. The two answer the same question by different
+           * routes and on the same underlying assessed figures — the value is
+           * in a homeowner seeing a named method and its bounds, not in a
+           * second number implying a second source.
+           *
+           * It refuses for exactly the four types the screening range refuses,
+           * by reading that module's own refusal text, so the page can never
+           * show "no estimate is possible" beside an estimate.
+           */
+          irwa = buildValuationEstimate({
+            easementType,
+            lotAreaSqFt: unified?.lotAreaSqFt ?? lotAreaSqFt,
+            easementAreaSqFt,
+            landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
+            valueSource:
+              unified !== null
+                ? `${unified.county} assessor${unified.rollYear ? `, ${unified.rollYear} roll` : ''}, queried ${unified.queriedOn}`
+                : 'No county assessment matched this address.',
           });
 
           remedy = buildRemedyPlan({
@@ -1046,6 +1075,85 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                   {screening.missing.join('; ')}.
                 </p>
               )}
+            </>
+          )}
+
+
+          {/*
+            THE IRWA ESTIMATE, after the screening range and still after the
+            open-questions panel. Two figures on one page is a risk — a reader
+            can take the second as independent corroboration of the first — so
+            the copy says plainly that both rest on the same assessed land
+            value and the same unverified percentages. What the named method
+            adds is a stated basis and bounds, not a second source.
+          */}
+          {irwa?.kind === 'estimated' && (
+            <>
+              <h2>The same question, by the IRWA method</h2>
+              <div className="panel">
+                <p style={{ fontSize: '1.35rem', margin: '0 0 0.5rem' }}>
+                  <strong>
+                    ${Math.round(irwa.low.result.totalCompensation).toLocaleString()} – $
+                    {Math.round(irwa.high.result.totalCompensation).toLocaleString()}
+                  </strong>
+                </p>
+                <p className="muted" style={{ marginBottom: '0.75rem' }}>
+                  {irwa.tier.lowPercent}–{irwa.tier.highPercent}% of the land value of{' '}
+                  {Math.round(irwa.low.result.easementArea).toLocaleString()} sq ft, at the{' '}
+                  <strong>{irwa.tier.name}</strong> impact level.
+                </p>
+                <p>
+                  <small>
+                    <strong>Why {irwa.tier.name.toLowerCase()}:</strong> {irwa.tier.description}
+                  </small>
+                </p>
+                <p className="muted">
+                  <small>Land value from: {irwa.valueSource}</small>
+                </p>
+              </div>
+
+              {irwa.stripOnly && (
+                <div className="undetermined">
+                  <p style={{ margin: 0 }}>{STRIP_ONLY_WARNING}</p>
+                </div>
+              )}
+
+              <h3>The other half of the method</h3>
+              {irwa.beforeAndAfter.kind === 'needs-appraiser' ? (
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    The IRWA methodology runs two methods and compares them. The second —
+                    Before-and-After — needs something this tool cannot produce:{' '}
+                    <strong>{irwa.beforeAndAfter.missingInput}</strong>
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    <small className="muted">{irwa.beforeAndAfter.whyNotDerived}</small>
+                  </p>
+                </div>
+              ) : (
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    Before-and-After, using an appraised remainder value of $
+                    {irwa.beforeAndAfter.remainderValuePerSqFt.toLocaleString()} per sq ft:{' '}
+                    <strong>
+                      ${Math.round(irwa.beforeAndAfter.totalCompensation).toLocaleString()}
+                    </strong>
+                  </p>
+                </div>
+              )}
+
+              <p className="muted">
+                <small>{irwa.methodDisclosure}</small>
+              </p>
+            </>
+          )}
+
+          {irwa?.kind === 'refused' && (
+            <>
+              <h2>Why no valuation is offered for this easement</h2>
+              <div className="undetermined">
+                <p style={{ margin: 0 }}>{irwa.reason}</p>
+              </div>
             </>
           )}
 
