@@ -34,6 +34,16 @@ import {
   floodImplication,
   lookupFloodZone,
 } from '@/lib/proximity/flood-zone';
+import {
+  FIRE_SEVERITY_DISCLOSURE,
+  buildFireSafetyContent,
+  lookupFireSeverity,
+  type FireSeverityResult,
+} from '@/lib/proximity/fire-severity';
+import {
+  buildFloodVulnerabilityContent,
+  FLOOD_VULNERABILITY_HEADING,
+} from '@/lib/proximity/flood-vulnerability';
 import type { EasementLegalCharacter } from '@/lib/analysis-layer/duration-facts';
 import {
   SHOULD_EXIST_DISCLOSURE,
@@ -188,19 +198,47 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         )
       : null;
 
-  const floodZone =
+  /*
+   * FIRE HAZARD SEVERITY, FROM THE ADDRESS ALONE — CAL FIRE FHSZ, run in
+   * PARALLEL with the FEMA query. Both are additive panels: an upstream
+   * failure in either must not affect the other or anything else on the page.
+   * The two lookups share only the geocoded coordinates, so running them
+   * together adds max(FEMA, CAL FIRE), not the sum.
+   */
+  const [floodZone, fireSeverity] =
     geocoded?.kind === 'matched'
-      ? await observe(
-          'fema-nfhl',
-          (r) => ({
-            result: r.kind === 'found' ? 'ok' : r.kind === 'no-map-coverage' ? 'degraded' : 'failed',
-            reason:
-              r.kind === 'no-map-coverage' ? 'no-coverage' : r.kind === 'lookup-failed' ? 'http-error' : undefined,
-            state,
-          }),
-          () => lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon }),
-        )
-      : null;
+      ? await Promise.all([
+          observe(
+            'fema-nfhl',
+            (r) => ({
+              result:
+                r.kind === 'found' ? 'ok' : r.kind === 'no-map-coverage' ? 'degraded' : 'failed',
+              reason:
+                r.kind === 'no-map-coverage'
+                  ? 'no-coverage'
+                  : r.kind === 'lookup-failed'
+                    ? 'http-error'
+                    : undefined,
+              state,
+            }),
+            () => lookupFloodZone({ lat: geocoded.lat, lon: geocoded.lon }),
+          ),
+          observe(
+            'calfire-fhsz',
+            (r) => ({
+              result:
+                r.kind === 'in-hazard-zone' || r.kind === 'not-in-hazard-zone'
+                  ? 'ok'
+                  : r.kind === 'no-map-coverage'
+                    ? 'degraded'
+                    : 'failed',
+              reason: r.kind === 'lookup-failed' ? 'http-error' : undefined,
+              state,
+            }),
+            () => lookupFireSeverity({ lat: geocoded.lat, lon: geocoded.lon }),
+          ),
+        ])
+      : [null, null];
 
   const durationAnalysis = submitted
     ? analyzeEasement({
@@ -807,6 +845,98 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </p>
             </>
           )}
+
+          {/*
+            FIRE, placed with the other value-and-protection facts rather than
+            with the easement findings — the same reasoning as the flood
+            panel. It renders only for overhead-utility easements in a mapped
+            hazard zone; buildFireSafetyContent returns null for every other
+            combination, so there is no placeholder and no hedging paragraph.
+          */}
+          {(() => {
+            const fire =
+              fireSeverity !== null ? buildFireSafetyContent(easementType, fireSeverity) : null;
+            if (fire === null) return null;
+            return (
+              <>
+                <h2>{fire.headline}</h2>
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    <span
+                      className={
+                        fire.severity === 'Very High'
+                          ? 'badge badge-stop'
+                          : fire.severity === 'High'
+                            ? 'badge badge-warn'
+                            : 'badge badge-ok'
+                      }
+                      style={{ marginRight: '0.5rem' }}
+                    >
+                      {fire.severity.toUpperCase()} FIRE HAZARD SEVERITY
+                    </span>
+                  </p>
+                  <p>{fire.whatItIs}</p>
+                  <p>{fire.whyItMatters}</p>
+                  <p>
+                    <strong>Who is responsible for what:</strong> {fire.whoIsResponsible}
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    <strong>Worth doing now, at no cost:</strong> {fire.freeNextStep}
+                  </p>
+                </div>
+                <p className="muted">
+                  <small>{FIRE_SEVERITY_DISCLOSURE}</small>
+                </p>
+              </>
+            );
+          })()}
+
+          {/*
+            FLOOD VULNERABILITY WHERE EASEMENTS MEET WATER. The panel above
+            says what FEMA mapped. This one says how the easement on this
+            property changes what water does — a blocked storm drain or a
+            failed lateral floods homes far from any river, which is exactly
+            the flooding a zone map does not price. Reuses the FEMA result
+            fetched above: no new upstream query. Renders only for the five
+            flood-relevant types; the builder returns null otherwise, so a
+            non-relevant type never duplicates the zone panel.
+          */}
+          {floodZone !== null &&
+            (() => {
+              const vuln = buildFloodVulnerabilityContent(easementType, floodZone);
+              if (!vuln) return null;
+              return (
+                <>
+                  <h2>{FLOOD_VULNERABILITY_HEADING}</h2>
+                  <div className="panel">
+                    {vuln.zoneFraming && <p style={{ marginTop: 0 }}>{vuln.zoneFraming}</p>}
+                    {vuln.zoneUnknownNote && (
+                      <p style={{ marginTop: 0 }} className="muted">
+                        <small>{vuln.zoneUnknownNote}</small>
+                      </p>
+                    )}
+                    <p>
+                      <strong>{vuln.typeAngle.whatItIs}</strong>
+                    </p>
+                    <p>{vuln.typeAngle.whyItMatters}</p>
+                    <p>
+                      <strong>Who maintains what:</strong> {vuln.typeAngle.whoMaintains}
+                    </p>
+                  </div>
+                  <div className="panel">
+                    <h3 style={{ marginTop: 0 }}>Free things you can do</h3>
+                    <ul>
+                      {vuln.freeThingsYouCanDo.map((step) => (
+                        <li key={step}>{step}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="muted">
+                    <small>{vuln.disclosure}</small>
+                  </p>
+                </>
+              );
+            })()}
 
           <h2>Who is responsible for what</h2>
           <p>

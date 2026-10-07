@@ -16,7 +16,16 @@ import { describe, expect, it } from 'vitest';
  * components that reach live county services. It is the weaker technique and
  * it is the one that runs in CI. Stated plainly rather than dressed up.
  */
-const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
+/**
+ * Line endings normalised to LF before any assertion runs.
+ *
+ * Several assertions below match multi-line snippets. Git checks this
+ * repository out with CRLF on Windows, so a snippet written with "\n" matches
+ * on one developer's machine and fails on another's — which is a property of
+ * the checkout, not of the code under test. Normalising makes the assertions
+ * mean what they look like they mean.
+ */
+const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
 /** Heading text in the order a reader meets it. */
 function headingIndex(text: string): number {
@@ -73,14 +82,44 @@ describe('the screening figure never renders without its disclosures', () => {
 });
 
 /**
- * The duration analysis is a FINDING about the document, so it must sit with
- * the other findings and above the limits, like everything else here.
- *
- * It also must not drift below "What should be on record" — that section is
- * about documents the homeowner does NOT have, and reading it before the
- * analysis of the document they DO have inverts the narrative: it opens on
- * what is missing before saying anything about what exists.
+ * The flood-vulnerability section is a FINDING about how the easement
+ * changes what water does, so it sits with the other findings, above the
+ * limits — and it must reuse the single FEMA query rather than adding
+ * another upstream call.
  */
+describe('the flood-vulnerability section sits in the right place', () => {
+  // The heading renders via the FLOOD_VULNERABILITY_HEADING constant, so
+  // ordering is asserted on the constant's JSX use site in the page source.
+  // (The import line has no braces around the name; only the use site does.)
+  const floodUseSite = () => PAGE.indexOf('{FLOOD_VULNERABILITY_HEADING}');
+
+  it('renders above the limits section, like every other finding', () => {
+    const flood = floodUseSite();
+    const limits = headingIndex('What this report does not tell you');
+    expect(flood).toBeGreaterThan(-1);
+    expect(limits).toBeGreaterThan(-1);
+    expect(flood).toBeLessThan(limits);
+  });
+
+  it('renders after the flood-zone panel, not before it', () => {
+    const vuln = floodUseSite();
+    const panel = headingIndex('Flood risk, and what it costs');
+    expect(panel).toBeGreaterThan(-1);
+    expect(vuln).toBeGreaterThan(panel);
+  });
+
+  it('makes exactly one FEMA query — the section reuses the existing result', () => {
+    // A second lookupFloodZone( call would double the FEMA latency on every
+    // report. The builder takes the already-fetched result as an argument.
+    const calls = PAGE.match(/lookupFloodZone\(/g) ?? [];
+    expect(calls).toHaveLength(1);
+  });
+
+  it('never leads its headline with the word "easement"', () => {
+    expect(PAGE).toContain('FLOOD_VULNERABILITY_HEADING');
+    expect(PAGE).not.toContain('<h2>Easement');
+  });
+});
 describe('the duration analysis sits in the right place', () => {
   it('renders above the limits section, like every other finding', () => {
     const duration = headingIndex('How long does it last?');
@@ -122,5 +161,53 @@ describe('the duration analysis sits in the right place', () => {
     // Sharing a parameter would silently merge the two axes.
     expect(PAGE).toContain('searchParams.legalCharacter');
     expect(PAGE).toContain('name="legalCharacter"');
+  });
+});
+
+describe('the IRWA section obeys the same ordering rule', () => {
+  const IRWA_HEADING = 'The same question, by the IRWA method';
+
+  it('renders below the limits, never above them', () => {
+    const at = headingIndex(IRWA_HEADING);
+    expect(at).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(headingIndex('What this report does not tell you'));
+  });
+
+  it('is never called compensation, market value, or an appraisal in the page', () => {
+    // The conflict notice forbids presenting matrix output as any of these.
+    // A literal claim in the rendered copy would be a defect.
+    const idx = PAGE.indexOf(`<h2>${IRWA_HEADING}</h2>`);
+    const section = PAGE.slice(idx, idx + 4000);
+    expect(section.toLowerCase()).not.toMatch(/this is (your )?compensation/);
+    expect(section.toLowerCase()).not.toMatch(/market value of your (property|home)/);
+  });
+});
+
+describe('the fire section sits with the value-and-protection findings', () => {
+  it('is wired between the flood panel and the limits', () => {
+    // The heading itself renders from the content builder, so the placement
+    // assertion is on source anchors: the fire block must sit after the flood
+    // panel and before the limits section.
+    const floodAt = PAGE.indexOf('FLOOD_ZONE_DISCLOSURE');
+    const fireAt = PAGE.indexOf('buildFireSafetyContent(easementType, fireSeverity)');
+    const limitsAt = PAGE.indexOf('<h2>What this report does not tell you</h2>');
+    expect(floodAt).toBeGreaterThan(-1);
+    expect(fireAt).toBeGreaterThan(-1);
+    expect(limitsAt).toBeGreaterThan(-1);
+    expect(fireAt).toBeGreaterThan(floodAt);
+    expect(fireAt).toBeLessThan(limitsAt);
+  });
+
+  it('runs the CAL FIRE lookup in parallel with the FEMA query', () => {
+    // One Promise.all for the two lookups: worst case adds max(FEMA, CAL
+    // FIRE), not the sum. A future sequential rewrite would slow every
+    // report and should break this test first.
+    expect(PAGE).toContain("observe(\n            'calfire-fhsz',");
+    const allIdx = PAGE.indexOf('await Promise.all([');
+    const fireIdx = PAGE.indexOf("'calfire-fhsz'");
+    const femaIdx = PAGE.indexOf("'fema-nfhl'");
+    expect(allIdx).toBeGreaterThan(-1);
+    expect(fireIdx).toBeGreaterThan(allIdx);
+    expect(femaIdx).toBeGreaterThan(allIdx);
   });
 });

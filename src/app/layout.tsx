@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { siteUrl } from '@/lib/site';
 import { PRODUCT_NAME, SiteFooter } from '@/components/site-footer';
 import './globals.css';
@@ -31,11 +32,11 @@ export const metadata: Metadata = {
     'Free. Enter your address and find out what an easement on your property restricts, who is ' +
     'responsible for maintaining and repairing it, how long it lasts, and what should be on ' +
     'record but often is not. Not legal advice.',
-  applicationName: 'Easement Report',
+  applicationName: 'SafeHomeValue',
   openGraph: {
     type: 'website',
-    siteName: 'Easement Report',
-    title: 'What the easement on your property means',
+    siteName: 'SafeHomeValue',
+    title: 'SafeHomeValue — know what your home is worth and what keeps it safe',
     description:
       'Free. What an easement restricts, who maintains and repairs it, how long it lasts, and ' +
       'what should be on record but often is not.',
@@ -56,11 +57,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         {children}
+        <Analytics />
         {/*
           Rendered from the layout so the Privacy link, the contact address and
           the standing "not a survey" line reach every page — including the
           ones that carry no other disclaimer. See site-footer.tsx for why it
-          is one component rather than per-page markup.
+          is one component rather than per-page markup. Analytics rides here
+          too: the <Analytics /> component is the code side of Vercel Web
+          Analytics; the dashboard starts counting once this is deployed.
         */}
         <SiteFooter />
       </body>

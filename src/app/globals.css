@@ -361,6 +361,20 @@ button {
   margin-top: 0.25rem;
 }
 
+/* ---------- site footer ---------- */
+
+.site-footer {
+  max-width: 74ch;
+  margin: 0 auto;
+  padding: 0 1.25rem 2.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+}
+
+.site-footer a {
+  color: var(--ink-faint);
+}
+
 /* ---------- misc ---------- */
 
 details {
@@ -394,6 +408,7 @@ svg {
   max-width: 100%;
   height: auto;
 }
+
 
 /* ---------- marketing homepage ----------
    Scoped under .marketing so none of this leaks into the report, which is a
@@ -543,4 +558,15 @@ svg {
   .site-nav {
     font-size: 0.85rem;
   }
+}
+
+/* ---------- site footer ---------- */
+
+.site-footer {
+  border-top: 1px solid var(--rule);
+  padding: 1.25rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+
 }

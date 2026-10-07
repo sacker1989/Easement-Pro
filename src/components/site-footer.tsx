@@ -39,6 +39,8 @@ export function SiteFooter() {
       <hr />
       <p className="muted">
         <small>
+          <Link href="/learn">Learn</Link>
+          {' · '}
           <Link href="/privacy">Privacy</Link>
           {' · '}
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
