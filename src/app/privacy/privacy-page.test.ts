@@ -18,12 +18,53 @@ describe('the privacy page', () => {
   it('states the four promises', () => {
     for (const promise of [
       'never written to our logs',
-      'no accounts, no passwords',
+      'no accounts and no passwords',
       'Counts, not identities',
-      'do not sell, rent, or share',
+      'never sell, rent, trade, or share',
     ]) {
       expect(PAGE.toLowerCase(), `missing: ${promise}`).toContain(promise.toLowerCase());
     }
+  });
+
+  describe('the county waitlist email', () => {
+    it('names the one purpose and rules out every other', () => {
+      /*
+       * THE SENTENCE THAT TURNS A WAITLIST INTO A MAILING LIST is "we may
+       * contact you about our services", and it is not here. The copy binds
+       * the address to a single message and names the things it is NOT for,
+       * because a purpose stated only in the positive leaves room.
+       */
+      expect(PAGE).toMatch(/single note when yours is live/i);
+      expect(PAGE).toMatch(/No newsletter, no marketing/i);
+      expect(PAGE).toMatch(/different purposes and we did not ask you about/i);
+    });
+
+    it('says it is optional and changes nothing if declined', () => {
+      expect(PAGE).toMatch(/entirely optional/i);
+      expect(PAGE).toMatch(/works exactly the same whether or not/i);
+    });
+
+    it('rules out selling, renting, trading and sharing by name', () => {
+      // "We don't sell your data" is the promise everyone makes and several of
+      // these words get around. All four are named.
+      for (const verb of ['sell', 'rent', 'trade', 'share']) {
+        expect(PAGE.toLowerCase(), `missing verb: ${verb}`).toContain(verb);
+      }
+      expect(PAGE).toMatch(/not with advertisers, not with\s+data brokers, not with partners/i);
+    });
+
+    it('offers deletion without conditions', () => {
+      expect(PAGE).toMatch(/delete it at any time/i);
+      expect(PAGE).toMatch(/do not have to\s+explain why/i);
+    });
+
+    it('keeps the no-linkage claim, which is why the promise is cheap to make', () => {
+      // There is nothing to join an email to: the addresses people look up are
+      // never stored. That is what makes "not combined with anything else"
+      // true rather than aspirational.
+      expect(PAGE).toMatch(/nothing else about you/i);
+      expect(PAGE).toMatch(/do not store the addresses people look up/i);
+    });
   });
 
   it('says what the tool is not', () => {

@@ -158,18 +158,32 @@ describe('claims the rest of the product has to keep', () => {
     expect(PAGE).toMatch(/any other address in\s*\n?\s*the country still produces a report/i);
   });
 
-  it('collects no email, and says why the waitlist is a mailto', () => {
+  it('binds the waitlist email to one purpose, matching the privacy page', () => {
     /*
-     * THE BRIEF ASKED FOR EMAIL CAPTURE ON THE COUNTY WAITLIST, and the
-     * privacy page promises there are no email addresses collected on this
-     * site. Those cannot both be true. A mailto keeps the promise and still
-     * gets the request to a person — so the contradiction is resolved toward
-     * the one that was already published.
+     * THE PRIVACY PAGE NOW PERMITS THIS, narrowly — one message when the
+     * county goes live, never sold, deletable on request. Whatever the
+     * homepage says about it has to be the same promise in shorter words, or
+     * a reader who checks finds two different answers and believes the weaker
+     * one.
      */
     // Built from the shared constant, so the literal address is not in source.
     expect(PAGE).toContain('mailto:${CONTACT_EMAIL}');
     expect(CONTACT_EMAIL).toBe('help@safehomevalue.com');
-    expect(PAGE).toMatch(/we do not collect email addresses/i);
+    expect(PAGE).toMatch(/one thing — a single note when your county goes live/i);
+    expect(PAGE).toMatch(/Never\s+sold, never shared, never a newsletter/i);
+    expect(PAGE).toMatch(/deleted the moment you ask/i);
+    expect(PAGE).toContain('href="/privacy"');
+  });
+
+  it('still has no capture form, because there is nowhere to put one', () => {
+    /*
+     * The copy permits capture; the product cannot yet do it. There is no
+     * datastore — the audit store is a file adapter and Vercel's filesystem is
+     * ephemeral, so a form would accept an address and drop it at the next
+     * cold start, silently. A mailto reaches a real inbox and keeps every
+     * promise on the privacy page. This test is the reminder that the gap is
+     * storage, not permission.
+     */
     expect(PAGE).not.toMatch(/<input[^>]*type="email"/);
     expect(PAGE).not.toMatch(/name="email"/);
   });

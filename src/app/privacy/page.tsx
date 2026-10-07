@@ -7,11 +7,23 @@ import { CONTACT_EMAIL, PRODUCT_NAME } from '@/components/site-footer';
  *
  * WHAT IT PROMISES, in plain order. The address a homeowner types is used
  * once to build their report and is never written to a log. There are no
- * accounts, no passwords, no email collection. The only measurement is
+ * accounts and no passwords. The only measurement is
  * privacy-friendly aggregate analytics — counts of visits and reports, never
  * who asked for what. Nothing is sold, rented, or shared, and there are no
  * advertising trackers. Reports are generated in the moment; no copy is kept
  * tied to the person who asked.
+ *
+ * THE ONE EXCEPTION IS THE COUNTY WAITLIST, added 2026-10-07 at the founder's
+ * direction, and it is written as narrowly as it actually is. An optional
+ * email, used for one message when that county goes live, never sold or
+ * shared, deletable on request. Stated as a PURPOSE rather than as a
+ * permission: 'we may contact you about our services' is the sentence that
+ * turns a waitlist into a mailing list, and it is not here.
+ *
+ * IT IS ALSO WRITTEN CONDITIONALLY — 'if you join' — so the page is accurate
+ * whether or not a capture form exists yet. Nothing on the site collects an
+ * email today; see the homepage FAQ, which still routes the request through a
+ * mailto.
  *
  * WHAT IT DOES NOT PROMISE. The tool gives property information for learning
  * purposes only. It is not a survey, not an appraisal, and not legal advice.
@@ -58,17 +70,42 @@ export default function PrivacyPage() {
 
       <h2>What we never ask for</h2>
       <p>
-        There are no accounts, no passwords, and no email addresses on this site. You cannot sign
-        up for anything because there is nothing to sign up for — the tool works the same for
-        everyone, anonymously.
+        There are no accounts and no passwords. You cannot sign up for anything to use the tool —
+        it works the same for everyone, anonymously, and you never have to tell us who you are to
+        get a report.
+      </p>
+
+      <h2>The one time we ask for an email</h2>
+      <p>
+        If your county isn&rsquo;t covered yet, you can ask us to tell you when it is. That is the
+        only thing on this site that takes an email address, it is entirely optional, and the tool
+        works exactly the same whether or not you give one.
+      </p>
+      <p>
+        <strong>We use it for that one message and nothing else.</strong> If you join the county
+        waitlist, your address goes on a list of counties people have asked for, and your email is
+        used to send you a single note when yours is live. No newsletter, no marketing, no
+        &ldquo;while we have you&rdquo; — those are different purposes and we did not ask you about
+        them.
+      </p>
+      <p>
+        <strong>We never sell, rent, trade, or share it.</strong> Not with advertisers, not with
+        data brokers, not with partners. It is not combined with anything else about you, because
+        there is nothing else about you — we do not store the addresses people look up, so there is
+        nothing to connect an email to.
+      </p>
+      <p>
+        Ask us to delete it at any time, at{' '}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>, and it is gone. You do not have to
+        explain why.
       </p>
 
       <h2>What we measure</h2>
       <p>
         We use privacy-friendly aggregate analytics: how many people visit, how many reports get
         generated. Counts, not identities. There are no advertising trackers on this site, and we
-        do not sell, rent, or share any data — there is nothing personal to sell in the first
-        place.
+        do not sell, rent, or share any data — including a waitlist email, which is the only
+        personal thing we ever hold.
       </p>
 
       <h2>What this tool is, and is not</h2>

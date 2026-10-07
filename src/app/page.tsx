@@ -190,8 +190,9 @@ export default function HomePage() {
               <a href={`mailto:${CONTACT_EMAIL}?subject=${WAITLIST_SUBJECT}`}>
                 Email us and say where you are.
               </a>{' '}
-              There is no signup form here on purpose — we do not collect email addresses, so this
-              goes straight to a person instead.
+              We use your address for one thing — a single note when your county goes live. Never
+              sold, never shared, never a newsletter, and deleted the moment you ask.{' '}
+              <Link href="/privacy">The privacy page says so in full.</Link>
             </p>
           </details>
         </div>
