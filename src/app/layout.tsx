@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { siteUrl } from '@/lib/site';
+import { PRODUCT_NAME, SiteFooter } from '@/components/site-footer';
 import './globals.css';
 
 /**
@@ -23,7 +24,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
     default: 'What the easement on your property means',
-    template: '%s · Easement Report',
+    // Was "Easement Report" — the project's working name, not the product's.
+    template: `%s · ${PRODUCT_NAME}`,
   },
   description:
     'Free. Enter your address and find out what an easement on your property restricts, who is ' +
@@ -52,7 +54,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        {/*
+          Rendered from the layout so the Privacy link, the contact address and
+          the standing "not a survey" line reach every page — including the
+          ones that carry no other disclaimer. See site-footer.tsx for why it
+          is one component rather than per-page markup.
+        */}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
