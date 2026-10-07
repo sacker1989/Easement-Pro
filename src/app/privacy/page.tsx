@@ -14,8 +14,7 @@ import Link from 'next/link';
  * WHAT IT DOES NOT PROMISE. The tool gives property information for learning
  * purposes only. It is not a survey, not an appraisal, and not legal advice.
  *
- * CONTACT EMAIL is still the founder's decision — the placeholder below is
- * deliberate, not an oversight. Nothing here invents one.
+ * CONTACT: help@safehomevalue.com — set by the founder 2026-10-06.
  */
 export default function PrivacyPage() {
   return (
@@ -60,7 +59,7 @@ export default function PrivacyPage() {
 
       <h2>Questions</h2>
       <p>
-        If you have a question about any of this, write to [CONTACT EMAIL].
+        If you have a question about any of this, write to help@safehomevalue.com.
       </p>
 
       <p>
