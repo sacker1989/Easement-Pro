@@ -38,7 +38,28 @@ export const metadata = {
     'and its safety. Enter your address and see what the public record says. Not legal advice.',
 };
 
+/**
+ * The county waitlist is a mailto, and the prefill is what makes that work.
+ *
+ * NO CAPTURE FORM BY CHOICE, not by omission. A form needs somewhere to put
+ * the address, and there is no datastore here — Vercel's filesystem is
+ * ephemeral, so a form would accept an email and silently drop it at the next
+ * cold start, which is worse than not offering one. An inbox is a real store
+ * that already exists.
+ *
+ * THE PREFILL IS THE WHOLE TRICK. Free-prose requests arrive as "any chance
+ * you'll do Travis County?" and "we're in 78704" and have to be read one at a
+ * time. Two labelled lines make the pile sortable by eye and countable without
+ * opening anything, which is the difference between a rule somebody follows
+ * and one they abandon in week three. See docs/waitlist-triage.md.
+ *
+ * It stays short on purpose: a long template reads as a form in disguise and
+ * gets deleted.
+ */
 const WAITLIST_SUBJECT = encodeURIComponent('County waitlist');
+const WAITLIST_BODY = encodeURIComponent(
+  'County: \nState: \n\nAnything else you want to tell us is welcome.\n',
+);
 
 export default function HomePage() {
   return (
@@ -187,7 +208,9 @@ export default function HomePage() {
             </p>
             <p>
               Want your county next?{' '}
-              <a href={`mailto:${CONTACT_EMAIL}?subject=${WAITLIST_SUBJECT}`}>
+              <a
+                href={`mailto:${CONTACT_EMAIL}?subject=${WAITLIST_SUBJECT}&body=${WAITLIST_BODY}`}
+              >
                 Email us and say where you are.
               </a>{' '}
               We use your address for one thing — a single note when your county goes live. Never

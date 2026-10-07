@@ -175,6 +175,20 @@ describe('claims the rest of the product has to keep', () => {
     expect(PAGE).toContain('href="/privacy"');
   });
 
+  it('prefills the mailto so the inbox is sortable', () => {
+    /*
+     * THE MAILBOX IS THE STORE, so the prefill is what makes the rule
+     * followable. Free-prose requests arrive as "any chance you'll do Travis
+     * County?" and have to be read one at a time; two labelled lines make the
+     * pile countable by eye. See docs/waitlist-triage.md.
+     */
+    expect(PAGE).toContain('subject=${WAITLIST_SUBJECT}&body=${WAITLIST_BODY}');
+    expect(PAGE).toContain("'County: \\nState: \\n");
+    // Short on purpose — a long template reads as a form in disguise.
+    const body = PAGE.match(/const WAITLIST_BODY = encodeURIComponent\(\s*'([^']*)'/)?.[1] ?? '';
+    expect(body.length).toBeLessThan(120);
+  });
+
   it('still has no capture form, because there is nowhere to put one', () => {
     /*
      * The copy permits capture; the product cannot yet do it. There is no
