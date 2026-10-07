@@ -17,6 +17,10 @@ const INDEX_SRC = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const TYPE_SRC = readFileSync(new URL('./[type]/page.tsx', import.meta.url), 'utf8');
 const DIAGRAMS_SRC = readFileSync(new URL('./diagrams.tsx', import.meta.url), 'utf8');
 const LAYOUT_SRC = readFileSync(new URL('../layout.tsx', import.meta.url), 'utf8');
+const FOOTER_SRC = readFileSync(
+  new URL('../../components/site-footer.tsx', import.meta.url),
+  'utf8',
+);
 
 describe('every easement type has a guide', () => {
   it('covers all twelve types, keyed by the canonical list', () => {
@@ -154,8 +158,11 @@ describe('incidents are sourced or labeled illustrative', () => {
 
 describe('the footer links to Learn', () => {
   it('sits next to the Privacy link', () => {
-    expect(LAYOUT_SRC).toContain('href="/learn"');
-    expect(LAYOUT_SRC).toContain('>Learn<');
+    // The footer is one component rendered from the root layout, so the link
+    // lives in site-footer.tsx and the layout must render it.
+    expect(FOOTER_SRC).toContain('href="/learn"');
+    expect(FOOTER_SRC).toContain('>Learn<');
+    expect(LAYOUT_SRC).toContain('<SiteFooter />');
   });
 });
 

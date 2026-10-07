@@ -15,6 +15,11 @@ import {
   type ScreeningResult,
 } from '@/lib/valuation/screening-estimate';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import {
+  buildValuationEstimate,
+  STRIP_ONLY_WARNING,
+  type ValuationEstimate,
+} from '@/lib/valuation/build-valuation-estimate';
 import { EXPECTATIONS, NO_LIST_NO_FEE } from '@/lib/referral-network/what-to-expect';
 import {
   RESPONSIBILITIES_DISCLOSURE,
@@ -39,15 +44,6 @@ import {
   buildFloodVulnerabilityContent,
   FLOOD_VULNERABILITY_HEADING,
 } from '@/lib/proximity/flood-vulnerability';
-import {
-  engineEstimate,
-  type EngineEstimateResult,
-} from '@/lib/valuation/engine-estimate';
-import {
-  mapJurisdictionToConfidence,
-  valuationConfidenceToTieredResult,
-} from '@/lib/valuation/jurisdiction-valuation-bridge';
-import { dispatchToAgent } from '@/lib/jurisdiction/dispatch-orchestrator';
 import type { EasementLegalCharacter } from '@/lib/analysis-layer/duration-facts';
 import {
   SHOULD_EXIST_DISCLOSURE,
@@ -273,8 +269,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let referral: ReferralPackage | null = null;
   let referralText: string | null = null;
   let screening: ScreeningResult | null = null;
-  let engine: EngineEstimateResult | null = null;
-  let engineCounty: string | null = null;
+  let irwa: ValuationEstimate | null = null;
   let remedy: RemedyPlan | null = null;
   const acquisitionPending = searchParams.acquisitionPending === '1';
 
@@ -291,7 +286,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       // unsupported/not-found distinction exists to prevent.
       const resolvedCounty =
         addressResult.normalized.county ?? zipHeuristicCountyResolver.resolve(addressResult.normalized);
-      engineCounty = resolvedCounty ?? null;
 
       // Every supported county goes through one dispatch. A lookup failure
       // must not sink the report — Track 3 is free nationwide, so it degrades
@@ -430,18 +424,27 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             assessmentVintageUnknown: unified === null || unified.landBaseYear === null,
           });
 
+
           /*
-           * The IRWA engine, computed alongside the screening range. The
-           * jurisdictional confidence wrapper is applied at render time: a
-           * flagged jurisdiction shows the flag reason with NO number, per
-           * the bridge's structural rule. Engine output is rendered on this
-           * page only — it is never fed to buildReferralPackage.
+           * THE IRWA ESTIMATE, alongside the screening range rather than
+           * replacing it. The two answer the same question by different
+           * routes and on the same underlying assessed figures — the value is
+           * in a homeowner seeing a named method and its bounds, not in a
+           * second number implying a second source.
+           *
+           * It refuses for exactly the four types the screening range refuses,
+           * by reading that module's own refusal text, so the page can never
+           * show "no estimate is possible" beside an estimate.
            */
-          engine = engineEstimate({
+          irwa = buildValuationEstimate({
             easementType,
-            landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
+            lotAreaSqFt: unified?.lotAreaSqFt ?? lotAreaSqFt,
             easementAreaSqFt,
-            totalPropertyAreaSqFt: lotAreaSqFt,
+            landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
+            valueSource:
+              unified !== null
+                ? `${unified.county} assessor${unified.rollYear ? `, ${unified.rollYear} roll` : ''}, queried ${unified.queriedOn}`
+                : 'No county assessment matched this address.',
           });
 
           remedy = buildRemedyPlan({
@@ -483,22 +486,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     });
     return `/report?${q}`;
   }
-
-  /*
-   * The engine range wrapped in jurisdictional confidence. A flagged
-   * jurisdiction carries NO number — the flag reason renders instead, per the
-   * bridge's structural rule. Computed once here so the JSX below can narrow
-   * on plain values rather than closures.
-   */
-  const engineTiered =
-    engine !== null && engine.status === 'range'
-      ? valuationConfidenceToTieredResult(
-          { low: engine.low, high: engine.high },
-          mapJurisdictionToConfidence(
-            dispatchToAgent({ county: engineCounty ?? 'Unknown', state }),
-          ),
-        )
-      : null;
 
   return (
     <main>
@@ -1221,75 +1208,82 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             </>
           )}
 
+
           {/*
-            The IRWA engine section renders AFTER the open-questions panel,
-            never before it — the same ordering rule as the screening range.
-            Engine output appears here only; it is never fed to the referral
-            package, and it is never called compensation, market value, or an
-            appraisal.
+            THE IRWA ESTIMATE, after the screening range and still after the
+            open-questions panel. Two figures on one page is a risk — a reader
+            can take the second as independent corroboration of the first — so
+            the copy says plainly that both rest on the same assessed land
+            value and the same unverified percentages. What the named method
+            adds is a stated basis and bounds, not a second source.
           */}
-          {engine !== null && engine.status === 'range' && (
+          {irwa?.kind === 'estimated' && (
             <>
-              <h2>The same question, worked a second way</h2>
-              {engineTiered !== null && engineTiered.tier === 'flagged-ambiguous' ? (
-                <p role="note">
-                  <strong>No second figure is shown.</strong> {engineTiered.flagReason}
+              <h2>The same question, by the IRWA method</h2>
+              <div className="panel">
+                <p style={{ fontSize: '1.35rem', margin: '0 0 0.5rem' }}>
+                  <strong>
+                    ${Math.round(irwa.low.result.totalCompensation).toLocaleString()} – $
+                    {Math.round(irwa.high.result.totalCompensation).toLocaleString()}
+                  </strong>
                 </p>
-              ) : (
-                <>
-                  {engineTiered !== null && engineTiered.tier === 'likely-with-caveat' && (
-                    <p role="note">
-                      <strong>{engineTiered.caveat}</strong>
-                    </p>
-                  )}
-                  <p role="note">
-                    <strong>{ORIENTATION_ONLY_BANNER}</strong>
-                  </p>
-                  <div className="panel">
-                    <p style={{ fontSize: '1.35rem', margin: '0 0 0.5rem' }}>
-                      <strong>
-                        $
-                        {(engineTiered !== null ? engineTiered.value.low : engine.low).toLocaleString()}{' '}
-                        – $
-                        {(engineTiered !== null ? engineTiered.value.high : engine.high).toLocaleString()}
-                      </strong>
-                    </p>
-                    <p className="muted" style={{ marginBottom: '0.75rem' }}>
-                      {engine.lowPercent}–{engine.highPercent}% of the strip&apos;s land value
-                      (IRWA {engine.tierName} tier)
-                    </p>
-                    <p style={{ marginBottom: 0 }}>
-                      <strong>How this was calculated:</strong> {engine.derivation}
-                    </p>
-                  </div>
-                  {engine.caveats
-                    .filter((c) => c !== ORIENTATION_ONLY_BANNER)
-                    .map((c) => (
-                      <p key={c} role="note" className="muted">
-                        {c}
-                      </p>
-                    ))}
-                </>
+                <p className="muted" style={{ marginBottom: '0.75rem' }}>
+                  {irwa.tier.lowPercent}–{irwa.tier.highPercent}% of the land value of{' '}
+                  {Math.round(irwa.low.result.easementArea).toLocaleString()} sq ft, at the{' '}
+                  <strong>{irwa.tier.name}</strong> impact level.
+                </p>
+                <p>
+                  <small>
+                    <strong>Why {irwa.tier.name.toLowerCase()}:</strong> {irwa.tier.description}
+                  </small>
+                </p>
+                <p className="muted">
+                  <small>Land value from: {irwa.valueSource}</small>
+                </p>
+              </div>
+
+              {irwa.stripOnly && (
+                <div className="undetermined">
+                  <p style={{ margin: 0 }}>{STRIP_ONLY_WARNING}</p>
+                </div>
               )}
-            </>
-          )}
 
-          {engine !== null && engine.status === 'refused' && (
-            <>
-              <h2>The same question, worked a second way</h2>
-              <p role="note">
-                <strong>No second figure is offered for this easement type.</strong> {engine.reason}
+              <h3>The other half of the method</h3>
+              {irwa.beforeAndAfter.kind === 'needs-appraiser' ? (
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    The IRWA methodology runs two methods and compares them. The second —
+                    Before-and-After — needs something this tool cannot produce:{' '}
+                    <strong>{irwa.beforeAndAfter.missingInput}</strong>
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    <small className="muted">{irwa.beforeAndAfter.whyNotDerived}</small>
+                  </p>
+                </div>
+              ) : (
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    Before-and-After, using an appraised remainder value of $
+                    {irwa.beforeAndAfter.remainderValuePerSqFt.toLocaleString()} per sq ft:{' '}
+                    <strong>
+                      ${Math.round(irwa.beforeAndAfter.totalCompensation).toLocaleString()}
+                    </strong>
+                  </p>
+                </div>
+              )}
+
+              <p className="muted">
+                <small>{irwa.methodDisclosure}</small>
               </p>
             </>
           )}
 
-          {engine !== null && engine.status === 'insufficient-data' && (
+          {irwa?.kind === 'refused' && (
             <>
-              <h2>The same question, worked a second way</h2>
-              <p role="note">
-                <strong>No second figure could be produced.</strong> {engine.reason} Missing:{' '}
-                {engine.missing.join('; ')}.
-              </p>
+              <h2>Why no valuation is offered for this easement</h2>
+              <div className="undetermined">
+                <p style={{ margin: 0 }}>{irwa.reason}</p>
+              </div>
             </>
           )}
 

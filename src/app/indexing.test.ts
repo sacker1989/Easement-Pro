@@ -86,15 +86,33 @@ describe('robots.txt', () => {
 });
 
 describe('sitemap', () => {
-  it('lists only the landing page', () => {
-    // A sitemap listing a parameterised route would contradict robots.ts, and
-    // that kind of inconsistency gets resolved in the crawler's favour.
-    const entries = sitemap();
-    expect(entries).toHaveLength(1);
-    expect(entries[0]!.url).not.toContain('?');
-    for (const forbidden of ['/report', '/analyze', '/advocacy', '/inquiry']) {
-      expect(entries[0]!.url).not.toContain(forbidden);
+  it('lists no route that reads user input', () => {
+    /*
+     * DERIVED FROM THE FILESYSTEM RATHER THAN A HARDCODED COUNT, which is what
+     * this used to be. A sitemap listing a parameterised route would
+     * contradict robots.ts, and that kind of inconsistency gets resolved in
+     * the crawler's favour. Checking the count only caught that by accident,
+     * and stopped catching anything the moment a second legitimate page was
+     * added.
+     */
+    const parameterised = routes()
+      .filter(([, source]) => source.includes('searchParams'))
+      .map(([route]) => route);
+
+    for (const entry of sitemap()) {
+      expect(entry.url).not.toContain('?');
+      for (const route of parameterised) {
+        expect(entry.url, `sitemap lists ${route}, which carries user input`).not.toContain(route);
+      }
     }
+  });
+
+  it('lists the landing page and the privacy page', () => {
+    // The two pages that carry no user input. Privacy is deliberately
+    // indexable — it has nothing in it to leak.
+    const urls = sitemap().map((e) => e.url);
+    expect(urls.some((u) => u.endsWith('/privacy'))).toBe(true);
+    expect(urls.length).toBe(2);
   });
 });
 

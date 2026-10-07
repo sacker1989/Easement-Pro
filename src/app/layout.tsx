@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import { Analytics } from '@vercel/analytics/react';
 import { siteUrl } from '@/lib/site';
+import { PRODUCT_NAME, SiteFooter } from '@/components/site-footer';
 import './globals.css';
 
 /**
@@ -24,8 +24,9 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    default: 'SafeHomeValue — know what your home is worth and what keeps it safe',
-    template: '%s · SafeHomeValue',
+    default: 'What the easement on your property means',
+    // Was "Easement Report" — the project's working name, not the product's.
+    template: `%s · ${PRODUCT_NAME}`,
   },
   description:
     'Free. Enter your address and find out what an easement on your property restricts, who is ' +
@@ -58,16 +59,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {children}
         <Analytics />
         {/*
-          THE SITE FOOTER, such as it is. One line, muted, on every page via
-          the root layout: the Learn guides and the Privacy page are the two
-          links a trust-based product cannot do without. A homeowner deciding
-          whether to type their address in should not have to hunt for either.
+          Rendered from the layout so the Privacy link, the contact address and
+          the standing "not a survey" line reach every page — including the
+          ones that carry no other disclaimer. See site-footer.tsx for why it
+          is one component rather than per-page markup. Analytics rides here
+          too: the <Analytics /> component is the code side of Vercel Web
+          Analytics; the dashboard starts counting once this is deployed.
         */}
-        <footer className="site-footer">
-          <Link href="/learn">Learn</Link>
-          {' · '}
-          <Link href="/privacy">Privacy</Link>
-        </footer>
+        <SiteFooter />
       </body>
     </html>
   );
