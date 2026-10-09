@@ -229,6 +229,20 @@ describe('claims the rest of the product has to keep', () => {
     expect(PAGE).not.toMatch(/name="email"/);
   });
 
+  it('the title names the job rather than asking a question', () => {
+    /*
+     * A DIFFERENT JOB FROM THE HEADLINE'S. A question works on the page, where
+     * the reader has arrived. In a search result it competes with ten other
+     * blue links and has to say what the thing IS — people type "property
+     * easement report", not "what's hiding in my property". It used to be the
+     * old h1 copied into the tab.
+     */
+    expect(PAGE).toContain('free property easement & risk report');
+    expect(PAGE).not.toMatch(/absolute:.*hiding in your property/);
+    // Absolute, so the layout suffix is not appended to a name already in it.
+    expect(PAGE).toMatch(/title:\s*\{\s*\n?\s*absolute:/);
+  });
+
   it('uses the product name from one place', () => {
     expect(PAGE).toContain('PRODUCT_NAME');
     expect(PRODUCT_NAME).toBe('SafeHomeValue');

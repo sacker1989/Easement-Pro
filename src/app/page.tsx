@@ -30,8 +30,25 @@ import { SUPPORTED_COUNTIES } from '@/lib/parcel-lookup/county-dispatch';
  */
 
 export const metadata = {
+  /*
+   * THE TITLE NAMES THE JOB, which is a different job from the headline's.
+   *
+   * It was "what's hiding in your property?" — the old h1, carried into the
+   * tab. A question is good copy on the page, where the reader has already
+   * arrived, and poor copy in a search result, where it competes with ten
+   * other blue links and has to say what the thing IS. Someone types "property
+   * easement report", not "what's hiding in my property".
+   *
+   * "easement" appears here and never in a heading on the page. That is not a
+   * contradiction: the heading rule exists because a visitor may not know the
+   * word, and this string is matched against a query from someone who typed
+   * it.
+   *
+   * Absolute, so the layout's "· SafeHomeValue" suffix is not appended on top
+   * of a name the string already carries.
+   */
   title: {
-    absolute: `${PRODUCT_NAME} — what's hiding in your property?`,
+    absolute: `${PRODUCT_NAME} — free property easement & risk report`,
   },
   description:
     'Free. Hidden utility rights-of-way and maintenance obligations affect your home’s value ' +
