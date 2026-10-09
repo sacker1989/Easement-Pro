@@ -77,12 +77,20 @@ export default function HomePage() {
       </nav>
 
       <main className="marketing" id="top">
-        {/* 2. Hero */}
-        <h1>What&rsquo;s hiding in your property?</h1>
-        <p className="hero-sub">
-          Hidden utility rights-of-way and maintenance obligations affect your home&rsquo;s value —
-          and its safety. Most homeowners never see them. Get your free report.
-        </p>
+        {/*
+          2. Hero — SEARCH FIRST.
+
+          The address input sits directly under the headline, before any
+          explanatory copy, the way Zillow and Redfin arrange it. Someone who
+          already knows what they want should be able to act without reading a
+          paragraph first, and someone who does not will scroll to the copy
+          below. Explanation above the input taxes the people most ready to
+          convert.
+        */}
+        <h1>
+          Hidden risks. Silent damage. Thousands in lost value. What&rsquo;s hiding on your
+          property? Get your free home report.
+        </h1>
 
         <form className="hero-form" action="/report" id="address">
           <input type="hidden" name="submitted" value="1" />
@@ -110,6 +118,17 @@ export default function HomePage() {
         </form>
         <p className="muted">
           <small>Free. No account. We never log your address.</small>
+        </p>
+
+        {/*
+          The explanatory copy, moved below the input. The closing CTA it used
+          to carry ("Get your free report") is gone, because the headline now
+          says it — repeating it two lines apart would read as a stutter rather
+          than as emphasis.
+        */}
+        <p className="hero-sub">
+          Hidden utility rights-of-way and maintenance obligations affect your home&rsquo;s value —
+          and its safety. Most homeowners never see them.
         </p>
 
         {/* 3. Two pillars */}

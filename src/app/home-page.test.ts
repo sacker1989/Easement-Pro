@@ -23,10 +23,37 @@ describe('all seven sections are present', () => {
     expect(CSS).toMatch(/\.site-nav\s*\{[^}]*position:\s*sticky/);
   });
 
-  it('2 — the hero headline and subhead, verbatim', () => {
-    expect(PAGE).toContain('What&rsquo;s hiding in your property?');
-    expect(PAGE).toMatch(/Hidden utility rights-of-way and maintenance obligations/);
-    expect(PAGE).toMatch(/Most homeowners never see them\. Get your free report\./);
+  it('2 — the hero headline, verbatim', () => {
+    // Founder copy, exact. Four beats then the ask.
+    expect(PAGE).toMatch(
+      /Hidden risks\. Silent damage\. Thousands in lost value\. What&rsquo;s hiding on your\s+property\? Get your free home report\./,
+    );
+  });
+
+  it('2 — search first: the input precedes the explanatory copy', () => {
+    /*
+     * THE STRUCTURAL REQUIREMENT, not a styling one. Zillow/Redfin layout —
+     * someone who already knows what they want acts without reading a
+     * paragraph, and the explanation is there for everyone else, below. An
+     * explanatory paragraph above the input taxes exactly the people most
+     * ready to convert, so the ordering is asserted rather than trusted.
+     */
+    const headline = PAGE.indexOf('Hidden risks. Silent damage.');
+    const form = PAGE.indexOf('className="hero-form"');
+    const explainer = PAGE.indexOf('className="hero-sub"');
+
+    expect(headline).toBeGreaterThan(-1);
+    expect(form).toBeGreaterThan(headline);
+    expect(explainer).toBeGreaterThan(form);
+  });
+
+  it('2 — the explainer no longer repeats the headline’s CTA', () => {
+    // The headline now ends "Get your free home report." The paragraph below
+    // used to end "Get your free report." Two lines apart that reads as a
+    // stutter, not emphasis.
+    const sub = PAGE.slice(PAGE.indexOf('className="hero-sub"'));
+    expect(sub.slice(0, 400)).toMatch(/Most homeowners never see them\./);
+    expect(sub.slice(0, 400)).not.toMatch(/Get your free report\./);
   });
 
   it('3 — two pillars, value and safety', () => {
