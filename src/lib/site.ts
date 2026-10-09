@@ -25,6 +25,18 @@
  * REMOVING THAT SILENTLY RESTORES THE OLD BEHAVIOUR. Verified against a real
  * production server: one build, three environments, three different origins.
  *
+ * AND ON VERCEL, CHANGING THE VARIABLE STILL NEEDS A REDEPLOY. Environment
+ * variables are bound to a deployment when it is created, so a running function
+ * reads its own snapshot rather than live project settings. force-dynamic buys
+ * per-request evaluation, not live settings reads — the two are easy to
+ * conflate and the runbook got it wrong for two days.
+ *
+ * SET IT EXPLICITLY ON ANY DEPLOYMENT WHOSE CANONICAL HOST MATTERS. The
+ * VERCEL_PROJECT_PRODUCTION_URL fallback below exists so a fresh deploy is
+ * correct BY DEFAULT, not so a configured project can rely on it: it tracks a
+ * Vercel-managed value that is invisible from here and moved under us once,
+ * when the domains were reconfigured.
+ *
  * `metadataBase` is still fixed at build, because it is read from a static
  * `metadata` export. Making it dynamic needs `generateMetadata`, which is not
  * worth it for a value that changes about once in a project's life — and on

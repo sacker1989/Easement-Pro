@@ -267,34 +267,55 @@ error reporting.
 
 ---
 
-# Open after launch
+# Canonical host — resolved 2026-10-09
 
-## `SITE_URL` is not set, and the canonical host is wrong
+**Settled.** `safehomevalue.com` (apex) is the serving host, `www` 308-redirects
+to it, and `SITE_URL=https://safehomevalue.com` is set on the Vercel project so
+the sitemap and robots advertise the apex. Nothing handed to a crawler
+redirects.
 
-**Found 2026-10-07, on the live site.** Not urgent, not a code change.
+Getting there took four attempts, and the reasons are worth keeping because
+each one will catch someone again.
 
-The serving host is `https://www.safehomevalue.com` (200). The apex
-`https://safehomevalue.com` 308-redirects to it. But `siteUrl()` falls back to
-`VERCEL_PROJECT_PRODUCTION_URL`, which Vercel has set to the apex — so:
+## An env var change needs a redeploy, `force-dynamic` or not
 
-```
-sitemap.xml  →  <loc>https://safehomevalue.com</loc>
-robots.txt   →  Sitemap: https://safehomevalue.com/sitemap.xml
-```
+This runbook previously said **"No redeploy"** for a `SITE_URL` change, on the
+grounds that `robots.ts` and `sitemap.ts` are `force-dynamic`. **That was
+wrong**, and it cost two rounds of confusion.
 
-Every URL handed to a crawler redirects. Google follows it, so nothing is
-broken — but the canonical signal is muddled, which matters most on a site with
-no history.
+`force-dynamic` controls *when the value is read* — per request, rather than
+frozen into a static file at build time. That fix was necessary and remains
+correct. But on Vercel, **environment variables are bound to a deployment when
+that deployment is created.** A running function reads its own deployment's
+environment snapshot, not the live project settings. Change or remove a
+variable and nothing happens until you redeploy.
 
-**Fix:** set `SITE_URL=https://www.safehomevalue.com` in the Vercel project.
-**No redeploy.** `robots.ts` and `sitemap.ts` are `force-dynamic` and the
-variable deliberately has no `NEXT_PUBLIC_` prefix, so it is read per request.
+## Do not fix it from both ends at once
 
-Verify:
+Attempt two set `SITE_URL` to the www host *and* made the apex primary. Each
+was a correct fix on its own; together they swapped which side was wrong —
+canonical said www, serving host became apex. Pick one end.
+
+## Prefer the explicit value over the fallback
+
+Attempt three deleted `SITE_URL` to let `siteUrl()` fall back to
+`https://${VERCEL_PROJECT_PRODUCTION_URL}`, which had been the apex. By then it
+was the www host — the domain changes had moved it. The fallback tracks a
+Vercel-managed value that is not visible from the code and can change
+underneath you.
+
+**So set `SITE_URL` explicitly on any deployment whose canonical host matters.**
+The fallback exists so a fresh deploy is *correct by default*, not so a
+configured project can rely on it.
+
+## Verify
 
 ```bash
-curl -s https://www.safehomevalue.com/sitemap.xml | grep loc
+curl -s https://safehomevalue.com/sitemap.xml | grep loc
+curl -s https://safehomevalue.com/robots.txt | grep -i sitemap
 ```
 
-The alternative is to make the apex primary in Vercel and redirect www to it.
-Do one or the other, not both.
+Both must show the apex, and `curl -I https://safehomevalue.com/` must return
+200 rather than a redirect. Check `X-Vercel-Cache` when a change seems not to
+have landed: `MISS` with `Age: 0` means the response was generated fresh and
+the problem is the environment, not a cache.
