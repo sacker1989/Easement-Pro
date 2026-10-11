@@ -55,6 +55,7 @@ import type {
   ParcelCandidate,
 } from './la-county-assessor-provider';
 import { AssessorLookupError } from './la-county-assessor-provider';
+import { abbreviateStreetLine } from './situs-address';
 
 export const COOK_COUNTY_PARCEL_LAYER =
   'https://gis12.cookcountyil.gov/traditional/rest/services/CookViewer3Parcels/MapServer/0';
@@ -110,8 +111,22 @@ export function escapeEsriLiteral(value: string): string {
   return value.replace(/'/g, "''");
 }
 
+/*
+ * THE UPPERCASING WAS NOT ENOUGH, which an audit of all four providers found.
+ * Cook stores the USPS abbreviation — confirmed live on 2026-10-11 as "233 S
+ * WACKER DR" — so a prefix LIKE built from "233 South Wacker Drive" matched
+ * zero rows, and a homeowner who spelled it out was told no parcel exists.
+ * Omitting the suffix always worked; spelling it never did.
+ *
+ * `abbreviateStreetLine` is shared with Orange, which had the identical gap,
+ * and with LA, where the abbreviation tables already lived. It also collapses
+ * runs of whitespace and strips trailing punctuation, neither of which this
+ * clause did before, and drops `%`/`_` so a stray keystroke cannot become a
+ * wildcard scan — `escapeEsriLiteral` doubles quotes but does not neutralise
+ * those.
+ */
 function buildWhere(streetLine: string, zip?: string): string {
-  const street = escapeEsriLiteral(streetLine.trim().toUpperCase());
+  const street = escapeEsriLiteral(abbreviateStreetLine(streetLine));
   const clauses = [`UPPER(street_address) LIKE '${street}%'`];
   if (zip !== undefined && zip.trim() !== '') {
     clauses.push(`ZIP1 = '${escapeEsriLiteral(zip.trim())}'`);

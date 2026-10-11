@@ -55,6 +55,8 @@
  * is the intended fallback shape. See spec §3.6.
  */
 
+import { abbreviateStreetLine } from './situs-address';
+
 const OC_LEGAL_LOTS_QUERY_URL =
   'https://www.ocgis.com/arcpub/rest/services/LegalLotsAttributeOpenData/MapServer/0/query';
 
@@ -216,13 +218,25 @@ function assertSafeAssessmentNo(assessmentNo: string): string {
 }
 
 /**
- * Normalises a typed street line to the layer's stored form: uppercase, single
- * spaces, no trailing punctuation. Matching is a prefix LIKE so that "1251 N
- * ALAMO" finds "1251 N ALAMO ST" — the county stores a suffix the user may
- * not type. Over-matching surfaces as `ambiguous` rather than a wrong parcel.
+ * Normalises a typed street line to the layer's stored form. Matching is a
+ * prefix LIKE so that "1251 N ALAMO" finds "1251 N ALAMO ST" — the county
+ * stores a suffix the user may not type. Over-matching surfaces as `ambiguous`
+ * rather than a wrong parcel.
+ *
+ * THE UPPERCASING WAS NOT ENOUGH, which an audit of all four providers found.
+ * The county stores the USPS abbreviation — confirmed live on 2026-10-11 as
+ * "1251 N ALAMO ST" — so a prefix LIKE built from "1251 North Alamo Street"
+ * matched zero rows and the homeowner was told no parcel exists. Tolerating a
+ * MISSING suffix was never the same as tolerating a SPELLED one, and the
+ * comment above used to imply it was.
+ *
+ * `abbreviateStreetLine` is shared with Cook, which had the identical gap, and
+ * with LA, whose split-column parser is where the abbreviation tables already
+ * lived. It also handles the trap in the other direction: "5821 WEST BLVD" is
+ * a street named WEST, so its first word is left alone.
  */
 export function normalizeSiteAddress(streetLine: string): string {
-  return streetLine.trim().toUpperCase().replace(/\s+/g, ' ').replace(/[.,]+$/, '');
+  return abbreviateStreetLine(streetLine);
 }
 
 export interface OrangeCountyProviderOptions {
