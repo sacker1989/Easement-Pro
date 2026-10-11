@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   observe,
   recordOutcome,
@@ -152,5 +154,86 @@ describe('an address cannot reach the log', () => {
     // @ts-expect-error -- an address has no home on this type, by design
     const bad: Outcome = { service: 'county-parcel', result: 'ok', address: ADDRESS };
     expect(bad).toBeDefined();
+  });
+});
+
+describe('a declared service is a watched service', () => {
+  /*
+   * THE DEFECT THIS EXISTS FOR, which cost an unknown number of weeks.
+   *
+   * 'county-parcel' was the first member of UpstreamService ever written and
+   * the last one to be wired up. For months it was a string in a union and
+   * nothing else: no call site, no records, no way to tell. In that window the
+   * San Diego provider began returning service-error for every address. Every
+   * report still rendered, because a failed county lookup falls back to
+   * national benchmarks and says so — correct for the homeowner, and silent
+   * for whoever runs the thing. It surfaced only because somebody timed the
+   * upstreams by hand.
+   *
+   * A UNION MEMBER IS A PROMISE THAT SOMETHING IS WATCHED, and an unused one
+   * is worse than an absent one: it reads, to the next person opening this
+   * file, as coverage that already exists. So the promise is checked.
+   *
+   * SOURCE-TEXT, which is the weaker technique and the only one that can see
+   * an absence. There is no runtime handle on "nobody calls observe with this
+   * argument" — the gap is precisely that no code exists to run.
+   */
+  const SELF = readFileSync(new URL('./outcome-log.ts', import.meta.url), 'utf8');
+
+  /** Every `| 'name'` between the union's declaration and the next one. */
+  const DECLARED = (
+    SELF.slice(
+      SELF.indexOf('export type UpstreamService'),
+      SELF.indexOf('export type FailureReason'),
+    ).match(/\|\s*'([a-z-]+)'/g) ?? []
+  ).map((line) => line.replace(/[^a-z-]/g, ''));
+
+  /**
+   * Every non-test source file except this module, which declares the union
+   * and so cannot also be its own caller.
+   */
+  function sourceText(dir: string): string {
+    return readdirSync(dir, { withFileTypes: true })
+      .map((entry) => {
+        const child = join(dir, entry.name);
+        if (entry.isDirectory()) return sourceText(child);
+        if (!/\.tsx?$/.test(entry.name)) return '';
+        if (entry.name.includes('.test.') || entry.name === 'outcome-log.ts') return '';
+        return readFileSync(child, 'utf8');
+      })
+      .join('\n');
+  }
+
+  const CALLERS = sourceText(join(fileURLToPath(new URL('.', import.meta.url)), '..', '..'));
+
+  it('reads the union from source rather than restating it here', () => {
+    // A restated list drifts. A broken parse would make every case below pass
+    // vacuously, so the parse is asserted before it is trusted.
+    expect(DECLARED).toContain('county-parcel');
+    expect(DECLARED).toContain('census-geocoder');
+    // Four today. A floor rather than an equality, so adding an upstream
+    // does not fail here — it fails in the case below, which is the one
+    // that asks whether the new member is actually watched.
+    expect(DECLARED.length).toBeGreaterThanOrEqual(4);
+    expect(CALLERS.length).toBeGreaterThan(10_000);
+  });
+
+  it.each(DECLARED)("%s is actually passed to observe()", (service) => {
+    /*
+     * Checked near an `observe(` rather than anywhere in src, so a service
+     * named only in a comment or a type annotation does not satisfy it. The
+     * window is generous because the classifier argument is formatted across
+     * several lines by Prettier.
+     */
+    const nearAnObserveCall = CALLERS.split('observe(')
+      .slice(1)
+      .some((tail) => tail.slice(0, 120).includes(`'${service}'`));
+
+    expect(
+      nearAnObserveCall,
+      `'${service}' is declared in UpstreamService and passed to observe() nowhere. ` +
+        'Either instrument it or remove it from the union — a member nobody calls ' +
+        'reads as coverage that does not exist.',
+    ).toBe(true);
   });
 });

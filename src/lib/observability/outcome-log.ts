@@ -33,13 +33,26 @@
  * enough to answer every operational question this is for.
  */
 
-/** Which upstream. A closed set; adding one is an edit here. */
+/**
+ * Which upstream. A closed set; adding one is an edit here.
+ *
+ * EVERY MEMBER MUST BE PASSED TO observe() SOMEWHERE, and
+ * outcome-log.test.ts fails if one is not. This is not pedantry. A member
+ * nobody calls reads, to the next person opening this file, as coverage that
+ * already exists — and that is exactly how the San Diego outage went
+ * unnoticed: 'county-parcel' was declared here and wired to nothing while
+ * the provider returned service-error for every address.
+ *
+ * 'assessor-valuation' WAS REMOVED rather than instrumented. The four
+ * assessor providers are reachable only through lookupParcel, so a second
+ * record would have double-counted every county lookup under two names and
+ * left both rates wrong. One upstream call, one service name.
+ */
 export type UpstreamService =
   | 'county-parcel'
   | 'census-geocoder'
   | 'fema-nfhl'
-  | 'calfire-fhsz'
-  | 'assessor-valuation';
+  | 'calfire-fhsz';
 
 /**
  * Why a call did not fully succeed.

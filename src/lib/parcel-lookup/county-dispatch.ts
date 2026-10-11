@@ -40,6 +40,7 @@ import {
 import { createCookCountyAssessorProvider } from '@/lib/risk-disclosure/cook-county-assessor-provider';
 import { COUNTY_AGENT_ROUTES } from '@/lib/jurisdiction/county-database';
 import { createResilientFetch } from '@/lib/net/resilient-fetch';
+import { observe } from '@/lib/observability/outcome-log';
 import type { NormalizedAddress } from '@/lib/parcel-resolution/types';
 
 /** A valuation normalised across counties, with the differences preserved. */
@@ -153,7 +154,70 @@ function getSharedFetch(): typeof fetch {
  * per-host concurrency and caching apply uniformly — Orange County in
  * particular returned 503 under modest load without it.
  */
+/**
+ * Instrumented wrapper. See `lookupParcelUninstrumented` for the work.
+ *
+ * WRAPPED HERE RATHER THAN AT THE CALL SITE, so every caller is timed instead
+ * of only the report page.
+ *
+ * THE GAP THIS CLOSES is an embarrassing one. `county-parcel` was declared in
+ * UpstreamService the day the outcome log was written, and used nowhere. The
+ * county lookup is the slowest upstream, the only one with per-county
+ * behaviour, and the one that silently returned service-error for every San
+ * Diego address until 2026-10-11 — and it was the single service production
+ * was not watching. The fallback to national benchmarks is quiet by design,
+ * so nothing surfaced until somebody measured by hand.
+ *
+ * THE COUNTY IS ON THE RECORD because that is what makes the log actionable:
+ * a rising failed rate for ONE county is the San Diego bug recurring
+ * somewhere else, and an aggregate rate would hide it behind three healthy
+ * counties. A county name is shared by millions of parcels, so it is safe to
+ * log. No address, ever — see outcome-log.ts for why that is structural.
+ */
 export async function lookupParcel(
+  address: NormalizedAddress,
+  options: CountyDispatchOptions = {},
+): Promise<CountyLookupResult> {
+  return observe(
+    'county-parcel',
+    (r: CountyLookupResult) => ({
+      /*
+       * 'found' and 'ambiguous' are both successes — the service answered and
+       * the data is usable. 'not-found' is DEGRADED rather than failed: the
+       * county genuinely has no parcel at that address, which is the ordinary
+       * result of a typo and not a fault. 'service-error' is the one worth
+       * paging about.
+       */
+      result:
+        r.status === 'found' || r.status === 'ambiguous'
+          ? ('ok' as const)
+          : r.status === 'service-error'
+            ? ('failed' as const)
+            : ('degraded' as const),
+      reason:
+        r.status === 'service-error'
+          ? ('network' as const)
+          : r.status === 'not-found'
+            ? ('no-match' as const)
+            : r.status === 'unsupported-county'
+              ? ('no-coverage' as const)
+              : undefined,
+      state: address.state,
+      /*
+       * 'found' carries the county inside the valuation; every other status
+       * carries it at the top level, and 'unsupported-county' may have none
+       * (the geocoder did not return one). Reading each branch rather than a
+       * sloppy `'county' in r` keeps this exhaustive — a new status with a
+       * differently-shaped county will fail to type-check here instead of
+       * silently logging undefined.
+       */
+      county: r.status === 'found' ? r.valuation.county : (r.county ?? undefined),
+    }),
+    () => lookupParcelUninstrumented(address, options),
+  );
+}
+
+async function lookupParcelUninstrumented(
   address: NormalizedAddress,
   options: CountyDispatchOptions = {},
 ): Promise<CountyLookupResult> {

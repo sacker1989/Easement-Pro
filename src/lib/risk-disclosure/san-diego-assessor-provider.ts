@@ -489,14 +489,39 @@ const SUFFIXES = new Set([
   'TER', 'TERRACE', 'PKWY', 'PARKWAY', 'TRL', 'TRAIL',
 ]);
 
+/**
+ * Directions, split off the street name for the same reason suffixes are: the
+ * county stores them in their own columns (SITUS_PRE_DIR, SITUS_POST_DIR)
+ * while users type them inline.
+ *
+ * THIS WAS A LIVE BUG, found by the county-parcel outcome log on the day it
+ * was wired up. "1590 E Chase Ave" parsed to street "E CHASE", which went out
+ * as `SITUS_STREET LIKE 'E CHASE%'` and matched nothing — the row holds
+ * SITUS_PRE_DIR 'E' and SITUS_STREET 'CHASE'. Every San Diego address with a
+ * directional prefix returned not-found, which is indistinguishable from a
+ * typo at the page, and had been for an unknown stretch. Verified against the
+ * live service: with 'E CHASE%' the layer returns zero features; with
+ * 'CHASE%' it returns APN 4982604500.
+ *
+ * ONLY THE ONE- AND TWO-LETTER FORMS, which is the whole set the county uses.
+ * The spelled-out words are NOT here on purpose: "North", "South" and "West"
+ * are real San Diego street names, so treating the spelled form as a direction
+ * would break the streets this is meant to fix.
+ */
+const DIRECTIONS = new Set(['N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW']);
+
 export interface ParsedSitus {
   readonly houseNumber: number;
   readonly street: string;
+  /** Non-null only when the caller actually typed one. */
+  readonly preDirection: string | null;
+  readonly postDirection: string | null;
 }
 
 /**
- * Splits "5102 Enelra Pl" into house number and street name. The street name
- * may contain spaces — the county stores values such as "PAUL JONES".
+ * Splits "5102 Enelra Pl" into house number and street name, with any
+ * direction separated out. The street name may contain spaces — the county
+ * stores values such as "PAUL JONES".
  */
 export function parseSanDiegoAddress(streetLine: string): ParsedSitus {
   const cleaned = streetLine.trim().toUpperCase().replace(/\s+/g, ' ').replace(/[.,]/g, '');
@@ -507,8 +532,31 @@ export function parseSanDiegoAddress(streetLine: string): ParsedSitus {
     );
   }
   const parts = m[2]!.split(' ');
+
+  /*
+   * ORDER MATTERS, and it is the one subtle thing here. A trailing direction
+   * comes off BEFORE the suffix, because it sits outside it: "123 MAIN ST W"
+   * ends in W, so a suffix loop run first sees a non-suffix, stops
+   * immediately, and leaves street "MAIN ST". Stripping W first exposes ST to
+   * the loop. (Got this backwards on the first attempt; the test caught it.)
+   *
+   * `length > 1` guards every pop, so a street genuinely named for a direction
+   * or a suffix survives rather than parsing to the empty string — San Diego
+   * really does have an E Street.
+   */
+  let postDirection: string | null = null;
+  if (parts.length > 1 && DIRECTIONS.has(parts[parts.length - 1]!)) {
+    postDirection = parts.pop()!;
+  }
+
   while (parts.length > 1 && SUFFIXES.has(parts[parts.length - 1]!)) parts.pop();
-  return { houseNumber: Number(m[1]), street: parts.join(' ') };
+
+  let preDirection: string | null = null;
+  if (parts.length > 1 && DIRECTIONS.has(parts[0]!)) {
+    preDirection = parts.shift()!;
+  }
+
+  return { houseNumber: Number(m[1]), street: parts.join(' '), preDirection, postDirection };
 }
 
 export interface SanDiegoProviderOptions {
@@ -540,12 +588,26 @@ export function createSanDiegoAssessorProvider(
     },
 
     async findByAddress(streetLine: string, zip?: string): Promise<SanDiegoLookupResult> {
-      const { houseNumber, street } = parseSanDiegoAddress(streetLine);
+      const { houseNumber, street, preDirection, postDirection } =
+        parseSanDiegoAddress(streetLine);
 
       const clauses = [
         `SITUS_ADDRESS=${houseNumber}`,
         `SITUS_STREET LIKE '${escapeSqlLiteral(street)}%'`,
       ];
+      /*
+       * CONSTRAINED ONLY WHEN THE CALLER TYPED ONE. "1590 E Chase" and "1590 W
+       * Chase" are different parcels, so a supplied direction is worth matching
+       * on. But a caller who omits it should get the candidate list and the
+       * disambiguation screen, not a silent miss — which is the failure this
+       * whole block exists to undo.
+       */
+      if (preDirection !== null) {
+        clauses.push(`SITUS_PRE_DIR='${escapeSqlLiteral(preDirection)}'`);
+      }
+      if (postDirection !== null) {
+        clauses.push(`SITUS_POST_DIR='${escapeSqlLiteral(postDirection)}'`);
+      }
       if (zip !== undefined && zip.trim() !== '') {
         clauses.push(`SITUS_ZIP LIKE '${escapeSqlLiteral(zip.trim())}%'`);
       }

@@ -232,7 +232,14 @@ any container platform already collect and parse into structured fields:
 ```
 
 `service` is one of `county-parcel`, `census-geocoder`, `fema-nfhl`,
-`assessor-valuation`. `result` is `ok`, `degraded` or `failed`.
+`calfire-fhsz`. `result` is `ok`, `degraded` or `failed`. `county-parcel`
+records also carry `county`, so a rising failure rate in one county is
+visible instead of being averaged away behind three healthy ones.
+
+This list previously named `assessor-valuation`, which the product never
+emitted, and omitted `calfire-fhsz`, which it did. The union in
+`src/lib/observability/outcome-log.ts` is now the authority, and a test
+fails if any member of it is instrumented nowhere.
 
 ## What to watch
 

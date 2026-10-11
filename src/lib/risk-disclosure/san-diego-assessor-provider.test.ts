@@ -264,10 +264,13 @@ describe('marketAdjustSanDiegoParcel', () => {
 });
 
 describe('parseSanDiegoAddress', () => {
+  const NO_DIRECTIONS = { preDirection: null, postDirection: null };
+
   it('strips a suffix the county stores separately', () => {
     expect(parseSanDiegoAddress('5102 Enelra Pl')).toEqual({
       houseNumber: 5102,
       street: 'ENELRA',
+      ...NO_DIRECTIONS,
     });
   });
 
@@ -276,15 +279,98 @@ describe('parseSanDiegoAddress', () => {
     expect(parseSanDiegoAddress('3741 Paul Jones Ave')).toEqual({
       houseNumber: 3741,
       street: 'PAUL JONES',
+      ...NO_DIRECTIONS,
     });
   });
 
   it('works when the user omits the suffix', () => {
-    expect(parseSanDiegoAddress('4212 Dakota')).toEqual({ houseNumber: 4212, street: 'DAKOTA' });
+    expect(parseSanDiegoAddress('4212 Dakota')).toEqual({
+      houseNumber: 4212,
+      street: 'DAKOTA',
+      ...NO_DIRECTIONS,
+    });
   });
 
   it('rejects a line with no house number', () => {
     expect(() => parseSanDiegoAddress('Dakota Drive')).toThrow(/house number/);
+  });
+
+  it('splits a leading direction off the street name', () => {
+    /*
+     * THE REGRESSION TEST FOR A LIVE BUG. This parsed to street "E CHASE",
+     * which went out as SITUS_STREET LIKE 'E CHASE%' and matched nothing,
+     * because the row holds SITUS_PRE_DIR 'E' and SITUS_STREET 'CHASE'. Every
+     * San Diego address with a directional prefix returned not-found. The
+     * address below is the one recorded from the live service in this file's
+     * own fixture — it is a parcel that definitely exists, and it did not
+     * resolve.
+     */
+    expect(parseSanDiegoAddress('1590 E Chase Ave')).toEqual({
+      houseNumber: 1590,
+      street: 'CHASE',
+      preDirection: 'E',
+      postDirection: null,
+    });
+  });
+
+  it('splits a trailing direction, after the suffix comes off', () => {
+    // Order-dependent, and the direction has to come off first: with the
+    // suffix loop running first it sees W, stops, and leaves "MAIN ST".
+    expect(parseSanDiegoAddress('123 Main St W')).toEqual({
+      houseNumber: 123,
+      street: 'MAIN',
+      preDirection: null,
+      postDirection: 'W',
+    });
+  });
+
+  it('handles both directions at once', () => {
+    expect(parseSanDiegoAddress('400 N Harbor Dr S')).toEqual({
+      houseNumber: 400,
+      street: 'HARBOR',
+      preDirection: 'N',
+      postDirection: 'S',
+    });
+  });
+
+  it('takes the two-letter forms too', () => {
+    expect(parseSanDiegoAddress('77 SW Mesa Rd')).toMatchObject({
+      street: 'MESA',
+      preDirection: 'SW',
+    });
+  });
+
+  it('leaves a spelled-out direction alone, because those are street names', () => {
+    /*
+     * "North", "South" and "West" are real San Diego street names. Treating
+     * the spelled form as a direction would break exactly the streets the
+     * change above is meant to fix, so DIRECTIONS holds only the abbreviated
+     * forms the county actually stores.
+     */
+    expect(parseSanDiegoAddress('1200 North Ave')).toEqual({
+      houseNumber: 1200,
+      street: 'NORTH',
+      ...NO_DIRECTIONS,
+    });
+    expect(parseSanDiegoAddress('88 West Point Loma Blvd')).toMatchObject({
+      street: 'WEST POINT LOMA',
+      preDirection: null,
+    });
+  });
+
+  it('never strips a street down to nothing', () => {
+    // A street whose entire name is a direction or a suffix. `length > 1`
+    // guards every pop for this reason.
+    expect(parseSanDiegoAddress('500 E')).toEqual({
+      houseNumber: 500,
+      street: 'E',
+      ...NO_DIRECTIONS,
+    });
+    expect(parseSanDiegoAddress('500 Way')).toEqual({
+      houseNumber: 500,
+      street: 'WAY',
+      ...NO_DIRECTIONS,
+    });
   });
 });
 

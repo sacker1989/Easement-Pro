@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setOutcomeSink, type OutcomeSink } from '@/lib/observability/outcome-log';
 import { lookupParcel, normaliseCountyName, SUPPORTED_COUNTIES } from './county-dispatch';
 import { ORANGE_COUNTY_STALENESS_CAVEAT } from '@/lib/risk-disclosure';
 import type { NormalizedAddress } from '@/lib/parcel-resolution/types';
@@ -67,6 +68,20 @@ function address(county: string | undefined, over: Partial<NormalizedAddress> = 
     ...over,
   };
 }
+
+/*
+ * Every lookup in this file now emits an outcome record, so the default sink
+ * would spray a dozen JSON lines across CI output for tests that are not
+ * about logging. Discard by default; the instrumentation suite below installs
+ * its own capturing sink and restores this one.
+ */
+let silenced: OutcomeSink;
+beforeAll(() => {
+  silenced = setOutcomeSink({ write: () => {} });
+});
+afterAll(() => {
+  setOutcomeSink(silenced);
+});
 
 describe('unsupported is not the same as not-found', () => {
   it('reports unsupported-county for a county with no provider', async () => {
@@ -201,5 +216,104 @@ describe('provenance travels with the figure', () => {
     expect(r.valuation.serviceUrl).toContain('lacounty.gov');
     expect(r.valuation.queriedOn).toBe('2026-08-17');
     expect(r.valuation.fipsCode).toBe('06037');
+  });
+});
+
+describe('the lookup is on the record, because once it was not', () => {
+  /*
+   * THE BUG THIS SUITE EXISTS FOR. 'county-parcel' was declared in
+   * UpstreamService the day outcome-log.ts was written and wired to nothing.
+   * San Diego then returned service-error for every address for an unknown
+   * stretch, the fallback to national benchmarks did its job quietly, and the
+   * only reason anybody found out was a hand-run latency measurement. The
+   * slowest upstream, the only one with per-county behaviour, was the one
+   * upstream production was not watching.
+   */
+  function capture(): { lines: string[]; restore: () => void } {
+    const lines: string[] = [];
+    const previous = setOutcomeSink({ write: (line) => lines.push(line) });
+    return { lines, restore: () => setOutcomeSink(previous) };
+  }
+
+  async function recordFor(
+    ...args: Parameters<typeof lookupParcel>
+  ): Promise<Record<string, unknown>> {
+    const { lines, restore } = capture();
+    try {
+      await lookupParcel(...args);
+    } finally {
+      restore();
+    }
+    const parcel = lines
+      .map((l) => JSON.parse(l) as Record<string, unknown>)
+      .filter((r) => r.service === 'county-parcel');
+    expect(parcel, 'no county-parcel record was emitted').toHaveLength(1);
+    return parcel[0]!;
+  }
+
+  it('records ok, with the state and county, on a hit', async () => {
+    const rec = await recordFor(address('Los Angeles'), {
+      fetchImpl: stubFetch({ features: [{ attributes: LA_ATTRS }] }),
+    });
+    expect(rec.result).toBe('ok');
+    expect(rec.reason).toBeUndefined();
+    expect(rec.state).toBe('CA');
+    // 'found' carries the county inside the valuation, not at the top level.
+    expect(rec.county).toBe('Los Angeles County');
+    expect(typeof rec.durationMs).toBe('number');
+  });
+
+  it('records failed on a service error, which is the one worth paging about', async () => {
+    const rec = await recordFor(address('Orange County'), { fetchImpl: failingFetch() });
+    expect(rec.result).toBe('failed');
+    expect(rec.reason).toBe('network');
+    expect(rec.county).toBe('Orange County');
+  });
+
+  it('records not-found as degraded rather than failed', async () => {
+    /*
+     * A county that genuinely has no parcel at an address is the ordinary
+     * result of a typo. Counting it as a failure would put a permanent floor
+     * under the failure rate and make the San Diego signal unreadable.
+     */
+    const rec = await recordFor(address('Orange County'), { fetchImpl: stubFetch({ features: [] }) });
+    expect(rec.result).toBe('degraded');
+    expect(rec.reason).toBe('no-match');
+  });
+
+  it('records an unsupported county as degraded, with no-coverage', async () => {
+    const rec = await recordFor(address('Ventura County'), { fetchImpl: stubFetch({ features: [] }) });
+    expect(rec.result).toBe('degraded');
+    expect(rec.reason).toBe('no-coverage');
+    expect(rec.county).toBe('Ventura County');
+  });
+
+  it('survives a county the geocoder could not name', async () => {
+    const rec = await recordFor(address(undefined), { fetchImpl: stubFetch({ features: [] }) });
+    expect(rec.result).toBe('degraded');
+    expect(rec.county).toBeUndefined();
+  });
+
+  it('puts no part of the address in the log, on any path', async () => {
+    /*
+     * THE WHOLE POINT OF THE CLOSED UNION IN outcome-log.ts, asserted from the
+     * outside. The street and ZIP below are in the fixture address and in the
+     * upstream request URL; a service-error path that logged err.message would
+     * leak them, and 'socket hang up' is exactly the sort of message that
+     * quotes a URL. Checked across every status so a future branch cannot be
+     * the exception.
+     */
+    const cases: Array<Parameters<typeof lookupParcel>> = [
+      [address('Los Angeles'), { fetchImpl: stubFetch({ features: [{ attributes: LA_ATTRS }] }) }],
+      [address('Orange County'), { fetchImpl: failingFetch() }],
+      [address('Orange County'), { fetchImpl: stubFetch({ features: [] }) }],
+      [address('Ventura County'), { fetchImpl: stubFetch({ features: [] }) }],
+    ];
+    for (const args of cases) {
+      const serialised = JSON.stringify(await recordFor(...args));
+      for (const secret of ['1251', 'ALAMO', 'Anaheim', '92801']) {
+        expect(serialised, `address leaked into the log: ${secret}`).not.toContain(secret);
+      }
+    }
   });
 });
