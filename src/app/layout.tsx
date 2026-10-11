@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@/components/analytics';
 import { siteUrl } from '@/lib/site';
 import { PRODUCT_NAME, SiteFooter } from '@/components/site-footer';
 import './globals.css';
@@ -65,6 +65,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           is one component rather than per-page markup. Analytics rides here
           too: the <Analytics /> component is the code side of Vercel Web
           Analytics; the dashboard starts counting once this is deployed.
+
+          IT IS OUR OWN WRAPPER, NOT THE VERCEL ONE, and that is load-bearing.
+          Imported straight, the beacon reports location.href — which on
+          /report contains the homeowner's street address. See
+          components/analytics.tsx.
         */}
         <SiteFooter />
       </body>
