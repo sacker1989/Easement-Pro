@@ -265,3 +265,86 @@ describe('no new dependencies', () => {
     expect(PAGE).not.toContain('onClick');
   });
 });
+
+describe('the homepage does not promise what the report refuses', () => {
+  /*
+   * THE DIVERGENCE THIS EXISTS TO CATCH, which happened within one day.
+   *
+   * 2026-10-11: economic-impact.ts stopped substituting an invented national
+   * land value and started saying it cannot price an easement without a
+   * published one. Correct — but the marketing homepage went on promising "a
+   * range for what it costs you" unconditionally, to an audience that is
+   * mostly outside the four counties with live records. The product got more
+   * honest and the advertising did not move with it.
+   *
+   * That is the worse direction of the two. An overstated report is read by
+   * someone already holding it; an overstated promise is what brought them.
+   */
+  const REFUSES_WITHOUT_LAND_VALUE = readFileSync(
+    new URL('../lib/risk-disclosure/economic-impact.ts', import.meta.url),
+    'utf8',
+  ).includes('does not substitute a national average');
+
+  /**
+   * The page with its JSX comments removed.
+   *
+   * THESE ASSERTIONS ARE ABOUT WHAT A READER SEES, and a `{/* … *\/}` block is
+   * not that. The comments above the corrected copy quote the old wording to
+   * explain why it went, so a guard reading raw source fires on its own
+   * explanation — which happened on the first run of the test below.
+   */
+  const COPY = PAGE.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+
+  it('the product really does refuse, so these assertions mean something', () => {
+    // If this ever goes false the tests below are guarding nothing, and the
+    // homepage would be free to promise unconditionally again — correctly.
+    expect(REFUSES_WITHOUT_LAND_VALUE).toBe(true);
+  });
+
+  it('conditions every money promise on the county publishing figures', () => {
+    /*
+     * Each of the three places the homepage mentions what the easement costs:
+     * the value pillar, step three of how-it-works, and the coverage FAQ. The
+     * condition is what makes them true for the majority of visitors.
+     */
+    const pillar = COPY.slice(COPY.indexOf('Maximize your value'));
+    expect(pillar.slice(0, 1200)).toMatch(/Where your county publishes an assessed land value/);
+
+    const steps = COPY.slice(COPY.indexOf('className="steps"'));
+    expect(steps.slice(0, 1200)).toMatch(/where your county publishes\s+the figures/);
+  });
+
+  it('never promises a cost range without a qualifier beside it', () => {
+    /*
+     * The specific sentence that was wrong. Matched as a shape rather than as
+     * the old string, so a reworded version of the same unconditional promise
+     * fails too.
+     */
+    const unconditional =
+      /(?:shows|gives|includes|get)[^.]{0,80}a range for what it costs you(?![^.]*\bwhere\b)/i;
+    expect(unconditional.test(COPY), 'unconditional cost-range promise on the homepage').toBe(
+      false,
+    );
+  });
+
+  it('no longer claims national data stands in for county figures', () => {
+    /*
+     * The coverage FAQ said the report "uses national data instead of your
+     * county's own figures". For the land value it does not substitute
+     * anything any more. Promising a stand-in that was deleted is the same
+     * defect the deletion fixed, one layer out.
+     */
+    expect(COPY).not.toMatch(/national data instead of your/);
+    expect(COPY).toMatch(/cannot price the easement/);
+  });
+
+  it('still says plainly what an uncovered address DOES get', () => {
+    /*
+     * The correction must not overshoot into "not for you". Most visitors are
+     * outside the covered counties, and the restrictions, maintenance duties
+     * and hazard data are genuinely the same everywhere — that is most of the
+     * report. Honest about the gap, not apologetic about the product.
+     */
+    expect(COPY).toMatch(/the restrictions, the maintenance duties and\s*\n?\s*the hazard data are the same everywhere/);
+  });
+});

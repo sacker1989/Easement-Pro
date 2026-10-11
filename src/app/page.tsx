@@ -159,10 +159,20 @@ export default function HomePage() {
               <strong>easement</strong>, and it limits where you can build, what you can plant, and
               what a buyer will pay. Most of it is on the public record and almost nobody looks.
             </p>
+            {/*
+              THE RANGE CLAIM IS CONDITIONAL, and saying so is not modesty.
+              The dollar range needs a published land value, and outside the
+              counties with live records there is none — the report refuses
+              rather than substituting a national average, because land prices
+              vary by more than an order of magnitude between neighbourhoods.
+              An unconditional promise here would send most visitors looking
+              for a figure the product deliberately declines to invent.
+            */}
             <p style={{ marginBottom: 0 }}>
-              Your report shows what affects your parcel, a range for what it costs you, and what
-              you can do about it — including the documents that should exist and usually
-              don&rsquo;t.
+              Your report shows what affects your parcel, what you can and cannot do there, and
+              what to do about it — including the documents that should exist and usually
+              don&rsquo;t. Where your county publishes an assessed land value, it also puts a range
+              on what the easement costs you.
             </p>
           </div>
           <div className="panel">
@@ -191,8 +201,9 @@ export default function HomePage() {
             them, national sources everywhere else, and we say which you got.
           </li>
           <li>
-            <strong>Get your free report.</strong> What affects the property, what it does to the
-            value, what you can and cannot do there, and who is responsible for maintenance.
+            <strong>Get your free report.</strong> What affects the property, what you can and
+            cannot do there, who is responsible for maintenance, and — where your county publishes
+            the figures — what it does to the value.
           </li>
         </ol>
 
@@ -237,10 +248,25 @@ export default function HomePage() {
           </details>
           <details>
             <summary>Which areas are covered?</summary>
+            {/*
+              THIS USED TO SAY the report "uses national data instead of your
+              county's own figures", which stopped being true on 2026-10-11.
+              For a land value it does not substitute anything: an invented
+              national median was removed, and the report now says it cannot
+              say rather than quoting a number that would be wrong by an order
+              of magnitude either way. Promising a substitute that no longer
+              exists is the same defect as the substitute was.
+            */}
             <p>
               Full county records for {SUPPORTED_COUNTIES.join(', ')} today. Any other address in
-              the country still produces a report — it uses national data instead of your
-              county&rsquo;s own figures and says so wherever it does.
+              the country still produces a report — the restrictions, the maintenance duties and
+              the hazard data are the same everywhere.
+            </p>
+            <p>
+              What needs your county&rsquo;s own figures is the money. Without a published land
+              value the report tells you it cannot price the easement, rather than reaching for a
+              national average — land is not worth the same per square foot in two places, and a
+              figure that ignores that is worse than no figure.
             </p>
             <p>
               Want your county next?{' '}
