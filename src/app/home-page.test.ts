@@ -349,3 +349,47 @@ describe('the homepage does not promise what the report refuses', () => {
     expect(COPY).toMatch(/the restrictions, the maintenance duties and\s*\n?\s*the hazard data are the same everywhere/);
   });
 });
+
+describe('keyboard focus is visible on everything that takes focus', () => {
+  /*
+   * MEASURED, NOT ASSUMED. Tabbing through the live site and reading the
+   * computed style showed links falling back to the browser's own ring —
+   * Chrome draws it at 0.8px — while form controls had the site's 2px accent
+   * ring. Visible, but thinnest on the elements there are most of: the nav,
+   * the FAQ, the footer, the parcel candidates.
+   *
+   * This product is used by homeowners sorting out a problem with their
+   * house, which skews older than the web average, and a sub-pixel-ish ring
+   * is the first thing to disappear.
+   */
+  const FOCUS_RULE = CSS.slice(CSS.indexOf('a:focus-visible'), CSS.indexOf('a:focus-visible') + 400);
+
+  it('covers links, summaries and form controls with one ring', () => {
+    for (const selector of [
+      'a:focus-visible',
+      'summary:focus-visible',
+      'input:focus-visible',
+      'select:focus-visible',
+      'button:focus-visible',
+    ]) {
+      expect(CSS, `no focus ring for ${selector}`).toContain(selector);
+    }
+    expect(FOCUS_RULE).toMatch(/outline: 2px solid/);
+  });
+
+  it('never removes an outline without replacing it', () => {
+    /*
+     * The single CSS line that strands a keyboard user. There is none today;
+     * this is here so there is still none later.
+     */
+    expect(CSS).not.toMatch(/outline:\s*(none|0)\s*;/);
+  });
+
+  it('includes summary, since the FAQ accordion is the one non-link control', () => {
+    // Native details/summary, by the no-JavaScript rule. It is focusable and
+    // keyboard-operable, and it is easy to forget precisely because it is not
+    // a <button>.
+    expect(PAGE).toContain('<details>');
+    expect(CSS).toContain('summary:focus-visible');
+  });
+});

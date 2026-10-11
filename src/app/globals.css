@@ -169,6 +169,25 @@ select {
   border-radius: 4px;
 }
 
+/*
+ * LINKS AND SUMMARIES ARE IN THIS LIST NOW, and they were not.
+ *
+ * The form controls had a 2px accent ring; links fell back to the browser's
+ * own, which Chrome draws at 0.8px in its own colour — measured on the live
+ * site by tabbing and reading the computed style, not assumed. So keyboard
+ * focus was visible but inconsistent, and thinnest on the elements there are
+ * most of: the nav, the FAQ, the footer, the "Which parcel?" candidates.
+ *
+ * This product is used by homeowners sorting out a problem with their house,
+ * which skews older than the web average, and a 0.8px ring is exactly the
+ * thing that disappears first. One ring, one width, everywhere focus lands.
+ *
+ * `summary` is included because the FAQ accordion is native details/summary —
+ * it is focusable and operable by keyboard, and it is the only interactive
+ * element on the homepage that is neither a link nor a form control.
+ */
+a:focus-visible,
+summary:focus-visible,
 input:focus-visible,
 select:focus-visible,
 button:focus-visible {
