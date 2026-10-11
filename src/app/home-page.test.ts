@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 import { CONTACT_EMAIL, PRODUCT_NAME } from '@/components/site-footer';
+import { readSource, stripJsxComments } from '@/lib/test-support/source-text';
 
 /**
  * The marketing homepage is load-bearing, so it is asserted like everything
@@ -10,8 +11,8 @@ import { CONTACT_EMAIL, PRODUCT_NAME } from '@/components/site-footer';
  * gives: these are server components that reach live services. It is the
  * weaker technique and it is the one that runs in CI.
  */
-const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
-const CSS = readFileSync(new URL('./globals.css', import.meta.url), 'utf8');
+const PAGE = readSource(new URL('./page.tsx', import.meta.url));
+const CSS = readSource(new URL('./globals.css', import.meta.url));
 
 describe('all seven sections are present', () => {
   it('1 — a sticky nav with the wordmark, two links and the CTA', () => {
@@ -280,20 +281,20 @@ describe('the homepage does not promise what the report refuses', () => {
    * That is the worse direction of the two. An overstated report is read by
    * someone already holding it; an overstated promise is what brought them.
    */
-  const REFUSES_WITHOUT_LAND_VALUE = readFileSync(
+  const REFUSES_WITHOUT_LAND_VALUE = readSource(
     new URL('../lib/risk-disclosure/economic-impact.ts', import.meta.url),
-    'utf8',
   ).includes('does not substitute a national average');
 
   /**
-   * The page with its JSX comments removed.
+   * The page as a reader meets it.
    *
-   * THESE ASSERTIONS ARE ABOUT WHAT A READER SEES, and a `{/* … *\/}` block is
-   * not that. The comments above the corrected copy quote the old wording to
-   * explain why it went, so a guard reading raw source fires on its own
-   * explanation — which happened on the first run of the test below.
+   * THESE ASSERTIONS ARE ABOUT WHAT A VISITOR SEES, and a JSX comment is not
+   * that — it renders as nothing. The comments above the corrected copy quote
+   * the old wording to explain why it went, so a guard reading raw source
+   * fires on its own explanation, which is what happened on the first run of
+   * the test below. `stripJsxComments` exists because of it.
    */
-  const COPY = PAGE.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
+  const COPY = stripJsxComments(PAGE);
 
   it('the product really does refuse, so these assertions mean something', () => {
     // If this ever goes false the tests below are guarding nothing, and the

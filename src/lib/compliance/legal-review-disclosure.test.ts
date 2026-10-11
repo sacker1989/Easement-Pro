@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { codeOf } from '@/lib/test-support/source-text';
 import { disclosureFor, fullLegalDisclosure, legalReviewDisclosure } from './legal-review-disclosure';
 import { CA_RULE_SET } from '@/lib/analysis-layer/rule-sets/ca';
 import type { RuleSetResolution } from '@/lib/analysis-layer/rule-set';
@@ -44,9 +44,7 @@ describe('there is no way to switch it off', () => {
   });
 
   it('exposes no suppress or force parameter', () => {
-    const src = readFileSync(new URL('./legal-review-disclosure.ts', import.meta.url), 'utf8')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+    const src = codeOf(new URL('./legal-review-disclosure.ts', import.meta.url));
     expect(src).not.toMatch(/suppress|force|skipDisclosure|allowUnreviewed/i);
   });
 });

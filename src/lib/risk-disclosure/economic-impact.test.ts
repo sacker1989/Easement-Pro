@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+
+import { readSource, stringLiterals, stripComments } from '@/lib/test-support/source-text';
 import { describe, expect, it } from 'vitest';
 import {
   buildEconomicImpactEstimate,
@@ -219,28 +220,19 @@ describe('buildEconomicImpactEstimate', () => {
 });
 
 describe('no unsourced land value, and no citation for one', () => {
-  const SOURCE = readFileSync(new URL('./economic-impact.ts', import.meta.url), 'utf8').replace(
+  const SOURCE = readSource(new URL('./economic-impact.ts', import.meta.url)).replace(
     /\r\n/g,
     '\n',
   );
 
-  /** Comments here discuss the deleted figure by name; the guard is on code. */
-  function codeOf(source: string): string {
-    return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  }
-  const CODE = codeOf(SOURCE);
+  // Comments here discuss the deleted figure by name; the guard is on code.
+  const CODE = stripComments(SOURCE);
 
   /**
-   * Every single-quoted literal, with concatenations joined first.
-   *
-   * These caveats are written as several quoted fragments joined by `+` across
-   * source lines, so without the join a sentence gets cut wherever the author
-   * happened to wrap, and a guard reading one half sees copy the reader never
-   * meets as a unit.
+   * Moved to test-support/source-text.ts as `stringLiterals`, with the
+   * reasoning. It was written here first, which is how it ended up as the
+   * fourth private copy of a shared idea.
    */
-  function stringLiteralsOf(code: string): string[] {
-    return code.replace(/'\s*\+\s*'/g, '').match(/'(?:[^'\\\n]|\\.)*'/g) ?? [];
-  }
 
   it('has no national land-value constant left to pick up again', () => {
     /*
@@ -285,7 +277,7 @@ describe('no unsourced land value, and no citation for one', () => {
      * code does not have — the chunk ran to the end of the file and would have
      * passed on the word "constructionCost" four hundred lines later.
      */
-    for (const literal of stringLiteralsOf(CODE)) {
+    for (const literal of stringLiterals(CODE)) {
       if (!literal.includes('NAHB')) continue;
       expect(
         /rework|construction/i.test(literal),
@@ -307,10 +299,7 @@ describe('no unsourced land value, and no citation for one', () => {
      * is ever softened, this assertion is the reminder that two sections have
      * to make the same promise.
      */
-    const screening = readFileSync(
-      new URL('../valuation/screening-estimate.ts', import.meta.url),
-      'utf8',
-    );
+    const screening = readSource(new URL('../valuation/screening-estimate.ts', import.meta.url));
     expect(screening).toMatch(/does not assume a default/);
     expect(NO_LAND_VALUE_SENTINEL.test(SOURCE)).toBe(true);
   });
@@ -320,7 +309,7 @@ describe('no unsourced land value, and no citation for one', () => {
 const NO_LAND_VALUE_SENTINEL = /does not substitute a national average/;
 
 describe('the variance band does not claim to be a measurement', () => {
-  const SOURCE = readFileSync(new URL('./economic-impact.ts', import.meta.url), 'utf8');
+  const SOURCE = readSource(new URL('./economic-impact.ts', import.meta.url));
 
   it('describes the band as a refusal to state a point figure', () => {
     /*

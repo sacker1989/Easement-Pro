@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { codeOf } from '@/lib/test-support/source-text';
 import {
   backoffDelay,
   createResilientFetch,
@@ -249,9 +249,7 @@ describe('caching', () => {
     // same self-match that hit the appraisal scanner against its own
     // disclaimer, and the calculator guard against its own doc comment. A
     // prohibition on code has to read code.
-    const code = readFileSync(new URL('./resilient-fetch.ts', import.meta.url), 'utf8')
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+    const code = codeOf(new URL('./resilient-fetch.ts', import.meta.url));
     expect(code).not.toMatch(/\.clone\(\)/);
   });
 

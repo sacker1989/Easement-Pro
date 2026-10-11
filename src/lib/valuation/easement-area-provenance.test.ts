@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readSource, stripComments } from '@/lib/test-support/source-text';
 import { describe, expect, it } from 'vitest';
 import {
   areaIsEstablished,
@@ -9,10 +9,9 @@ import {
   type EasementAreaProvenance,
 } from './easement-area-provenance';
 
-const REPORT_PAGE = readFileSync(
-  new URL('../../app/report/page.tsx', import.meta.url),
-  'utf8',
-).replace(/\r\n/g, '\n');
+// readSource normalises CRLF, which this checkout produces and every pattern
+// below is written without.
+const REPORT_PAGE = readSource(new URL('../../app/report/page.tsx', import.meta.url));
 
 describe('reading the provenance off the query string', () => {
   it('treats a missing value as assumed, which is the homepage funnel', () => {
@@ -74,13 +73,9 @@ describe('the report page cannot go back to asking the parcel match', () => {
    * Source-text, for the reason page-ordering.test.ts gives: this is a server
    * component that reaches live services.
    */
-  function codeOf(source: string): string {
-    // Comments in the page quote the old expression to explain it. A guard
-    // that fires on its own explanation is noise, so they are stripped first.
-    return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-  }
-
-  const CODE = codeOf(REPORT_PAGE);
+  // Comments in the page quote the old expression to explain it. A guard that
+  // fires on its own explanation is noise, so they are stripped first.
+  const CODE = stripComments(REPORT_PAGE);
 
   it('derives areaEstablished from the provenance helper', () => {
     expect(CODE).toContain('areaEstablished: areaIsEstablished(areaProvenance)');

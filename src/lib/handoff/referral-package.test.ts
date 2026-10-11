@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { codeOf } from '@/lib/test-support/source-text';
 import {
   assertPackageIntegrity,
   buildLandValueSection,
@@ -234,9 +234,6 @@ describe('the rejected method must not reappear', () => {
     // fires on that explanation — the same failure the appraisal scanner hit
     // when it matched its own disclaimer. The prohibition is on code, so the
     // check reads code.
-    const stripComments = (s: string) =>
-      s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-
     // index.ts is in the list because the barrel is the easiest place for the
     // rejected method to re-enter: a single re-export line would make
     // EasementValuationCalculator reachable from `@/lib/handoff`, which is the
@@ -250,7 +247,7 @@ describe('the rejected method must not reappear', () => {
       'rent-intake.ts',
     ];
     for (const f of files) {
-      const code = stripComments(readFileSync(new URL(`./${f}`, import.meta.url), 'utf8'));
+      const code = codeOf(new URL(`./${f}`, import.meta.url));
       expect(code).not.toMatch(/from ['"].*valuation\/calculator['"]/);
       expect(code).not.toMatch(/from ['"].*valuation\/valuation-matrix['"]/);
       expect(code).not.toMatch(/\bIMPACT_TIERS\b/);

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { codeOf } from '@/lib/test-support/source-text';
 import {
   buildRecordsRequest,
   NOT_SENT_BANNER,
@@ -168,10 +168,7 @@ describe('every draft is unsent, and says so', () => {
   it('exposes no function that could send it', () => {
     // Source-text assertion. A comment saying "never send" would not survive a
     // refactor that adds a convenience helper.
-    const src = readFileSync(new URL('./build-request.ts', import.meta.url), 'utf8').replace(
-      /\/\*[\s\S]*?\*\//g,
-      '',
-    );
+    const src = codeOf(new URL('./build-request.ts', import.meta.url));
     for (const forbidden of ['fetch(', 'sendMail', 'nodemailer', 'axios', 'XMLHttpRequest']) {
       expect(src).not.toContain(forbidden);
     }
