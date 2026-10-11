@@ -61,15 +61,54 @@ describe('accepted is a distinct state from closed', () => {
     expect(gap).toBeDefined();
     expect(gap!.riskAccepted).toBeDefined();
     expect(gap!.riskAccepted!.by).toBe('product');
-    expect(gap!.riskAccepted!.on).toBe('2026-08-22');
+    expect(gap!.riskAccepted!.on).toBe('2026-10-11');
     expect(gap!.riskAccepted!.rationale.length).toBeGreaterThan(80);
   });
 
-  it('revisits on an event rather than a date', () => {
-    // A date gets forgotten. "Before any paid tier is sold against the figure"
-    // does not.
+  it('keeps the acceptance it replaced, and says what reopened it', () => {
+    /*
+     * THE FIRST TIME A revisitWhen ACTUALLY FIRED. The 2026-08-22 acceptance
+     * said to revisit "before advertising runs in any state"; the product went
+     * live with a marketing homepage claiming "Thousands in lost value", and
+     * product re-accepted on 2026-10-11.
+     *
+     * Overwriting the old record would have lost the two things worth having:
+     * that the trigger fired at all, and what was believed before it did. An
+     * acceptance that silently replaces its predecessor reads, later, exactly
+     * like a revisitWhen that was written down and then ignored.
+     */
     const gap = COMPLIANCE_GAPS.find((g) => g.id === 'SCREENING-BANDS-UNCITED')!;
-    expect(gap.riskAccepted!.revisitWhen).toMatch(/Not a\s+date — an event/);
+    const prior = gap.riskAccepted!.supersedes;
+    expect(prior).toBeDefined();
+    expect(prior).toHaveLength(1);
+    expect(prior![0]!.on).toBe('2026-08-22');
+    expect(prior![0]!.revisitWhen).toMatch(/Not a\s+date — an event/);
+    expect(prior![0]!.reopenedBy).toMatch(/advertising/i);
+    // Oldest first, and strictly older than the acceptance that replaced it.
+    expect(prior![0]!.on < gap.riskAccepted!.on).toBe(true);
+  });
+
+  it('does not let a spent trigger look like it could fire again', () => {
+    /*
+     * The advertising trigger has been consumed. Leaving it in the live
+     * revisitWhen would mean the register lists a condition that is already
+     * true, which is how a trigger stops being noticed — it reads as pending
+     * forever. The remaining ones are still events rather than dates.
+     */
+    const gap = COMPLIANCE_GAPS.find((g) => g.id === 'SCREENING-BANDS-UNCITED')!;
+    const revisit = gap.riskAccepted!.revisitWhen;
+    expect(revisit).toMatch(/SPENT/);
+    expect(revisit).toMatch(/paid tier/);
+    expect(revisit).toMatch(/appraiser, a regulator or a user disputes/);
+    expect(revisit).toMatch(/events, not dates/);
+  });
+
+  it('records that the bands themselves are no better understood', () => {
+    // Re-accepting is not progress on the question. The rationale has to say
+    // so, or a later reader takes a second dated decision for a second look.
+    const gap = COMPLIANCE_GAPS.find((g) => g.id === 'SCREENING-BANDS-UNCITED')!;
+    expect(gap.riskAccepted!.rationale).toMatch(/NOTHING ABOUT THE BANDS HAS CHANGED/);
+    expect(gap.riskAccepted!.rationale).toMatch(/no appraiser has looked at them/);
   });
 
   it('still counts an accepted gap as open', () => {

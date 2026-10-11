@@ -61,6 +61,31 @@ export interface ComplianceGap {
     readonly rationale: string;
     /** The event that should reopen the decision rather than a date to forget. */
     readonly revisitWhen: string;
+    /**
+     * Earlier acceptances of this same gap, oldest first.
+     *
+     * ADDED 2026-10-11, WHEN THE FIRST REVISIT TRIGGER ACTUALLY FIRED. Until
+     * then `riskAccepted` was a single record, and honouring a `revisitWhen`
+     * would have meant overwriting the decision it reopened — losing the two
+     * things an audit trail most needs: that the trigger fired at all, and
+     * what was believed before it did.
+     *
+     * THIS IS THE SAME ARGUMENT `closed` MAKES one field below, applied to
+     * acceptance rather than closure. An acceptance that silently replaces its
+     * predecessor reads, later, exactly like a gap nobody ever revisited —
+     * which is indistinguishable from a `revisitWhen` that was written down
+     * and then ignored. The point of naming an event rather than a date was
+     * that events get noticed; that is only true if the noticing leaves a
+     * mark.
+     */
+    readonly supersedes?: readonly {
+      readonly by: 'product' | 'counsel' | 'product-and-counsel';
+      readonly on: string;
+      readonly rationale: string;
+      readonly revisitWhen: string;
+      /** Which named trigger fired, and the fact that fired it. */
+      readonly reopenedBy: string;
+    }[];
   };
   /**
    * Present when the gap's question was actually ANSWERED.
@@ -259,7 +284,10 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     current:
       'Four percentage bands with no citation anyone has verified drive the dollar range shown to ' +
       'a homeowner on /report. They were recorded-but-not-adopted until the screening estimate ' +
-      'shipped; the module name still says UNCITED.',
+      'shipped; the module name still says UNCITED. SINCE 2026-10-11 the product is also live ' +
+      'and indexed at safehomevalue.com behind marketing copy that claims "Thousands in lost ' +
+      'value", so the figure these bands produce now backs a public claim rather than only ' +
+      'answering someone who came looking.',
     required:
       'The module\'s own header states percentage-of-fee is the method Allen (IRWA 2001) and ' +
       'UASFLA §4.6.5 reject, and that the bands are kept "as an order-of-magnitude sanity check ' +
@@ -275,17 +303,55 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
     markedOn: '2026-08-22',
     riskAccepted: {
       by: 'product',
-      on: '2026-08-22',
+      on: '2026-10-11',
       rationale:
-        'Cannot be fully determined now; the bands are assumed correct for the time being. The ' +
-        'residual exposure is bounded by structure rather than by wording: the output is a range ' +
-        'with no point estimate field to render, the arithmetic prints beside it, the figure is ' +
-        'rounded hard, and the page places it below the not-determined panel by an asserted rule. ' +
-        'Four easement types are refused outright rather than approximated.',
+        'RE-ACCEPTED BECAUSE THE ADVERTISING TRIGGER FIRED. The 2026-08-22 acceptance said to ' +
+        'revisit "before advertising runs in any state". It now has: the product is live and ' +
+        'indexed at safehomevalue.com, and the marketing homepage leads with "Hidden risks. ' +
+        'Silent damage. Thousands in lost value." — a value claim in public promotion, ' +
+        'substantiated downstream by these uncited bands. Product was shown this and chose to ' +
+        'proceed rather than soften the headline or commission the review. ' +
+        'NOTHING ABOUT THE BANDS HAS CHANGED: no appraiser has looked at them, no citation has ' +
+        'been fetched, and the Sherwood attribution in valuation-matrix.ts remains unretrieved. ' +
+        'What changed is that the product is now making a value claim to strangers rather than ' +
+        'showing a figure to someone who went looking for it. ' +
+        'The structural bounds from the original acceptance were re-checked on 2026-10-11 and ' +
+        'all four still hold: the output is a range with no point-estimate field to render ' +
+        '(screening-estimate.ts says so and no pointEstimate exists), the arithmetic prints ' +
+        'beside the figure, the result is rounded hard (to $5,000 above $100k), and ' +
+        'page-ordering.test.ts asserts it renders below the not-determined panel. Four easement ' +
+        'types are still refused outright rather than approximated. ' +
+        'The headline itself is unquantified — "thousands", not a figure — which is the thin ' +
+        'part of this: it is a claim about scale made by copy, not a number produced by the ' +
+        'bands. A specific figure in marketing would be a different decision.',
       revisitWhen:
-        'Before any paid tier is sold against the figure, before advertising runs in any state, ' +
-        'or on the first occasion an appraiser, a regulator or a user disputes a range. Not a ' +
-        'date — an event, because a date gets forgotten and these will not.',
+        'The advertising trigger is now SPENT and cannot fire again, so the remaining events ' +
+        'are: before any paid tier is sold against the figure; on the first occasion an ' +
+        'appraiser, a regulator or a user disputes a range; and — new, because this acceptance ' +
+        'turns on it — if any marketing copy states a specific dollar figure or percentage ' +
+        'rather than an unquantified claim about scale. Still events, not dates.',
+      supersedes: [
+        {
+          by: 'product',
+          on: '2026-08-22',
+          rationale:
+            'Cannot be fully determined now; the bands are assumed correct for the time being. ' +
+            'The residual exposure is bounded by structure rather than by wording: the output ' +
+            'is a range with no point estimate field to render, the arithmetic prints beside ' +
+            'it, the figure is rounded hard, and the page places it below the not-determined ' +
+            'panel by an asserted rule. Four easement types are refused outright rather than ' +
+            'approximated.',
+          revisitWhen:
+            'Before any paid tier is sold against the figure, before advertising runs in any ' +
+            'state, or on the first occasion an appraiser, a regulator or a user disputes a ' +
+            'range. Not a date — an event, because a date gets forgotten and these will not.',
+          reopenedBy:
+            'The "before advertising runs in any state" trigger. The product went live at ' +
+            'safehomevalue.com with an indexable marketing homepage whose hero reads "Hidden ' +
+            'risks. Silent damage. Thousands in lost value." Noticed 2026-10-11 during a sweep ' +
+            'of every user-facing constant for a source, not by anyone watching the trigger.',
+        },
+      ],
     },
   },
 
