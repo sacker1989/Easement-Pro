@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { readSource } from '@/lib/test-support/source-text';
 import { describe, expect, it } from 'vitest';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import { GUIDE_BY_TYPE, guideFor, isGuideType } from '@/lib/easements/guide-content';
@@ -286,5 +287,33 @@ describe('citations are fetchable, and stay that way', () => {
       expect(s.label.length, `${s.type}: label too short`).toBeGreaterThan(15);
       expect(s.label, `${s.type}: label is just a URL`).not.toMatch(/^https?:\/\//);
     }
+  });
+});
+
+describe('long URLs cannot break the page on a phone', () => {
+  /*
+   * MEASURED ON THE LIVE REPORT, not inferred. The LA County source URL is
+   * 95 characters with nothing to break on, and canvas text metrics put it at
+   * 624px against the 310px a 390px phone leaves after padding — a 314px
+   * overflow that took the document's whole scroll width with it. Every line
+   * of the report ran off the side of the screen.
+   *
+   * The report prints its source URLs as text rather than links, on purpose,
+   * so they cannot be shortened; they have to wrap.
+   */
+  const CSS_SRC = readSource(new URL('../globals.css', import.meta.url));
+
+  it('wraps long words at the body, so every page inherits it', () => {
+    const body = CSS_SRC.slice(CSS_SRC.indexOf('body {'), CSS_SRC.indexOf('main {'));
+    expect(body).toMatch(/overflow-wrap:\s*break-word/);
+  });
+
+  it('is not pinned to the one element that happened to overflow', () => {
+    /*
+     * Four counties publish four long service URLs and the next one will
+     * publish a fifth. A rule on .muted would have fixed Los Angeles.
+     */
+    const body = CSS_SRC.slice(CSS_SRC.indexOf('body {'), CSS_SRC.indexOf('main {'));
+    expect(body).toContain('overflow-wrap');
   });
 });

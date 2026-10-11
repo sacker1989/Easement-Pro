@@ -65,6 +65,29 @@ body {
   color: var(--ink);
   font: 16px/1.6 ui-serif, Georgia, 'Times New Roman', serif;
   -webkit-font-smoothing: antialiased;
+  /*
+   * THE REPORT PRINTS ITS SOURCES AS FULL URLS, and one of them is 95
+   * characters with nothing to break on:
+   *
+   *   https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0
+   *
+   * Measured on the live page with canvas text metrics: it renders 624px wide
+   * in the 310px a 390px phone leaves after padding. It overflowed by 314px
+   * and took the whole document's scroll width with it, so every line of the
+   * report ran past the edge of the screen on a phone. The brief for this
+   * product said mobile-first.
+   *
+   * ON BODY, SO IT INHERITS. The LA URL is the one that happens to render
+   * today; Orange, San Diego and Cook each publish their own, equally long,
+   * and the next county will too. Fixing the one element that overflowed
+   * would have fixed one county.
+   *
+   * `break-word` rather than `anywhere`: it breaks a word only when that word
+   * would otherwise overflow, and leaves ordinary prose alone. Printing the
+   * URL rather than linking it is deliberate — see the report page — so it
+   * has to wrap rather than be shortened.
+   */
+  overflow-wrap: break-word;
 }
 
 main {
