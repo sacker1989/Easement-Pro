@@ -91,6 +91,41 @@ const DEFAULTS = {
   maxConcurrentPerHost: 4,
 };
 
+/**
+ * Hosts that need different numbers, and the measurement behind each.
+ *
+ * RETRYING A SLOW SERVICE IS WORSE THAN WAITING FOR IT, and that is the whole
+ * reason this table exists. The defaults assume a failure is transient: abort
+ * at 10s, back off, try again. That is right for a service that is DOWN and
+ * exactly wrong for one that is merely slow — you abandon a response that was
+ * about to arrive, pay the 10s anyway, and then do it twice more until the
+ * 25s budget is gone. The result is a guaranteed failure from a service that
+ * would have answered.
+ *
+ * San Diego was doing precisely this in production. Three consecutive timings
+ * of the same parcel query on 2026-10-11: 0.6s, 22.4s, 1.3s. The 22-second
+ * one is not an outage, it is the service's spread — and every request that
+ * landed on it returned `service-error`, so San Diego reports showed no parcel
+ * section and no valuation at all while LA, Orange and Cook were fine.
+ *
+ * So the fix is fewer attempts with more patience, not more attempts. One
+ * retry covers a genuine blip; a 28s ceiling covers the observed tail with
+ * room to spare.
+ */
+export const HOST_OVERRIDES: Readonly<
+  Record<string, Partial<Pick<typeof DEFAULTS, 'maxAttempts' | 'timeoutMs' | 'totalBudgetMs'>>>
+> = {
+  'gis-public.sandiegocounty.gov': {
+    // Measured tail is ~22s. 28 leaves headroom without reaching the 30s
+    // Vercel function ceiling that /report declares.
+    timeoutMs: 28_000,
+    // Two, not three: a second attempt after a 28s wait cannot fit anyway,
+    // and the point is to stop throwing away slow successes.
+    maxAttempts: 2,
+    totalBudgetMs: 29_000,
+  },
+};
+
 function hostOf(url: string): string {
   try {
     return new URL(url).host;
@@ -187,6 +222,25 @@ export interface ResilientFetch {
   readonly clearCache: () => void;
 }
 
+
+/**
+ * The tuning values for one host: defaults, then any host override, then any
+ * value the caller passed explicitly.
+ *
+ * PURE AND EXPORTED SO THE DECISION IS TESTABLE. The per-attempt timeout is
+ * enforced by a real setTimeout firing an AbortController, which an injected
+ * clock cannot trigger — so a test that tries to observe the override through
+ * fetch behaviour ends up testing its own stub. This is the actual decision,
+ * and it can be asserted directly.
+ */
+export function resolveHostConfig<T extends Partial<typeof DEFAULTS>>(
+  host: string,
+  base: typeof DEFAULTS,
+  explicit: T,
+): typeof DEFAULTS {
+  return { ...base, ...(HOST_OVERRIDES[host] ?? {}), ...explicit };
+}
+
 export function createResilientFetch(options: ResilientFetchOptions = {}): ResilientFetch {
   if (typeof window !== 'undefined') {
     throw new Error(
@@ -196,6 +250,16 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
     );
   }
 
+  /*
+   * Kept separate from `cfg` so a per-host override cannot outrank an
+   * explicit caller option. A test that passes timeoutMs means it, and must
+   * not be quietly overridden by a table keyed on a hostname it never named.
+   */
+  const explicitOptions = {
+    ...(options.maxAttempts !== undefined ? { maxAttempts: options.maxAttempts } : {}),
+    ...(options.timeoutMs !== undefined ? { timeoutMs: options.timeoutMs } : {}),
+    ...(options.totalBudgetMs !== undefined ? { totalBudgetMs: options.totalBudgetMs } : {}),
+  };
   const cfg = { ...DEFAULTS, ...options };
   const doFetch = options.fetchImpl ?? fetch;
   const now = options.now ?? (() => Date.now());
@@ -242,18 +306,25 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
     cacheable: boolean,
   ): Promise<Response> => {
     const host = hostOf(url);
-    await acquire(host, cfg.maxConcurrentPerHost);
+    /*
+     * PER-HOST OVERRIDES APPLIED HERE, after the host is known and before any
+     * timing starts. An explicit option passed to createResilientFetch still
+     * wins — a test that sets timeoutMs means it, and must not be silently
+     * overridden by a table keyed on a hostname it never mentioned.
+     */
+    const hostCfg = resolveHostConfig(host, cfg, explicitOptions);
+    await acquire(host, hostCfg.maxConcurrentPerHost);
 
     let lastStatus: number | null = null;
     let lastError: unknown = null;
 
     try {
-      for (let attempt = 1; attempt <= cfg.maxAttempts; attempt += 1) {
+      for (let attempt = 1; attempt <= hostCfg.maxAttempts; attempt += 1) {
         const elapsed = now() - startedAt;
-        const remaining = cfg.totalBudgetMs - elapsed;
+        const remaining = hostCfg.totalBudgetMs - elapsed;
         if (remaining <= 0) {
           throw new ResilientFetchError(
-            `Request budget of ${cfg.totalBudgetMs}ms exhausted after ${attempt - 1} attempt(s): ${url}`,
+            `Request budget of ${hostCfg.totalBudgetMs}ms exhausted after ${attempt - 1} attempt(s): ${url}`,
             attempt - 1,
             lastStatus,
             lastError,
@@ -266,7 +337,7 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
         const callerSignal = init?.signal ?? null;
         const onCallerAbort = () => controller.abort(callerSignal?.reason);
         callerSignal?.addEventListener('abort', onCallerAbort, { once: true });
-        const timer = setTimeout(() => controller.abort(), Math.min(cfg.timeoutMs, remaining));
+        const timer = setTimeout(() => controller.abort(), Math.min(hostCfg.timeoutMs, remaining));
 
         try {
           const response = await doFetch(url, { ...init, signal: controller.signal });
@@ -299,20 +370,20 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
             });
           }
 
-          if (!RETRYABLE_STATUSES.includes(response.status) || attempt === cfg.maxAttempts) {
+          if (!RETRYABLE_STATUSES.includes(response.status) || attempt === hostCfg.maxAttempts) {
             return response;
           }
 
           const retryAfter = parseRetryAfter(response.headers.get('retry-after'), now());
-          const delay = retryAfter ?? backoffDelay(attempt, cfg.baseDelayMs, cfg.maxDelayMs, random);
+          const delay = retryAfter ?? backoffDelay(attempt, hostCfg.baseDelayMs, hostCfg.maxDelayMs, random);
           retries += 1;
-          await sleep(Math.min(delay, Math.max(0, cfg.totalBudgetMs - (now() - startedAt))));
+          await sleep(Math.min(delay, Math.max(0, hostCfg.totalBudgetMs - (now() - startedAt))));
         } catch (err) {
           lastError = err;
           if (callerSignal?.aborted) {
             throw new ResilientFetchError('Request aborted by caller', attempt, lastStatus, err);
           }
-          if (attempt === cfg.maxAttempts) {
+          if (attempt === hostCfg.maxAttempts) {
             throw new ResilientFetchError(
               `Request failed after ${attempt} attempt(s): ${url}`,
               attempt,
@@ -321,7 +392,7 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
             );
           }
           retries += 1;
-          await sleep(backoffDelay(attempt, cfg.baseDelayMs, cfg.maxDelayMs, random));
+          await sleep(backoffDelay(attempt, hostCfg.baseDelayMs, hostCfg.maxDelayMs, random));
         } finally {
           clearTimeout(timer);
           callerSignal?.removeEventListener('abort', onCallerAbort);
@@ -329,8 +400,8 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
       }
 
       throw new ResilientFetchError(
-        `Request failed after ${cfg.maxAttempts} attempt(s): ${url}`,
-        cfg.maxAttempts,
+        `Request failed after ${hostCfg.maxAttempts} attempt(s): ${url}`,
+        hostCfg.maxAttempts,
         lastStatus,
         lastError,
       );
