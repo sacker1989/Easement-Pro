@@ -48,9 +48,17 @@ export const metadata: Metadata = {
    * read as the document's own name rather than as site furniture.
    */
   title: { absolute: `Privacy Policy — ${PRODUCT_NAME}` },
+  /*
+   * THE DESCRIPTION CARRIED THE OVERSTATEMENT TOO, which is the easiest place
+   * for one to survive a correction: nobody rereads the meta tag. It said the
+   * address "is never written to our logs" — the absolute the body text
+   * stopped making on 2026-10-11. A search result is where most readers meet
+   * a privacy claim first, so it is the last place an overstatement should
+   * outlive the page.
+   */
   description:
-    'The address you enter is used once to build your report and is never written to our logs. ' +
-    'No accounts, no email, nothing sold or shared.',
+    'The address you enter is used once to build your report. Our records are built so it ' +
+    'cannot get into them. No accounts, no cookies, no email, nothing sold or shared.',
 };
 
 export default function PrivacyPage() {
@@ -63,9 +71,38 @@ export default function PrivacyPage() {
 
       <h2>What happens to the address you enter</h2>
       <p>
-        It is used once, to generate your report, and never written to our logs. We do not store
-        the addresses people look up, and we do not keep a copy of your report tied to you. Each
-        report is generated in the moment you ask for it.
+        It is used once, to generate your report. We do not store the addresses people look up, we
+        do not keep a copy of your report tied to you, and each report is generated in the moment
+        you ask for it.
+      </p>
+      <p>
+        Our own records are built so the address cannot get into them. The thing that writes our
+        operational log will not accept free text at all — it takes a fixed list of outcomes, a
+        state, and a county — so an address has nowhere to go even by mistake. That is a property
+        of the code, not a policy someone has to remember.
+      </p>
+      {/*
+        PRECISE RATHER THAN ABSOLUTE, AND IT USED TO BE ABSOLUTE.
+
+        This section said the address is "never written to our logs", full
+        stop. That is true of the application — outcome-log.ts enforces it
+        with a closed union — and it was not the whole picture, because the
+        address travels in the page's own URL. A URL reaches the browser's
+        history and the automatic request records that any web host keeps,
+        neither of which the application controls.
+
+        Saying so costs a strong sentence and is the right trade on a privacy
+        page: a reader who later notices the address in their address bar has
+        no way to tell an overstatement from a lie. The honest version is also
+        the one that explains what we are doing about it.
+      */}
+      <p>
+        One honest limit. Your address travels in this page&rsquo;s own web address — you can see
+        it in your browser&rsquo;s address bar while you read the report. That means it can appear
+        in places the tool does not control: your own browser history, and the automatic request
+        records that any web host keeps. We do not use those records to look up who searched for
+        what, and nothing in the product reads them. Getting the address out of the URL entirely
+        is the fix, and it is work in progress rather than something we can claim today.
       </p>
 
       <h2>What we never ask for</h2>
@@ -102,9 +139,29 @@ export default function PrivacyPage() {
 
       <h2>What we measure</h2>
       <p>
-        We use privacy-friendly aggregate analytics: how many people visit, how many reports get
-        generated. Counts, not identities. There are no advertising trackers on this site, and we
-        do not sell, rent, or share any data — including a waitlist email, which is the only
+        We count visits and reports, and that is all. The analytics are Vercel Web Analytics —
+        Vercel also hosts the site — and we name them because &ldquo;privacy-friendly&rdquo; is
+        not something you should have to take on trust without knowing who receives the data.
+      </p>
+      <p>
+        This site sets <strong>no cookies at all</strong>, stores nothing in your browser, and
+        loads no scripts from anyone else. You can check: open your browser&rsquo;s developer
+        tools on this page and look at Storage and Network.
+      </p>
+      {/*
+        THE QUERY STRING IS STRIPPED BEFORE THE EVENT IS SENT, and this
+        paragraph exists because it was not always. Vercel Web Analytics
+        reports location.href when no parameterised route is supplied, which
+        is the case for the React integration this site mounts — so every
+        report pageview was sending the address while the page said "counts,
+        not identities". See components/analytics.tsx. Describing the measure
+        here is what keeps the claim checkable rather than reassuring.
+      */}
+      <p>
+        One detail that matters, because the address is in the page&rsquo;s URL: the analytics
+        event is sent with the address stripped out of it. What gets counted is that someone
+        viewed a report, not which property. There are no advertising trackers here, and we do
+        not sell, rent, or share any data — including a waitlist email, which is the only
         personal thing we ever hold.
       </p>
 

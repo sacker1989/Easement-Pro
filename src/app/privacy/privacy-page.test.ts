@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONTACT_EMAIL, NOT_A_SURVEY_LINE, PRODUCT_NAME } from '@/components/site-footer';
+import { stripComments, stripJsxComments } from '@/lib/test-support/source-text';
 
 const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const FOOTER = readFileSync(
@@ -16,14 +17,84 @@ describe('the privacy page', () => {
   });
 
   it('states the four promises', () => {
+    /*
+     * TWO OF THESE WERE REWORDED ON 2026-10-11, and since this page was
+     * specified as founder copy verbatim, the reason is recorded rather than
+     * absorbed.
+     *
+     * "never written to our logs" was absolute and the picture is not. It is
+     * true of the application — outcome-log.ts takes a closed set of values
+     * and will not accept free text — and the address also travels in the
+     * page's own URL, which reaches the browser's history and whatever
+     * automatic request records a host keeps. The page now says both halves.
+     *
+     * "Counts, not identities" was simply false when written. Vercel Web
+     * Analytics reports location.href when no parameterised route is given,
+     * which is what @vercel/analytics/react does, so every report pageview
+     * carried the address in its query string. Fixed in
+     * components/analytics.tsx the same day; the sentence now describes the
+     * stripping instead of asserting the outcome.
+     *
+     * The PROMISES are unchanged — our records cannot hold the address, and
+     * what is measured is counts. Only the overstatement went.
+     */
     for (const promise of [
-      'never written to our logs',
+      'built so the address cannot get into them',
       'no accounts and no passwords',
-      'Counts, not identities',
+      'We count visits and reports, and that is all',
       'never sell, rent, trade, or share',
     ]) {
       expect(PAGE.toLowerCase(), `missing: ${promise}`).toContain(promise.toLowerCase());
     }
+  });
+
+  it('does not restate the overstatements it replaced', () => {
+    /*
+     * A later edit re-adding either absolute would put the page back out of
+     * step with what the code can actually guarantee.
+     *
+     * Checked against the reader-visible copy, not the raw file: the comments
+     * in page.tsx quote the old wording to explain why it went, and a guard
+     * that fires on its own explanation is noise. That has now happened
+     * often enough in this repo to have its own helper.
+     *
+     * The METADATA is checked separately below, because stripJsxComments
+     * leaves it in — and it is the easiest place for an overstatement to
+     * survive a correction, since nobody rereads a meta tag.
+     */
+    // BOTH COMMENT FORMS. The body uses JSX comments and the metadata block
+    // uses a plain one, and the old wording is quoted in each to explain why
+    // it went. Neither is visible to a reader, so neither should be scanned.
+    const copy = stripComments(stripJsxComments(PAGE));
+    expect(copy).not.toContain('never written to our logs');
+    expect(copy).not.toContain('Counts, not identities');
+  });
+
+  it('keeps the correction out of the search snippet too', () => {
+    const description = PAGE.slice(PAGE.indexOf('description:'), PAGE.indexOf('};'));
+    expect(description).not.toContain('never written to our logs');
+    expect(description).toMatch(/cannot get into them/);
+  });
+
+  it('names the analytics provider and what is stripped', () => {
+    /*
+     * "Privacy-friendly" is not checkable and the reader cannot evaluate it
+     * without knowing who receives the data. Naming Vercel, and naming the
+     * one measure that makes the claim true, is what turns reassurance into
+     * something a reader can verify in their own devtools.
+     */
+    expect(PAGE).toContain('Vercel Web Analytics');
+    expect(PAGE).toMatch(/stripped out of it/);
+    expect(PAGE).toMatch(/no cookies at all/i);
+  });
+
+  it('admits the address is in the URL', () => {
+    // Verified on the live site: the report URL carries street, city and ZIP.
+    // A reader who notices that in their address bar, having been told the
+    // address is never recorded anywhere, has no way to tell an overstatement
+    // from a lie.
+    expect(PAGE).toMatch(/travels in this page.{0,12}s own web address/);
+    expect(PAGE).toMatch(/browser history|browser&rsquo;s history|own browser history/);
   });
 
   describe('the county waitlist email', () => {

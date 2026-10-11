@@ -240,10 +240,22 @@ export default function HomePage() {
           </details>
           <details>
             <summary>Do you store my address?</summary>
+            {/*
+              PRECISE, BECAUSE THE PRIVACY PAGE IS. This repeated the absolute
+              "never written to our logs". True of the application — the
+              operational log takes a closed set of values and will not accept
+              free text — and not the whole story, because the address is in
+              this page's URL and a URL reaches the browser's history and a
+              host's automatic request records. Two pages making different
+              strength claims about the same fact is how a reader learns to
+              trust neither.
+            */}
             <p>
-              No. It is used once to build your report and is never written to our logs — the
-              system is built so it structurally can&rsquo;t be, not merely so we promise not to.{' '}
-              <Link href="/privacy">The privacy page explains how.</Link>
+              We don&rsquo;t store it. It is used once to build your report, and our own records
+              are built so it cannot get into them — that is a property of the code, not a promise
+              someone has to keep. One honest limit: the address is in this page&rsquo;s web
+              address, so it reaches your browser history like any URL.{' '}
+              <Link href="/privacy">The privacy page sets out exactly what that means.</Link>
             </p>
           </details>
           <details>
