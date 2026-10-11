@@ -156,6 +156,52 @@ describe('incidents are sourced or labeled illustrative', () => {
   });
 });
 
+describe('public-right-of-way is sourced, after being the last one that was not', () => {
+  /*
+   * PINNED SPECIFICALLY, not as a blanket "no guide may be illustrative".
+   * The illustrative fallback is legitimate and the next easement type may
+   * need it; what should not happen quietly is THIS guide sliding back, since
+   * it took three rounds to source and the first two failed by looking for
+   * the wrong kind of evidence — a homeowner news story rather than a
+   * documented enforcement action.
+   */
+  const incident = guideFor('public-right-of-way').incident;
+
+  it('carries a real incident rather than the documented pattern', () => {
+    expect(incident.illustrative).toBe(false);
+    expect(incident.sources.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('names the city and the scale, which is what makes it checkable', () => {
+    expect(incident.whatHappened).toMatch(/Asheville/);
+    expect(incident.whatHappened).toMatch(/at least 25/);
+    expect(incident.whatHappened).toMatch(/30 days/);
+  });
+
+  it('does not claim the structures came down', () => {
+    /*
+     * Later coverage indicates at least one wall was given a reprieve, and
+     * the full follow-up could not be read. Reporting what the letters
+     * required is supportable; asserting the outcome is not. The same
+     * discipline the Eaton Fire section uses for the DA review.
+     */
+    for (const forbidden of ['were removed', 'came down', 'had to be torn down', 'demolished']) {
+      expect(
+        incident.whatHappened.toLowerCase(),
+        `asserts an outcome that was not verified: ${forbidden}`,
+      ).not.toContain(forbidden);
+    }
+  });
+
+  it('points the reader at the process that can let a structure stay', () => {
+    // More useful than "it will come out", and it is what the city's own page
+    // documents — which is why that page is one of the two sources.
+    expect(incident.couldItHappenToYou).toMatch(/encroachment agreement/i);
+    expect(incident.couldItHappenToYou).toMatch(/your own city/i);
+    expect(incident.sources.some((s) => s.url.includes('ashevillenc.gov'))).toBe(true);
+  });
+});
+
 describe('the footer links to Learn', () => {
   it('sits next to the Privacy link', () => {
     // The footer is one component rendered from the root layout, so the link

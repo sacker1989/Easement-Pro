@@ -14,12 +14,27 @@ import { EASEMENT_TYPES } from './easement-types';
  * "when this goes wrong" section presents the documented risk pattern from
  * responsibilities.ts and is explicitly labeled illustrative.
  *
+ * NO GUIDE RELIES ON THAT FALLBACK ANY MORE. public-right-of-way was the last
+ * one, illustrative after two rounds of searching found nothing; a third round
+ * on 2026-10-11 found Asheville by looking for the wrong thing the first two
+ * times. The earlier rounds hunted for a homeowner news story, which is thin
+ * and local and tends not to survive. The access guide had already shown the
+ * better shape — it cites a published appellate decision — and widening the
+ * search from "an incident" to "a documented enforcement action" turned up a
+ * city-wide one affecting 25 owners. The fallback stays in the type and in
+ * this rule, because the next easement type may need it.
+ *
  * INCIDENT GROUND RULES. Sourced incidents only: San Bruno 2010 (NTSB),
  * Eaton Fire 2025 (CAL FIRE / LA County Fire official investigation),
  * Camp Fire 2018 (Cal Fire determination), CGA DIRT excavation statistics,
- * published sewer-lateral cost data. The Eaton Fire section states the
- * official finding and notes the DA review / litigation posture rather than
- * asserting settled liability.
+ * published sewer-lateral cost data, Romero v. Shih (2022) 78 Cal.App.5th 326,
+ * and the City of Asheville right-of-way notices of January 2022 (WLOS News 13
+ * reporting, plus the city's own encroachment-agreement page). The Eaton Fire
+ * section states the official finding and notes the DA review / litigation
+ * posture rather than asserting settled liability. The Asheville section
+ * likewise reports what the letters required and what the parties said; later
+ * coverage indicates at least one wall was given a reprieve, so the section
+ * does not claim the structures came down.
  */
 
 export interface GuideSource {
@@ -578,23 +593,43 @@ export const GUIDE_BY_TYPE = {
       'If the city does work in front of your house, photograph the parkway before and after.',
     ],
     incident: {
-      title: 'The fence that had to come down',
+      title: 'The hedge that was not the property line — Asheville, 2022',
       whatHappened:
-        'Illustrative pattern, not a single case: a homeowner builds a handsome fence and ' +
-        'landscaping three feet inside what they assumed was their line. Years later the city ' +
-        'widens the road — or a utility needs the corridor — and the right of way is found to ' +
-        'extend six feet past the curb. The improvements come out at the owner’s expense.',
+        'In January 2022 the City of Asheville, North Carolina notified at least 25 property ' +
+        'owners — ten on one road, fourteen on another — that their fences, cement walls and ' +
+        'rock walls sat on the city’s maintenance right of way, and gave them 30 days to move ' +
+        'them or face fines. One letter set the penalty at $50 a day. A homeowner, Chip ' +
+        'Plemmons, said he had taken it for granted that a row of hedges marked his boundary ' +
+        'and that he had never had a survey done. The city attorney said the city’s position ' +
+        'rested on a survey built from property deeds and earlier surveys.',
       whyItHappened:
-        'The mechanism is the invisible line: the right of way usually extends further back from ' +
-        'the curb than owners assume, and “I didn’t know” is not a defense against a recorded ' +
-        'dedication. The improvement was always removable; nobody checked.',
+        'The mechanism is the invisible line: the right of way commonly extends further back ' +
+        'from the curb than owners assume, and a structure inside it stays removable however ' +
+        'long it has been there. The city attorney described the second half of the problem — ' +
+        'staff generally discover an encroachment only when something forces them to look, and ' +
+        'the example he gave was a garbage truck that could not get past. That is why these ' +
+        'arrive as a letter about a wall built years earlier.',
       couldItHappenToYou:
-        'If you have never measured your street’s right-of-way width back from the curb, anything ' +
-        'you have built near the street may already sit inside it. The documented pattern is that ' +
-        'this is discovered at the worst moment — when the work crew arrives — and the free ' +
-        'protection is the tape measure and the phone call to the city.',
-      sources: [],
-      illustrative: true,
+        'If you have never measured your street’s right-of-way width back from the curb, ' +
+        'anything you have built near the street may already sit inside it, and a row of ' +
+        'hedges or an old fence is not evidence of where the line runs. The free protection is ' +
+        'the tape measure and the phone call to the city. Where something is already built, ask ' +
+        'specifically about an encroachment agreement: many cities, Asheville included, have a ' +
+        'formal process that can let a structure stay — normally on terms that leave you ' +
+        'responsible for it. Local ordinance governs, so the answer is your own city’s.',
+      sources: [
+        {
+          label:
+            'WLOS News 13 (Kimberly King) via CNN Newssource: city in dispute with at least 25 ' +
+            'property owners over walls, fences, right-of-way issues (11 January 2022)',
+          url: 'https://krdo.com/cnn-regional/2022/01/11/city-in-dispute-with-at-least-25-property-owners-over-walls-fences-right-of-way-issues/',
+        },
+        {
+          label: 'City of Asheville: encroachment agreements for structures in the right of way',
+          url: 'https://www.ashevillenc.gov/department/public-works/street-services/permits/',
+        },
+      ],
+      illustrative: false,
     },
   }),
 
