@@ -14,6 +14,13 @@ import {
   THREE_REGIME_DISCLOSURE,
   type ScreeningResult,
 } from '@/lib/valuation/screening-estimate';
+import {
+  areaIsEstablished,
+  ASSUMED_AREA_CAVEAT,
+  AREA_FIELD_HINT,
+  DEFAULT_EASEMENT_AREA_SQ_FT,
+  easementAreaProvenance,
+} from '@/lib/valuation/easement-area-provenance';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
 import {
   buildValuationEstimate,
@@ -151,7 +158,18 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     : mapEasementTypeToPurpose('utility-overhead');
   const easementPurpose: EasementPurpose = typeMapping.purpose;
   const typedLotAreaSqFt = Number(param(searchParams.lotAreaSqFt) || '8000');
-  const easementAreaSqFt = Number(param(searchParams.easementAreaSqFt) || '800');
+  /*
+   * THE AREA'S PROVENANCE IS READ BEFORE THE AREA ITSELF, because once the
+   * default has been substituted there is no way to tell the two apart — and
+   * the difference is the difference between a figure about this property and
+   * a figure about 800 sq ft. The homepage posts an address and nothing else,
+   * so the primary funnel is always 'assumed-default'.
+   */
+  const areaProvenance = easementAreaProvenance(param(searchParams.easementAreaSqFt));
+  const easementAreaSqFt =
+    areaProvenance === 'assumed-default'
+      ? DEFAULT_EASEMENT_AREA_SQ_FT
+      : Number(param(searchParams.easementAreaSqFt));
   /*
    * DURATION FACTS, read separately from the physical easement type above.
    *
@@ -451,7 +469,15 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             easementType,
             instrumentInHand: false,
             easementConfirmed: false,
-            areaEstablished: unified !== null,
+            /*
+             * FROM THE AREA'S OWN PROVENANCE, never from the parcel match.
+             * This read `unified !== null` — the county PARCEL match — which
+             * establishes the LOT area and says nothing about the easement
+             * footprint, so the step telling the reader to go and measure it
+             * was suppressed precisely where the county data was good. See
+             * easement-area-provenance.ts.
+             */
+            areaEstablished: areaIsEstablished(areaProvenance),
             acquisitionPending,
             hasScreeningRange: screening.status === 'range',
           });
@@ -546,7 +572,21 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             </label>
             <label>
               Easement area (sq ft)
-              <input name="easementAreaSqFt" type="number" defaultValue={easementAreaSqFt} />
+              {/*
+                PLACEHOLDER, NOT defaultValue, when nothing was supplied. A
+                defaultValue puts 800 in the box as though the reader had typed
+                it, which is how the assumption stayed invisible: the figure
+                below said 800 and so did the field, and nothing distinguished
+                that from a number they had chosen. An empty field with a greyed
+                hint reads as the open question it is.
+              */}
+              <input
+                name="easementAreaSqFt"
+                type="number"
+                {...(areaProvenance === 'assumed-default'
+                  ? { placeholder: `e.g. ${DEFAULT_EASEMENT_AREA_SQ_FT}` }
+                  : { defaultValue: easementAreaSqFt })}
+              />
             </label>
           </div>
           <label style={{ marginTop: '0.9rem' }}>
@@ -561,8 +601,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           </label>
           <p className="muted" style={{ marginTop: '0.6rem' }}>
             Lot area is ignored when a county parcel matches — the county&rsquo;s own geometry is
-            used instead. If you don&rsquo;t know the easement area, put your best guess; the report
-            will record that you did.
+            used instead. {AREA_FIELD_HINT}
           </p>
         </fieldset>
 
@@ -1164,6 +1203,19 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                     <p style={{ marginBottom: 0 }}>
                       <strong>How this was calculated:</strong> {screening.range.derivation}
                     </p>
+                    {/*
+                      INSIDE THE PANEL, under the number. The range is a
+                      percentage of the easement area, so when that area is a
+                      placeholder the figure is a statement about 800 sq ft
+                      rather than about this property. A caveat further down
+                      the page is read by whoever scrolls; this has to be read
+                      by whoever looks at the number.
+                    */}
+                    {areaProvenance === 'assumed-default' && (
+                      <p role="note" style={{ margin: '0.75rem 0 0' }}>
+                        <strong>{ASSUMED_AREA_CAVEAT}</strong>
+                      </p>
+                    )}
                   </div>
 
                   <h3>The three limits on this number</h3>
@@ -1240,6 +1292,17 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 <p className="muted">
                   <small>Land value from: {irwa.valueSource}</small>
                 </p>
+                {/*
+                  REPEATED HERE RATHER THAN SAID ONCE ABOVE. Two figures on one
+                  page already risk reading as corroboration; if only the first
+                  carried the assumption, the second would look like the
+                  independent check it is not. Both rest on the same area.
+                */}
+                {areaProvenance === 'assumed-default' && (
+                  <p role="note" style={{ margin: '0.75rem 0 0' }}>
+                    <strong>{ASSUMED_AREA_CAVEAT}</strong>
+                  </p>
+                )}
               </div>
 
               {irwa.stripOnly && (
