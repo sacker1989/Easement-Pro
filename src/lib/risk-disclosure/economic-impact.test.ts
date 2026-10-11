@@ -318,3 +318,43 @@ describe('no unsourced land value, and no citation for one', () => {
 
 /** The same promise, in this module's words. */
 const NO_LAND_VALUE_SENTINEL = /does not substitute a national average/;
+
+describe('the variance band does not claim to be a measurement', () => {
+  const SOURCE = readFileSync(new URL('./economic-impact.ts', import.meta.url), 'utf8');
+
+  it('describes the band as a refusal to state a point figure', () => {
+    /*
+     * The methodology used to call it a range "to reflect estimate
+     * uncertainty", which asserts that the uncertainty was estimated. It is a
+     * round 20% nobody calibrated. Widening a figure is a fine way to refuse
+     * a point estimate; describing the width as measured is the same move as
+     * the $220 — a number reading as analysis.
+     */
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 10000,
+      easementAreaSqFt: 1000,
+      isLaCounty: true,
+      pricePerSqFtOverride: 300,
+    });
+    expect(result.methodology).toContain('not a calculated margin of error');
+    expect(result.methodology).not.toContain('to reflect estimate uncertainty');
+  });
+
+  it('still produces the band, which is doing real work', () => {
+    // The point is the labelling, not removing the range: a band invites less
+    // reliance than a single number, which is why it is there.
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 10000,
+      easementAreaSqFt: 1000,
+      isLaCounty: true,
+      pricePerSqFtOverride: 300,
+    });
+    const range = rangeOf(result);
+    expect(range.low).toBe(Math.round(1000 * 300 * 0.8));
+    expect(range.high).toBe(Math.round(1000 * 300 * 1.2));
+  });
+
+  it('says in the source that it is not a confidence interval', () => {
+    expect(SOURCE).toMatch(/NOT a confidence interval|not a measured one/i);
+  });
+});

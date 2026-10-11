@@ -164,7 +164,22 @@ function dataCoverageLabelText(result: TieredResult<DataCoverageLabel>): string 
  * construction-cost.ts.
  */
 export const NATIONAL_ECONOMIC_BENCHMARKS = {
-  varianceBand: 0.2, // +/-20%, reflected in the low/high range
+  /*
+   * A PRESENTATIONAL BAND, NOT A MEASURED ONE, and the only figure in this
+   * module left without a source after the sweep that removed the $220.
+   *
+   * It is a round 20% that nobody calibrated. That is defensible as a way of
+   * refusing to print a single number — a band invites less reliance than a
+   * point estimate, which is the same reasoning the screening range rests on
+   * — but it is NOT a confidence interval, and there is no distribution
+   * behind it. The methodology string used to call it a range "to reflect
+   * estimate uncertainty", which claimed the uncertainty had been estimated.
+   * It had not. The copy now says what it is.
+   *
+   * It would become a real interval given a distribution of assessed-to-sale
+   * ratios for the county in question. Nothing in the product has one.
+   */
+  varianceBand: 0.2,
   needsLiveDataSourceIntegration: true as const,
 };
 
@@ -342,8 +357,9 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
   const valueAtRiskSentence =
     priceSourceNote === null
       ? 'No value at risk is given, because no land value was available for this address.'
-      : `Value at risk multiplies that area by ${priceSourceNote}, shown as a range of ` +
-        `±${variancePercent}% to reflect estimate uncertainty.`;
+      : `Value at risk multiplies that area by ${priceSourceNote}, shown as a fixed ` +
+        `±${variancePercent}% band rather than a single number. That band is a deliberate ` +
+        'refusal to state a point figure, not a calculated margin of error.';
 
   const methodology =
     `Lost buildable area is the easement's footprint: ${Math.round(lostBuildableAreaSqFt).toLocaleString()} sq ft ` +
