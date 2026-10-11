@@ -1361,11 +1361,24 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                       {report.economicImpact.lostBuildableAreaSqFt.toLocaleString()} sq ft
                     </span>
                   </li>
+                  {/*
+                    THE ROW STAYS WHEN THERE IS NO FIGURE, carrying the reason
+                    where the number would be. Dropping it would leave a reader
+                    outside the covered counties with no sign that a value at
+                    risk exists as a question — which reads as "nothing at
+                    risk" rather than "we cannot say".
+                  */}
                   <li>
                     <span className="k">Value at risk</span>
                     <span className="v">
-                      ${report.economicImpact.valueAtRiskRange.low.toLocaleString()} – $
-                      {report.economicImpact.valueAtRiskRange.high.toLocaleString()}
+                      {report.economicImpact.valueAtRisk.status === 'range' ? (
+                        <>
+                          ${report.economicImpact.valueAtRisk.range.low.toLocaleString()} – $
+                          {report.economicImpact.valueAtRisk.range.high.toLocaleString()}
+                        </>
+                      ) : (
+                        <em>Not available</em>
+                      )}
                     </span>
                   </li>
                   <li>
@@ -1376,6 +1389,12 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                     </span>
                   </li>
                 </ul>
+                {report.economicImpact.valueAtRisk.status === 'unavailable' && (
+                  <p role="note" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
+                    <strong>Value at risk: </strong>
+                    {report.economicImpact.valueAtRisk.reason}
+                  </p>
+                )}
                 <p className="muted" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
                   Rework is based on ${report.economicImpact.constructionCost.costPerSqFt}/sq ft
                   {report.economicImpact.constructionCost.isDivisionReported
