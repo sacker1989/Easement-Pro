@@ -373,6 +373,28 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             isLaCounty,
             state,
             assessorValuation: valuation ?? undefined,
+            /*
+             * THE OTHER THREE COUNTIES' LAND VALUE, which was being read and
+             * then dropped. `valuation` above is the LA-shaped record, so
+             * Orange, San Diego and Cook reached the economic impact with no
+             * price at all — even though `unified.landValuePerSqFt` is right
+             * here and is rendered in the parcel panel a few hundred lines
+             * below.
+             *
+             * It did not look like a bug while an invented national average
+             * stood in for it. Once that was deleted the report started
+             * saying "No land value is published for this address" directly
+             * under a panel showing the published land value, which is how it
+             * was finally noticed.
+             *
+             * Guarded on a positive number: a roll can carry 0 for an exempt
+             * parcel, and dividing a report's headline figure by a zero land
+             * value is worse than declining to price it.
+             */
+            countyLandValue:
+              unified && unified.landValuePerSqFt > 0
+                ? { county: unified.county, perSqFt: unified.landValuePerSqFt }
+                : undefined,
           });
 
           // The referral package: what a licensed appraiser or attorney would

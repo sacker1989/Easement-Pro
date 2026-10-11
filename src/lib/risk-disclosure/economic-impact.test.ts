@@ -347,3 +347,90 @@ describe('the variance band does not claim to be a measurement', () => {
     expect(SOURCE).toMatch(/NOT a confidence interval|not a measured one/i);
   });
 });
+
+describe('the counties that are not LA still have a land value', () => {
+  /*
+   * THE REGRESSION THIS EXISTS FOR, found by a production sweep hours after
+   * shipping the refusal.
+   *
+   * assessorValuation is the LA-shaped record — it carries an AIN and a
+   * Proposition 13 base year. Orange, San Diego and Cook publish neither, so
+   * their land value arrives on the unified county shape instead, and the
+   * report page was reading it, rendering it in the parcel panel, and never
+   * passing it here.
+   *
+   * While an invented national $220 stood in, that looked like a working
+   * report. Once the $220 was deleted it became "No land value is published
+   * for this address" printed directly under a panel displaying the
+   * published land value — self-contradictory on one screen, which is how it
+   * was finally caught.
+   */
+  const ORANGE = { county: 'Orange County', perSqFt: 84.65 } as const;
+
+  it('prices the easement off the county roll rather than refusing', () => {
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 6279,
+      easementAreaSqFt: 500,
+      isLaCounty: false,
+      countyLandValue: ORANGE,
+    });
+    expect(result.valueAtRisk.status).toBe('range');
+    expect(rangeOf(result).low).toBe(Math.round(500 * ORANGE.perSqFt * 0.8));
+    expect(result.methodology).toContain('Orange County assessed land value');
+  });
+
+  it('labels the coverage as the county roll, not a national estimate', () => {
+    // The page rendered a real county figure under "Based on national
+    // estimates, not locally verified", because the rules only knew about LA.
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 6279,
+      easementAreaSqFt: 500,
+      isLaCounty: false,
+      countyLandValue: ORANGE,
+    });
+    expect(result.dataCoverage.tier).toBe('likely-with-caveat');
+    const label = result.dataCoverage.tier === 'flagged-ambiguous' ? '' : result.dataCoverage.value.label;
+    expect(label).toContain('Orange County assessment roll');
+    expect(label).not.toContain('national');
+  });
+
+  it('is likely-with-caveat rather than clear, because the vintage is unknown', () => {
+    /*
+     * 'clear' gates direct assertion in a paid letter. These counties publish
+     * no base year, so the roll cannot say whether a figure is current or
+     * decades stale — the per-county staleness caveats exist for exactly
+     * this. An unknown vintage is not a verified price.
+     */
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 6279,
+      easementAreaSqFt: 500,
+      isLaCounty: false,
+      countyLandValue: ORANGE,
+    });
+    expect(result.dataCoverage.tier).not.toBe('clear');
+  });
+
+  it('still refuses where no county published anything', () => {
+    // The fix must not reopen the hole it was built beside.
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: 10000,
+      easementAreaSqFt: 1000,
+      isLaCounty: false,
+    });
+    expect(result.valueAtRisk.status).toBe('unavailable');
+  });
+
+  it('lets LA keep precedence, since its record carries a base year', () => {
+    // If both arrive, the indexed LA figure is the better one: it is the only
+    // path that can correct for Proposition 13.
+    const result = buildEconomicImpactEstimate({
+      lotAreaSqFt: ASSESSOR_RECORD.lotAreaSqFt,
+      easementAreaSqFt: 500,
+      isLaCounty: true,
+      assessorValuation: ASSESSOR_RECORD,
+      countyLandValue: ORANGE,
+    });
+    expect(result.methodology).toContain('market-indexed');
+    expect(result.methodology).not.toContain('Orange County');
+  });
+});

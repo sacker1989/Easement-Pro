@@ -28,6 +28,16 @@ export interface DataCoverageFacts {
   assessorValuation?: AssessorParcelValuation;
   /** True when the price was modelled forward by the house-price index. */
   marketIndexed?: boolean;
+  /**
+   * A county that is not LA, whose own assessor roll supplied the land value.
+   *
+   * ADDED BECAUSE THE RULES ONLY KNEW ABOUT LA. Orange, San Diego and Cook
+   * all publish an assessed land value, the report renders it in the parcel
+   * panel, and every one of them still fell through to the
+   * national-estimate-default rule — so a page showing a real county figure
+   * was labelled "Based on national estimates, not locally verified".
+   */
+  countyLandValue?: { readonly county: string; readonly perSqFt: number };
 }
 
 const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataCoverageLabel>> = [
@@ -89,6 +99,45 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
           'This address is in LA County, where assessor roll values are available, but no ' +
           'parcel record was retrieved for it. The figures below fall back to national ' +
           'benchmarks and are not verified against county data.',
+      };
+    },
+  },
+  {
+    /*
+     * ORDERED AFTER THE LA RULES AND BEFORE THE DEFAULT, which is the whole
+     * of its behaviour: classifyByRules is first-match-wins, so this catches
+     * the three counties that publish a land value and are not LA, and lets
+     * everywhere else fall through to the national default as before.
+     */
+    id: 'county-assessor-verified',
+    // Data provenance, not law. Needs no state rule set.
+    claimType: 'observation' as const,
+    evaluate(facts) {
+      const v = facts.countyLandValue;
+      if (!v) return null;
+      /*
+       * likely-with-caveat, NOT clear, and the difference is deliberate.
+       * 'clear' gates direct assertion in a paid letter. These counties
+       * publish no Proposition 13 base year, so there is no way to tell from
+       * the roll whether a figure is current or decades stale — the caveat
+       * that already travels with the valuation says so per county. An
+       * unknown vintage is not a verified price.
+       */
+      return {
+        tier: 'likely-with-caveat',
+        value: {
+          label:
+            `Verified against the ${v.county} assessment roll (land value ` +
+            `$${v.perSqFt.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}/sq ft)`,
+        },
+        caveat:
+          'This is the county’s own assessed land value for your parcel, not a national ' +
+          'average. It is an assessment rather than an appraisal, and this county publishes no ' +
+          'base year with it, so how closely it tracks current market value cannot be read off ' +
+          'the roll.',
       };
     },
   },
@@ -204,6 +253,16 @@ export interface EconomicImpactInputs {
    * rework estimate. Falls back to the national median when omitted.
    */
   state?: string;
+  /**
+   * Land value from a non-LA county assessor roll.
+   *
+   * SEPARATE FROM assessorValuation BECAUSE THAT TYPE IS LA-SHAPED — it
+   * carries an AIN and a Proposition 13 base year, neither of which Orange,
+   * San Diego or Cook publish. Flattening them into it would mean inventing
+   * the fields they do not have, which is the opposite of what the unified
+   * county shape exists to prevent.
+   */
+  countyLandValue?: { readonly county: string; readonly perSqFt: number };
 }
 
 /**
@@ -214,7 +273,7 @@ export interface EconomicImpactInputs {
  * so no later edit can reintroduce one without adding a variant here and
  * saying where it came from.
  */
-type PriceSource = 'caller-override' | 'market-indexed' | 'assessor-roll';
+type PriceSource = 'caller-override' | 'market-indexed' | 'assessor-roll' | 'county-assessor';
 
 interface ResolvedPrice {
   price: number;
@@ -245,6 +304,20 @@ function resolvePricePerSqFt(inputs: EconomicImpactInputs): ResolvedPrice | null
       }
     }
     return { price: valuation.landValuePerSqFt, source: 'assessor-roll' };
+  }
+
+  /*
+   * THE OTHER THREE COUNTIES. `assessorValuation` above is the LA-shaped
+   * record, so Orange, San Diego and Cook never reached it — their land
+   * value was read, rendered in the parcel panel, and then dropped on the
+   * floor here. Before 2026-10-11 that meant the invented national $220 was
+   * used instead of a figure the county had published; after the $220 was
+   * deleted it meant the report said "No land value is published for this
+   * address" directly beneath a panel displaying the published land value.
+   * Both were wrong, and the second was wrong in a way a reader could see.
+   */
+  if (inputs.countyLandValue) {
+    return { price: inputs.countyLandValue.perSqFt, source: 'county-assessor' };
   }
 
   return null;
@@ -306,6 +379,7 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
     isLaCounty: inputs.isLaCounty,
     assessorValuation: inputs.assessorValuation,
     marketIndexed: resolved?.source === 'market-indexed',
+    countyLandValue: inputs.countyLandValue,
   });
 
   /*
@@ -344,7 +418,11 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
           'assessor-roll': inputs.assessorValuation
             ? `the LA County ${inputs.assessorValuation.rollYear} assessed land value of ` +
               `$${displayPrice}/sq ft for this parcel`
-            : `an assessed land value of $${displayPrice}/sq ft`,
+            : `an assessed land value of ${displayPrice}/sq ft`,
+          'county-assessor': inputs.countyLandValue
+            ? `the ${inputs.countyLandValue.county} assessed land value of ` +
+              `${displayPrice}/sq ft for this parcel`
+            : `a county assessed land value of ${displayPrice}/sq ft`,
         }[resolved.source];
   const variancePercent = Math.round(NATIONAL_ECONOMIC_BENCHMARKS.varianceBand * 100);
 

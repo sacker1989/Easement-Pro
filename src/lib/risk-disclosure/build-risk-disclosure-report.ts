@@ -22,6 +22,8 @@ export interface RiskDisclosureInput {
    * the estimate to national benchmarks with a coverage label that says so.
    */
   assessorValuation?: AssessorParcelValuation;
+  /** Land value from a non-LA county roll. See economic-impact.ts. */
+  countyLandValue?: { readonly county: string; readonly perSqFt: number };
   /** Set false to price off the raw assessed value instead of indexing it forward. */
   applyMarketIndex?: boolean;
   /** Two-letter state code, used to pick a regional construction cost. */
@@ -57,6 +59,7 @@ export function buildRiskDisclosureReport(input: RiskDisclosureInput): RiskDiscl
       isLaCounty: input.isLaCounty,
       pricePerSqFtOverride: input.pricePerSqFtOverride,
       assessorValuation: input.assessorValuation,
+      countyLandValue: input.countyLandValue,
       applyMarketIndex: input.applyMarketIndex,
       state: input.state,
     }),
