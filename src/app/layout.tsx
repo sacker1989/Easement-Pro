@@ -46,6 +46,30 @@ export const metadata: Metadata = {
    * a product that has none, and a broken image reference is worse than its
    * absence. Add one when there is a real one to add.
    */
+  /*
+   * PINNED, NOT LEFT TO THE BROWSER, because this site puts a home address in
+   * a URL.
+   *
+   * /report is reached as `?street=…&city=…&zip=…`, so the page's own address
+   * is sensitive in a way most sites' are not. A referrer header carries the
+   * current URL to whatever is being requested, and the DEFAULT varies: modern
+   * browsers use strict-origin-when-cross-origin, which sends only the origin,
+   * but the older default — no-referrer-when-downgrade — sends the FULL URL on
+   * any https-to-https request. On an old browser that is the homeowner's
+   * address handed to a third party.
+   *
+   * There is nothing to leak through today: /report currently has zero
+   * external links, verified on the live page, and renders its source URLs as
+   * text rather than anchors. That is the reason to set this NOW rather than
+   * later — it costs nothing while the surface is empty, and the day someone
+   * adds a perfectly reasonable link to a county records page, the protection
+   * is already in place instead of being remembered.
+   *
+   * strict-origin-when-cross-origin rather than no-referrer: it sends the bare
+   * origin, which leaks nothing and still lets a site we cite see that the
+   * traffic came from here.
+   */
+  referrer: 'strict-origin-when-cross-origin',
   robots: {
     index: true,
     follow: true,

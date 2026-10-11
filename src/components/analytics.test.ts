@@ -56,3 +56,24 @@ describe('analytics cannot send the address', () => {
     expect(wrapperImports).toBe(1);
   });
 });
+
+describe('the address cannot leak through a referrer header either', () => {
+  /*
+   * A SECOND ESCAPE PATH FROM THE SAME ROOT CAUSE. The address is in
+   * /report's URL, and a referrer header carries the current URL outward.
+   * Modern browsers default to strict-origin-when-cross-origin and send only
+   * the origin; the older default, no-referrer-when-downgrade, sends the full
+   * URL on https-to-https. Relying on the browser's default means relying on
+   * which browser the homeowner happens to use.
+   */
+  it('pins the policy rather than inheriting it', () => {
+    expect(LAYOUT_CODE).toMatch(/referrer: 'strict-origin-when-cross-origin'/);
+  });
+
+  it('is set once, in the root layout, so every page inherits it', () => {
+    // A per-page policy would be one more thing to remember on the page that
+    // needs it most.
+    expect(LAYOUT_CODE.indexOf('referrer:')).toBeGreaterThan(-1);
+    expect(LAYOUT_CODE.indexOf('referrer:')).toBeLessThan(LAYOUT_CODE.indexOf('export default'));
+  });
+});
