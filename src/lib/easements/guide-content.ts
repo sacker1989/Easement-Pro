@@ -148,7 +148,7 @@ export const GUIDE_BY_TYPE = {
         },
         {
           label: 'Rep. Judy Chu: statement on the official Eaton Fire cause determination',
-          url: 'http://chu.house.gov/media-center/press-releases/rep-chus-statement-confirmation-eaton-fire-cause',
+          url: 'https://chu.house.gov/media-center/press-releases/rep-chus-statement-confirmation-eaton-fire-cause',
         },
         {
           label: 'Associated Press via FireRescue1: Cal Fire determination on the Camp Fire (PG&E lines)',
@@ -206,7 +206,7 @@ export const GUIDE_BY_TYPE = {
       sources: [
         {
           label: 'Underground Construction: CGA 2025 DIRT data (221,717 damage reports; 811 notification the top root cause)',
-          url: 'http://admin.undergroundinfrastructure.com/news/2026/july/buried-utility-damages-hit-record-high-in-2025-cga-reports',
+          url: 'https://admin.undergroundinfrastructure.com/news/2026/july/buried-utility-damages-hit-record-high-in-2025-cga-reports',
         },
         {
           label: 'EHS Today: CGA “Between the Lines” report ($83.2B annual cost of buried-utility damage)',

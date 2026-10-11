@@ -232,3 +232,59 @@ describe('learn pages stay indexable and input-free', () => {
     }
   });
 });
+
+describe('citations are fetchable, and stay that way', () => {
+  /*
+   * AUDITED 2026-10-11. Every cited URL in guide-content.ts was requested and
+   * all 25 resolved — no link rot. Two returned 403 to curl
+   * (leginfo.legislature.ca.gov and citizenportal.ai) and were confirmed alive
+   * in a real browser; that is bot-blocking, not a dead citation, and the
+   * distinction matters because treating a 403 as rot would have thrown away
+   * two good sources.
+   *
+   * NO NETWORK CALL IN THIS SUITE, deliberately. A link-checker in CI is slow
+   * and fails on someone else's outage, which trains people to ignore it. What
+   * is cheap and worth enforcing is the SHAPE of a citation; the fetching is a
+   * periodic manual audit, dated above so the next person knows when it last
+   * happened.
+   */
+  const sources = EASEMENT_TYPES.flatMap((t) =>
+    guideFor(t).incident.sources.map((s) => ({ type: t, ...s })),
+  );
+
+  it('there are citations to check', () => {
+    // Guards the assertions below against passing vacuously.
+    expect(sources.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it.each(sources.map((s) => [`${s.type}: ${s.label.slice(0, 50)}`, s] as const))(
+    '%s is https',
+    (_label, s) => {
+      /*
+       * Two citations shipped as plain http until this audit — a House press
+       * release and a trade-press article, both of which serve https fine. A
+       * reader following a citation over http can be redirected or injected
+       * into, and a product whose whole argument is "check this yourself"
+       * should not hand them a link that can be tampered with in transit.
+       */
+      expect(s.url.startsWith('https://'), `${s.url} is not https`).toBe(true);
+    },
+  );
+
+  it('cites no placeholder or example domain', () => {
+    // A fixture URL reaching a reader looks exactly like a real citation.
+    for (const s of sources) {
+      for (const bad of ['example.com', 'example.org', 'localhost', 'test.', 'TODO']) {
+        expect(s.url, `${s.type} cites a placeholder: ${s.url}`).not.toContain(bad);
+      }
+    }
+  });
+
+  it('gives each source a label a reader can evaluate before clicking', () => {
+    // "Source" or a bare URL tells the reader nothing about who is speaking.
+    for (const s of sources) {
+      expect(s.label.length, `${s.type}: label too short`).toBeGreaterThan(15);
+      expect(s.label, `${s.type}: label is just a URL`).not.toMatch(/^https?:\/\//);
+    }
+  });
+});
