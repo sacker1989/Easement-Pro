@@ -612,3 +612,18 @@ svg {
   color: var(--ink-faint);
 
 }
+
+/*
+ * The second entry point on the hero form.
+ *
+ * TWO BUTTONS, ONE PRIMARY. Owners are who this was built for and the bulk of
+ * the traffic; the buyer path is an addition rather than a reframing, and the
+ * weighting says so without hiding it. Same size and same hit area — the
+ * difference is fill, not prominence, because a buyer should not have to hunt
+ * for the button that matches their situation.
+ */
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}

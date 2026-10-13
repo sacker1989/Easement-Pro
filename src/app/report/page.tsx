@@ -1,4 +1,5 @@
 import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
+import { audienceCopy, BUYER_DECISION_WARNING, resolveAudience } from '@/lib/audience/audience-mode';
 import { resolveStateCode } from '@/lib/parcel-resolution/us-states';
 import {
   buildRiskDisclosureReport,
@@ -174,6 +175,17 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    */
   const state = resolveStateCode(param(searchParams.state)) ?? 'CA';
   const zip = param(searchParams.zip);
+  /*
+   * WHO IS READING. The facts are identical either way — same parcel, same
+   * restrictions, same duties, same county figures. What changes is what the
+   * reader can do about them: an owner already has the encumbrance and moves
+   * slowly, a buyer can still walk away or push it into the contract and has
+   * a contingency window that expires. Resolved rather than validated,
+   * because unknown input must land on the owner view that every existing
+   * link already means.
+   */
+  const audience = resolveAudience(param(searchParams.audience));
+  const copy = audienceCopy(audience);
   // The interface now selects a physical easement TYPE (twelve of them) and
   // derives the purpose, rather than offering the five purposes directly.
   // Seven types were previously unreachable from this page.
@@ -561,16 +573,73 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     return `/report?${q}`;
   }
 
+  /**
+   * The same report, read as the other party.
+   *
+   * REBUILT FROM THE RESOLVED VALUES rather than by editing the incoming
+   * query string, so a reader who arrived with `?state=California` or an
+   * unknown easementType gets the corrected ones carried across instead of
+   * the input that produced them. Everything the reader supplied survives the
+   * switch; only the audience flips.
+   */
+  const switchAudienceHref = (() => {
+    const q = new URLSearchParams({
+      submitted: '1',
+      street,
+      city,
+      state,
+      zip,
+      easementType,
+      lotAreaSqFt: String(typedLotAreaSqFt),
+      easementAreaSqFt: String(easementAreaSqFt),
+      audience: audience === 'owner' ? 'buyer' : 'owner',
+    });
+    return `/report?${q}`;
+  })();
+
   return (
     <main>
-      <h1>What an easement on your property means</h1>
+      <h1>What an easement on {copy.propertyPhrase} means</h1>
+      <p className="lede">{copy.standfirst}</p>
       <p className="lede">
         This reads public parcel, assessment and infrastructure records and reports what they say:
-        which activities are typically restricted, what the county publishes about your lot, a rough
+        which activities are typically restricted, what the county publishes about the lot, a rough
         sense of the scale of money involved, and a plan for what to do next. It also states what it
         cannot determine, which for an easement is a great deal. The range it gives is for
         orientation — enough to tell you whether this is worth a professional&rsquo;s time. It is not
         a valuation, and the report is explicit about why not.
+      </p>
+
+      {/*
+        THE BUYER WARNING SITS ABOVE EVERYTHING, not beside the figures.
+
+        A buyer can act on this report in ways an owner cannot — by pricing an
+        offer, waiving a contingency, or walking away — and all three are
+        expensive to get wrong on the strength of a tool that has read no
+        documents. The owner path has no equivalent because its mistakes are
+        slower and cheaper to undo.
+      */}
+      {audience === 'buyer' && (
+        <p role="note">
+          <strong>{BUYER_DECISION_WARNING}</strong>
+        </p>
+      )}
+
+      {/*
+        The switch is a link rather than a control, so it works with no
+        JavaScript and so the two modes are separately linkable — an agent can
+        send a client the buyer view directly.
+      */}
+      <p className="muted">
+        <small>
+          Reading this as{' '}
+          <strong>{audience === 'owner' ? 'the owner' : 'someone considering buying'}</strong>.{' '}
+          <a href={switchAudienceHref}>
+            {audience === 'owner'
+              ? 'I am considering buying this property instead'
+              : 'I own this property instead'}
+          </a>
+        </small>
       </p>
 
       <form>
@@ -1476,6 +1545,29 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               </details>
             </>
           )}
+
+          {/*
+            THE AUDIENCE'S OWN STEPS, ABOVE THE GENERAL REMEDY PLAN.
+
+            The remedy plan below is about the easement — establish the area,
+            read the instrument, speak to the holder. These are about the
+            READER'S POSITION, and for a buyer they are time-limited in a way
+            nothing else on the page is. Putting them first is the whole point
+            of having two modes: a buyer who reads only the top of the report
+            should still come away knowing to order the title report.
+          */}
+          <h2>
+            {audience === 'buyer' ? 'What to do before you commit' : 'Where to look first'}
+          </h2>
+          <ol className="steps">
+            {copy.nextSteps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <p role="note">
+            <strong>{audience === 'buyer' ? 'The clock: ' : 'On timing: '}</strong>
+            {copy.timingNote}
+          </p>
 
           {remedy && (
             <>

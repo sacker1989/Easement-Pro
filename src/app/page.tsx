@@ -131,7 +131,27 @@ export default function HomePage() {
               <input name="zip" placeholder="90049" required inputMode="numeric" autoComplete="postal-code" />
             </label>
           </div>
-          <button type="submit">Get my free report</button>
+          {/*
+            TWO BUTTONS, ONE FORM, AND THE SAME SEARCH.
+
+            `audience` is a submit button with a value, so each posts the same
+            address to the same place and differs only in who the report
+            addresses. A dropdown would have made the reader choose before
+            they understood there was a choice; two labelled buttons state the
+            two situations and let them recognise theirs.
+
+            The owner button is first and is the primary, because owners are
+            who the product was built for and the overwhelming majority of the
+            traffic. The buyer path is an addition, not a reframing.
+          */}
+          <div className="field-row" style={{ marginTop: '0.25rem' }}>
+            <button type="submit" name="audience" value="owner">
+              I own it — show my report
+            </button>
+            <button type="submit" name="audience" value="buyer" className="secondary">
+              I&rsquo;m thinking of buying it
+            </button>
+          </div>
         </form>
         <p className="muted">
           <small>Free. No account. We never log your address.</small>
