@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { codeOf } from '@/lib/test-support/source-text';
 import {
+  HOST_OVERRIDES,
   backoffDelay,
   createResilientFetch,
   parseRetryAfter,
@@ -324,5 +325,34 @@ describe('it stays a drop-in for the providers', () => {
     const typed: typeof fetch = f;
     const r = await typed(URL_A);
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('the Overpass budget is short because the scan is optional', () => {
+  /*
+   * THE OPPOSITE CALL FROM SAN DIEGO, ON THE SAME MECHANISM. San Diego gets
+   * 28 seconds because its answers are slow but correct and its figures are
+   * load-bearing. Overpass gets five, because the infrastructure scan is an
+   * addition — everything else on the report is already decided when it runs.
+   *
+   * Measured on the first wired build: the endpoint was down and the default
+   * budget held the whole report for 25 seconds before saying so.
+   */
+  it('caps a dead endpoint well inside a readable page load', () => {
+    const cfg = HOST_OVERRIDES['overpass-api.de']!;
+    expect(cfg.totalBudgetMs!).toBeLessThanOrEqual(4_000);
+    expect(cfg.timeoutMs!).toBeLessThanOrEqual(3_000);
+  });
+
+  it('does not retry, because there is nothing worth waiting for', () => {
+    // The San Diego work established that retrying a slow service is worse
+    // than waiting for it. Here the failure is a fast dispatcher error.
+    expect(HOST_OVERRIDES['overpass-api.de']!.maxAttempts).toBe(1);
+  });
+
+  it('is far stricter than the county that was given more patience', () => {
+    const overpass = HOST_OVERRIDES['overpass-api.de']!;
+    const sanDiego = HOST_OVERRIDES['gis-public.sandiegocounty.gov']!;
+    expect(overpass.totalBudgetMs!).toBeLessThan(sanDiego.totalBudgetMs! / 4);
   });
 });

@@ -66,6 +66,27 @@ export interface UnifiedParcelValuation {
   readonly caveats: readonly string[];
   readonly serviceUrl: string;
   readonly queriedOn: string;
+  /**
+   * How to ask this county's service for this exact parcel again.
+   *
+   * ADDED FOR THE INFRASTRUCTURE SCAN, which needs the parcel POLYGON to
+   * measure distances from — `assessEvidenceTier` states that a distance must
+   * come from the boundary, not the centroid.
+   *
+   * A SECOND REQUEST RATHER THAN GEOMETRY ON THIS ONE, deliberately. Setting
+   * returnGeometry on the valuation query would have been fewer round trips
+   * and would have put a new failure mode on the path that already works:
+   * four providers, seven call sites, every parcel lookup carrying a polygon
+   * whether or not anything wanted it. The scan is an addition and should be
+   * able to fail entirely without the valuation noticing.
+   *
+   * THE FIELD NAME TRAVELS WITH THE VALUE because the two cannot be derived
+   * from each other. LA queries on AIN `2004001003` while its own `apn` reads
+   * `2004-001-003`; Cook uses PIN14_dash; Orange uses AssessmentNo. Each
+   * provider already knows its own, so recording it here keeps one source of
+   * truth instead of a lookup table that drifts.
+   */
+  readonly idQuery: { readonly field: string; readonly value: string };
 }
 
 export interface ParcelCandidateRef {
@@ -275,6 +296,7 @@ async function lookupParcelUninstrumented(
           caveats: [],
           serviceUrl,
           queriedOn,
+          idQuery: { field: 'AIN', value: v.ain },
         },
       };
     }
@@ -325,6 +347,7 @@ async function lookupParcelUninstrumented(
           ],
           serviceUrl,
           queriedOn,
+          idQuery: { field: 'PIN14_dash', value: v.apn },
         },
       };
     }
@@ -364,6 +387,7 @@ async function lookupParcelUninstrumented(
           caveats: [ORANGE_COUNTY_STALENESS_CAVEAT],
           serviceUrl,
           queriedOn,
+          idQuery: { field: 'AssessmentNo', value: v.assessmentNo },
         },
       };
     }
@@ -407,6 +431,7 @@ async function lookupParcelUninstrumented(
         ],
         serviceUrl,
         queriedOn,
+        idQuery: { field: 'APN', value: v.apn },
       },
     };
   } catch (err) {

@@ -52,7 +52,8 @@ export type UpstreamService =
   | 'county-parcel'
   | 'census-geocoder'
   | 'fema-nfhl'
-  | 'calfire-fhsz';
+  | 'calfire-fhsz'
+  | 'osm-infrastructure';
 
 /**
  * Why a call did not fully succeed.

@@ -124,7 +124,45 @@ export const HOST_OVERRIDES: Readonly<
     maxAttempts: 2,
     totalBudgetMs: 29_000,
   },
+  /*
+   * THE OPPOSITE OF SAN DIEGO, AND FOR THE OPPOSITE REASON.
+   *
+   * San Diego gets more patience because its answers are slow but correct,
+   * and the parcel figures are load-bearing: throwing away a slow success
+   * meant losing the county's own land value.
+   *
+   * Overpass gets less, because the infrastructure scan is an ADDITION. The
+   * restrictions, the maintenance duties, the hazard panels and the county's
+   * figures are all already decided by the time it runs, and a reader who
+   * loses the scan loses a section that tells them to go and check their deed
+   * anyway. Measured on the first wired build: the public endpoint was down,
+   * and the default budget held the whole report for 25 seconds before saying
+   * so. Nobody waits 25 seconds.
+   *
+   * ONE ATTEMPT. The San Diego work established that retrying a slow service
+   * is worse than waiting for it, and here there is nothing worth waiting
+   * for — the endpoint fails fast with a dispatcher error or not at all.
+   */
+  'overpass-api.de': {
+    timeoutMs: 3_000,
+    maxAttempts: 1,
+    totalBudgetMs: 3_500,
+  },
 };
+
+/*
+ * HONEST LIMIT ON THE NUMBER ABOVE: healthy Overpass latency has not been
+ * measured, because the endpoint and both mirrors were failing throughout the
+ * work that added it. 3 seconds is chosen from the page's side of the trade
+ * rather than the service's — it is what a reader will tolerate for a section
+ * they did not ask for — and it may be cutting off slow successes once the
+ * service recovers.
+ *
+ * The outcome log answers this without guesswork. A persistent `failed` rate
+ * on osm-infrastructure after Overpass recovers means the budget is too tight;
+ * a healthy `ok` rate means it is not. That is a measurement to take, not a
+ * number to argue about, and it is the same instrument that settled San Diego.
+ */
 
 function hostOf(url: string): string {
   try {
