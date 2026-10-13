@@ -101,6 +101,25 @@ export function stripJsxComments(source: string): string {
 }
 
 /**
+ * Everything a reader of the rendered page would actually see: both comment
+ * forms removed.
+ *
+ * ADDED AFTER COMPOSING IT BY HAND THREE TIMES. A `.tsx` page carries JSX
+ * comments in its markup and plain block comments around its metadata, and a
+ * guard on page copy has to ignore both — the privacy page kept failing its
+ * own "do not restate this claim" test on the comment explaining why the
+ * claim was removed, once per comment style.
+ *
+ * `stripJsxComments` alone leaves the metadata comment; `stripComments` alone
+ * leaves `{}` where the JSX comment was. The order matters: JSX comments go
+ * first, because stripping `/* … *\/` out of `{/* … *\/}` would leave the
+ * braces behind for the second pass to trip over.
+ */
+export function visibleCopy(source: string): string {
+  return stripComments(stripJsxComments(source));
+}
+
+/**
  * Every single-quoted literal, with adjacent concatenations joined first.
  *
  * FOR ASSERTIONS ABOUT TEXT THAT REACHES A USER, where the literal is the

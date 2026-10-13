@@ -591,9 +591,20 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               ZIP <input name="zip" defaultValue={zip} required />
             </label>
           </div>
+          {/*
+            THE SAME STALE CLAIM THE HOMEPAGE CARRIED, one page over. It said
+            an uncovered address "uses national benchmarks and says so", which
+            stopped being true when the invented national land value was
+            deleted: for a land value the report now substitutes nothing and
+            says it cannot price the easement. The homepage was corrected on
+            2026-10-11 and this line was missed, which is the ordinary way a
+            claim survives its own correction — it was not where anyone looked.
+          */}
           <p className="muted" style={{ marginTop: '0.6rem' }}>
             Live county records: {SUPPORTED_COUNTIES.join(', ')}. Anywhere else still produces a
-            report — it uses national benchmarks and says so.
+            report — the restrictions, the maintenance duties and the hazard data are the same
+            everywhere. Without a published land value it tells you it cannot price the easement,
+            rather than reaching for a national average.
           </p>
         </fieldset>
 

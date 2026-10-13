@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONTACT_EMAIL, NOT_A_SURVEY_LINE, PRODUCT_NAME } from '@/components/site-footer';
-import { stripComments, stripJsxComments } from '@/lib/test-support/source-text';
+import { visibleCopy } from '@/lib/test-support/source-text';
 
 const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8');
 const FOOTER = readFileSync(
@@ -65,7 +65,7 @@ describe('the privacy page', () => {
     // BOTH COMMENT FORMS. The body uses JSX comments and the metadata block
     // uses a plain one, and the old wording is quoted in each to explain why
     // it went. Neither is visible to a reader, so neither should be scanned.
-    const copy = stripComments(stripJsxComments(PAGE));
+    const copy = visibleCopy(PAGE);
     expect(copy).not.toContain('never written to our logs');
     expect(copy).not.toContain('Counts, not identities');
   });
