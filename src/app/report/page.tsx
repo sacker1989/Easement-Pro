@@ -1,5 +1,6 @@
 import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
 import { audienceCopy, BUYER_DECISION_WARNING, resolveAudience } from '@/lib/audience/audience-mode';
+import { ringCentroid } from '@/lib/geo/planar-distance';
 import { currentEntitlements } from '@/lib/entitlements/search-entitlements';
 import { lookupInfrastructure } from '@/lib/proximity/infrastructure';
 import { fetchParcelGeometry } from '@/lib/proximity/parcel-geometry';
@@ -378,12 +379,33 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             // `lookup` again inside a callback, where it cannot.
             const matched = lookup.valuation;
             try {
-              const [geometry, nearby] = await Promise.all([
-                fetchParcelGeometry({
-                  serviceUrl: matched.serviceUrl,
-                  idQuery: matched.idQuery,
-                }),
-                observe(
+              /*
+               * GEOMETRY FIRST, THEN THE SCAN, rather than both at once.
+               *
+               * Two reasons, both found by testing the pipeline against a
+               * real transmission corridor. The search is centred on the
+               * PARCEL rather than on the geocoded address point, so the
+               * radius means what the copy says it means — "within 400 ft of
+               * this parcel" was measured from the geocode, which is not the
+               * same place and is further from it the larger the lot.
+               *
+               * And without a ring there is nothing to measure against, so
+               * the scan cannot produce a tier however long it waits. Running
+               * them in parallel meant paying the full 3-second Overpass
+               * budget to then discard the answer. Sequencing costs one short
+               * county round trip and saves that wait entirely on the path
+               * where it was pure loss.
+               */
+              const geometry = await fetchParcelGeometry({
+                serviceUrl: matched.serviceUrl,
+                idQuery: matched.idQuery,
+              });
+              const scanCentre =
+                geometry.kind === 'ring'
+                  ? ringCentroid(geometry.ring)
+                  : ([geocoded.lon, geocoded.lat] as const);
+              const nearby = geometry.kind === 'ring'
+                ? await observe(
                   'osm-infrastructure',
                   (r) => ({
                     result:
@@ -403,16 +425,19 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                   }),
                   () =>
                     lookupInfrastructure({
-                      lat: geocoded.lat,
-                      lon: geocoded.lon,
+                      lat: scanCentre[1],
+                      lon: scanCentre[0],
                       radiusFt: currentEntitlements().scanRadiusFt,
                     }),
-                ),
-              ]);
-              parcelInfrastructure = assessParcelInfrastructure(
-                nearby,
-                geometry.kind === 'ring' ? geometry.ring : null,
-              );
+                )
+                : null;
+              parcelInfrastructure =
+                nearby === null
+                  ? { kind: 'no-parcel-geometry' }
+                  : assessParcelInfrastructure(
+                      nearby,
+                      geometry.kind === 'ring' ? geometry.ring : null,
+                    );
             } catch {
               // Left null. The renderer says the scan did not run.
               parcelInfrastructure = null;
