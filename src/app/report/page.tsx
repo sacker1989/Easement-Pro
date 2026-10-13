@@ -1,4 +1,5 @@
 import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
+import { resolveStateCode } from '@/lib/parcel-resolution/us-states';
 import {
   buildRiskDisclosureReport,
   createLaCountyAssessorProvider,
@@ -147,15 +148,40 @@ const PARTY_LABEL: Record<Party, string> = {
 export default async function ReportPage({ searchParams }: ReportPageProps) {
   const street = param(searchParams.street);
   const city = param(searchParams.city);
-  const state = param(searchParams.state) || 'CA';
+  /*
+   * BOTH OF THESE ARE VALIDATED HERE, AT THE BOUNDARY, because both reached
+   * library code entitled to assume they already had been.
+   *
+   * `state` went straight to analyzeEasementAt, whose contract is a
+   * two-letter code and which throws on anything else — correctly calling it
+   * "a programmer error rather than an unsupported jurisdiction". It was
+   * right about its contract; this page was the programmer error. Measured on
+   * a production build, `?state=California` returned HTTP 500, and the state
+   * field carries autoComplete="address-level1", which browsers routinely
+   * fill with the full name.
+   *
+   * `easementType` was HALF validated, which is worse than not at all: the
+   * conditional below guarded typeMapping and nothing else, so the
+   * unvalidated value still went to responsibilitiesFor, whatShouldExist,
+   * buildRemedyPlan, buildFireSafetyContent, buildFloodVulnerabilityContent
+   * and the picker's defaultValue. `?easementType=anything` returned HTTP 500
+   * on "Cannot read properties of undefined (reading 'heading')" — one
+   * guarded call site and six unguarded ones, which is exactly the shape a
+   * local fallback produces.
+   *
+   * Validating once and using the result everywhere makes the second class of
+   * bug impossible rather than fixed.
+   */
+  const state = resolveStateCode(param(searchParams.state)) ?? 'CA';
   const zip = param(searchParams.zip);
   // The interface now selects a physical easement TYPE (twelve of them) and
   // derives the purpose, rather than offering the five purposes directly.
   // Seven types were previously unreachable from this page.
-  const easementType = (param(searchParams.easementType) || 'utility-overhead') as EasementType;
-  const typeMapping = EASEMENT_TYPES.includes(easementType)
-    ? mapEasementTypeToPurpose(easementType)
-    : mapEasementTypeToPurpose('utility-overhead');
+  const requestedType = param(searchParams.easementType);
+  const easementType: EasementType = EASEMENT_TYPES.includes(requestedType as EasementType)
+    ? (requestedType as EasementType)
+    : 'utility-overhead';
+  const typeMapping = mapEasementTypeToPurpose(easementType);
   const easementPurpose: EasementPurpose = typeMapping.purpose;
   const typedLotAreaSqFt = Number(param(searchParams.lotAreaSqFt) || '8000');
   /*
