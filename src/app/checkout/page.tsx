@@ -1,6 +1,7 @@
 import { buildAdvocacyWizardState } from '@/lib/advocacy-wizard';
 import { CURRENT_DISCLAIMER } from '@/lib/compliance';
 import { buildCheckoutSession, StripePaymentProvider, totalLineItemsCents } from '@/lib/checkout';
+import { siteUrl } from '@/lib/site';
 import { normalizeAddress } from '@/lib/parcel-resolution';
 import { getStateCompliance } from '@/config/state-tiers';
 import { analyzeEasement } from '@/lib/analysis-layer';
@@ -116,8 +117,25 @@ export default async function CheckoutPage({ searchParams }: CheckoutPageProps) 
               requiredFlow: wizardState.access.requiredFlow,
               attorneyReviewChoice,
               disclaimerAccepted,
-              successUrl: 'http://localhost:3000/checkout?success=1',
-              cancelUrl: 'http://localhost:3000/checkout?canceled=1',
+              /*
+               * FROM siteUrl(), NOT HARDCODED, and this was a live trap.
+               *
+               * These were 'http://localhost:3000/checkout?success=1' and
+               * '?canceled=1'. Harmless today because COMMERCE_ENABLED is
+               * false and this branch is unreachable — which is exactly why
+               * it survived: nothing exercises it, so nothing complains.
+               *
+               * The day somebody flips that flag, a customer completes
+               * payment at Stripe and is redirected to localhost. They have
+               * paid, and they land on a dead link, on the one flow where the
+               * stakes are money rather than a missing figure. A bug behind a
+               * flag is a bug scheduled for the worst possible moment.
+               *
+               * siteUrl() is the same resolver robots.ts and sitemap.ts use,
+               * and its own header records what it cost to get right.
+               */
+              successUrl: `${siteUrl()}/checkout?success=1`,
+              cancelUrl: `${siteUrl()}/checkout?canceled=1`,
             },
             new StripePaymentProvider(),
           );

@@ -79,3 +79,33 @@ describe('every page tells the same story about coverage', () => {
     },
   );
 });
+
+describe('no page hardcodes a host', () => {
+  /*
+   * A BUG BEHIND A FLAG IS A BUG SCHEDULED FOR THE WORST MOMENT.
+   *
+   * /checkout built its Stripe redirect URLs as
+   * 'http://localhost:3000/checkout?success=1'. Harmless while
+   * COMMERCE_ENABLED is false, because the branch is unreachable — which is
+   * precisely why it survived: nothing exercises it, so nothing complains.
+   * The day that flag is flipped, a customer pays at Stripe and is redirected
+   * to localhost. They have paid, and they land nowhere.
+   *
+   * siteUrl() is the resolver robots.ts and sitemap.ts use, and its own
+   * header records the two rounds of debugging it took to get the canonical
+   * host right. Nothing should be re-deriving a host beside it.
+   */
+  it.each(PAGES.map((p) => [p.label, p] as const))('%s derives its host', (label, page) => {
+    expect(page.copy, `${label} hardcodes localhost`).not.toMatch(/https?:\/\/localhost/);
+    expect(page.copy, `${label} hardcodes the production host`).not.toMatch(
+      /https?:\/\/(www\.)?safehomevalue\.com/,
+    );
+  });
+
+  it('the checkout redirects come from siteUrl', () => {
+    const checkout = PAGES.find((p) => p.label.includes('checkout'));
+    expect(checkout).toBeDefined();
+    expect(checkout!.copy).toMatch(/successUrl: `\$\{siteUrl\(\)\}/);
+    expect(checkout!.copy).toMatch(/cancelUrl: `\$\{siteUrl\(\)\}/);
+  });
+});
