@@ -37,7 +37,10 @@ import {
   createSanDiegoAssessorProvider,
   ORANGE_COUNTY_STALENESS_CAVEAT,
 } from '@/lib/risk-disclosure';
-import { createCookCountyAssessorProvider } from '@/lib/risk-disclosure/cook-county-assessor-provider';
+import {
+  COOK_COUNTY_PARCEL_LAYER,
+  createCookCountyAssessorProvider,
+} from '@/lib/risk-disclosure/cook-county-assessor-provider';
 import { COUNTY_AGENT_ROUTES } from '@/lib/jurisdiction/county-database';
 import { createResilientFetch } from '@/lib/net/resilient-fetch';
 import { observe } from '@/lib/observability/outcome-log';
@@ -345,9 +348,19 @@ async function lookupParcelUninstrumented(
               'at it. This land value is the assessed figure as published, not scaled up — so it ' +
               'understates market value, by a ratio that varies with property class.',
           ],
-          serviceUrl,
           queriedOn,
           idQuery: { field: 'PIN14_dash', value: v.apn },
+          /*
+           * COOK'S OWN LAYER, NOT THE ROUTE'S. routeFor() reads
+           * county-database.ts, where Cook is an api-extractor pointing at
+           * the Clerk's human search portal — correct for records requests
+           * and not a GIS service, so serviceUrl resolves to 'unknown'.
+           * The provider queries a real parcel layer and exports its URL;
+           * using it here is what lets the infrastructure scan fetch a
+           * boundary for Cook at all. The other three counties route to a
+           * gis-explorer and need no such override.
+           */
+          serviceUrl: COOK_COUNTY_PARCEL_LAYER,
         },
       };
     }

@@ -60,6 +60,26 @@ export async function fetchParcelGeometry(query: ParcelGeometryQuery): Promise<P
   const id = safeIdentifier(query.idQuery.value);
   if (id === null) return { kind: 'unavailable', reason: 'parcel identifier is not well formed' };
 
+  /*
+   * THE LAYER URL IS NOT THE QUERY URL, which cost a production bug.
+   *
+   * `esriServiceUrl` in county-database.ts is the layer — ".../MapServer/0" —
+   * because that is what identifies the layer. Esri's query endpoint is that
+   * plus "/query". Appending the parameters straight to the layer URL hits
+   * the layer's metadata document instead, which answers 200 with no
+   * `features` at all, so this returned "no parcel outline" for every parcel
+   * in every county.
+   *
+   * IT PASSED LOCALLY because the live check was written with the query URL
+   * typed by hand, and only production used the stored one. Normalising here
+   * rather than editing four database entries: the stored value is correct
+   * for what it claims to be, and every future caller wanting to query a
+   * layer needs the same suffix.
+   */
+  const queryUrl = query.serviceUrl.replace(/\/+$/, '').endsWith('/query')
+    ? query.serviceUrl
+    : `${query.serviceUrl.replace(/\/+$/, '')}/query`;
+
   const params = new URLSearchParams({
     where: `${query.idQuery.field}='${id}'`,
     outFields: query.idQuery.field,
@@ -70,7 +90,7 @@ export async function fetchParcelGeometry(query: ParcelGeometryQuery): Promise<P
   });
 
   try {
-    const response = await (query.fetchImpl ?? defaultFetch())(`${query.serviceUrl}?${params}`);
+    const response = await (query.fetchImpl ?? defaultFetch())(`${queryUrl}?${params}`);
     if (!response.ok) {
       return { kind: 'unavailable', reason: `county service returned ${response.status}` };
     }
