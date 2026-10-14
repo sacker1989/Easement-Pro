@@ -91,7 +91,54 @@ describe('the four outcomes still read differently', () => {
     const lookupAt = body.indexOf('lookupInfrastructure');
     expect(geometryAt).toBeGreaterThan(-1);
     expect(lookupAt).toBeGreaterThan(geometryAt);
-    // And skips Overpass entirely when there is no ring to measure against.
-    expect(SECTION).toMatch(/if \(geometry\.kind !== 'ring'\) return \{ kind: 'no-parcel-geometry' \}/);
+    // And skips both sources entirely when there is no ring to measure
+    // against — neither Overpass nor the county layer can produce a tier
+    // without a boundary, so neither is paid for.
+    expect(SECTION).toMatch(/if \(geometry\.kind !== 'ring'\)/);
+    const earlyReturn = SECTION.slice(SECTION.indexOf("geometry.kind !== 'ring'"));
+    expect(earlyReturn.slice(0, 200)).toMatch(/'no-parcel-geometry'/);
+  });
+
+  it('queries the county’s own layers as well as OpenStreetMap', () => {
+    /*
+     * Near four parcels in unincorporated Lakeside, OSM returned zero
+     * features and San Diego County's sewer layer returned 22 to 29, each
+     * with a diameter, a material and a facility id. The county source is
+     * what makes this section say something rather than "nothing mapped".
+     */
+    const body = SECTION.slice(SECTION.indexOf('async function scan('));
+    expect(body).toContain('lookupCountyUtilities');
+    expect(body).toContain('lookupInfrastructure');
+  });
+});
+
+describe('county coverage is stated, because absence is ambiguous', () => {
+  /*
+   * ABSENCE INSIDE A SERVICE AREA AND ABSENCE OUTSIDE ONE look identical in a
+   * query result and mean opposite things. San Diego County DPW serves county
+   * service areas; El Cajon runs its own sewers and is simply not in that
+   * layer. A reader in a city told "the county found no sewer" may hear
+   * "there is no sewer here".
+   */
+  it('renders the coverage note when a county source found nothing', () => {
+    expect(SECTION).toContain('coverageNotes.map');
+  });
+
+  it('attributes findings that came from the county', () => {
+    // A reader weighing a finding should be able to tell a county's record of
+    // its own pipes from a volunteer map; the next step differs too, since a
+    // facility id is something you can ring the county about.
+    expect(SECTION).toContain('outcome.publishers');
+    expect(SECTION).toMatch(/record of its own network/);
+  });
+
+  it('lets one source survive the other failing', () => {
+    /*
+     * A county outage must not look like an empty street, and an Overpass
+     * outage must not hide county data. The merge takes whichever answered.
+     */
+    const body = SECTION.slice(SECTION.indexOf('const merged'));
+    expect(body.slice(0, 400)).toMatch(/county\.kind === 'found'/);
+    expect(body.slice(0, 400)).toMatch(/nearby\.kind === 'found'/);
   });
 });

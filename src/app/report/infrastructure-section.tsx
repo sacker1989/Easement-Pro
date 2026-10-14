@@ -1,6 +1,7 @@
 import { ringCentroid } from '@/lib/geo/planar-distance';
 import { currentEntitlements } from '@/lib/entitlements/search-entitlements';
 import { observe } from '@/lib/observability/outcome-log';
+import { lookupCountyUtilities } from '@/lib/proximity/county-utilities';
 import { lookupInfrastructure } from '@/lib/proximity/infrastructure';
 import { fetchParcelGeometry } from '@/lib/proximity/parcel-geometry';
 import {
@@ -49,7 +50,15 @@ export interface InfrastructureSectionProps {
   readonly propertyPhrase: string;
 }
 
-async function scan(props: InfrastructureSectionProps): Promise<ParcelInfrastructure | null> {
+interface ScanOutcome {
+  readonly assessed: ParcelInfrastructure;
+  /** Named where the county supplied findings, for attribution. */
+  readonly publishers: readonly string[];
+  /** What a county layer does not cover, shown when it found nothing. */
+  readonly coverageNotes: readonly string[];
+}
+
+async function scan(props: InfrastructureSectionProps): Promise<ScanOutcome | null> {
   try {
     /*
      * GEOMETRY FIRST. The search is centred on the parcel rather than the
@@ -61,9 +70,41 @@ async function scan(props: InfrastructureSectionProps): Promise<ParcelInfrastruc
       serviceUrl: props.serviceUrl,
       idQuery: props.idQuery,
     });
-    if (geometry.kind !== 'ring') return { kind: 'no-parcel-geometry' };
+    if (geometry.kind !== 'ring') {
+      return { assessed: { kind: 'no-parcel-geometry' }, publishers: [], coverageNotes: [] };
+    }
 
     const [lon, lat] = ringCentroid(geometry.ring);
+
+    /*
+     * THE COUNTY'S OWN LAYERS FIRST, where it publishes any.
+     *
+     * Near four parcels in unincorporated Lakeside, OpenStreetMap returned
+     * zero features and San Diego County's sewer layer returned twenty-two to
+     * twenty-nine, each with a diameter, a material and a facility id. Where a
+     * county publishes its network, it is both better data and faster — the
+     * same servers the valuation already talks to, answering in well under a
+     * second, against a public Overpass endpoint that fails more often than
+     * it succeeds.
+     *
+     * Not a replacement: county layers cover one utility in one jurisdiction,
+     * and OSM carries the transmission lines no county publishes. Both run,
+     * and the findings merge.
+     */
+    const radiusFt = currentEntitlements().scanRadiusFt;
+    const padDegrees = radiusFt / 364_000;
+    const xs = geometry.ring.map((p) => p[0]);
+    const ys = geometry.ring.map((p) => p[1]);
+    const county = await lookupCountyUtilities({
+      county: props.county,
+      envelope: [
+        Math.min(...xs) - padDegrees,
+        Math.min(...ys) - padDegrees,
+        Math.max(...xs) + padDegrees,
+        Math.max(...ys) + padDegrees,
+      ],
+    });
+
     const nearby = await observe(
       'osm-infrastructure',
       (r) => ({
@@ -82,9 +123,29 @@ async function scan(props: InfrastructureSectionProps): Promise<ParcelInfrastruc
         state: props.state,
         county: props.county,
       }),
-      () => lookupInfrastructure({ lat, lon, radiusFt: currentEntitlements().scanRadiusFt }),
+      () => lookupInfrastructure({ lat, lon, radiusFt }),
     );
-    return assessParcelInfrastructure(nearby, geometry.ring);
+
+    /*
+     * MERGED, WITH THE COUNTY’S FEATURES FIRST. assessParcelInfrastructure
+     * sorts by tier and then distance, so ordering here only decides ties;
+     * what matters is that both sources reach the tiering at all. A county
+     * outage must not look like an empty street, so a failed county lookup
+     * still lets the OSM result through and vice versa.
+     */
+    const merged =
+      county.kind === 'found'
+        ? nearby.kind === 'found'
+          ? { ...nearby, features: [...county.features, ...nearby.features] }
+          : { kind: 'found' as const, features: county.features, radiusFt, queriedOn: new Date().toISOString().slice(0, 10) }
+        : nearby;
+
+    const assessed = assessParcelInfrastructure(merged, geometry.ring);
+    return {
+      assessed,
+      publishers: county.kind === 'found' ? county.publishers : [],
+      coverageNotes: county.kind === 'none-found' ? county.coverageNotes : [],
+    };
   } catch {
     return null;
   }
@@ -118,7 +179,8 @@ export function InfrastructurePending({ propertyPhrase }: { propertyPhrase: stri
 }
 
 export async function InfrastructureSection(props: InfrastructureSectionProps) {
-  const result = await scan(props);
+  const outcome = await scan(props);
+  const result = outcome?.assessed ?? null;
 
   return (
     <>
@@ -151,6 +213,21 @@ export async function InfrastructureSection(props: InfrastructureSectionProps) {
       {result?.kind === 'none-mapped' && (
         <>
           <p>Nothing is mapped within {result.radiusFt} ft of this parcel.</p>
+          {/*
+            THE COUNTY'S OWN COVERAGE STATEMENT, WHERE IT HAS ONE.
+
+            Absence inside a service area and absence outside one look
+            identical in a query result and mean opposite things. San Diego
+            County DPW serves county service areas; El Cajon runs its own
+            sewers and is simply not in that layer. Without this sentence a
+            reader in a city is told the county found no sewer and may hear
+            "there is no sewer here".
+          */}
+          {outcome?.coverageNotes.map((note) => (
+            <p key={note} role="note">
+              {note}
+            </p>
+          ))}
           <p role="note">
             <strong>{COVERAGE_CAVEAT}</strong>
           </p>
@@ -178,6 +255,22 @@ export async function InfrastructureSection(props: InfrastructureSectionProps) {
             {result.findings[0]!.assessment.implication}
           </p>
           <p role="note">{GEOMETRY_IS_NOT_A_DEED}</p>
+          {/*
+            ATTRIBUTION WHERE THE COUNTY SUPPLIED SOMETHING. A reader weighing
+            a finding should be able to tell a county's own record of its own
+            pipes from a volunteer map, because those carry very different
+            weight — and the next step differs too: a county facility id is
+            something you can ring the county about.
+          */}
+          {outcome !== null && outcome.publishers.length > 0 && (
+            <p className="muted">
+              <small>
+                Some of these come from {outcome.publishers.join(' and ')} — the county&rsquo;s own
+                record of its own network, which is a stronger source than the volunteer map below
+                and still not a record of who may cross your land.
+              </small>
+            </p>
+          )}
           <p className="muted">
             <small>{COVERAGE_CAVEAT}</small>
           </p>
