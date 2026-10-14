@@ -142,3 +142,22 @@ describe('county coverage is stated, because absence is ambiguous', () => {
     expect(body.slice(0, 400)).toMatch(/nearby\.kind === 'found'/);
   });
 });
+
+describe('two sources, two outcomes, neither swallowing the other', () => {
+  /*
+   * CAUGHT ON PRODUCTION, not in review. A city address in El Cajon: the
+   * county layer answered cleanly with nothing — it does not serve that
+   * area — and OpenStreetMap was down. The reader saw only "the scan did not
+   * complete", which threw away the more useful half. The county DID answer,
+   * and it can say why it has nothing there.
+   */
+  it('shows the county coverage note even when the other source failed', () => {
+    const failedBranch = SECTION.slice(SECTION.indexOf("result?.kind === 'lookup-failed'"));
+    expect(failedBranch.slice(0, 1200)).toContain('coverageNotes.map');
+  });
+
+  it('shows it when nothing was mapped too', () => {
+    const emptyBranch = SECTION.slice(SECTION.indexOf("result?.kind === 'none-mapped'"));
+    expect(emptyBranch.slice(0, 1400)).toContain('coverageNotes.map');
+  });
+});

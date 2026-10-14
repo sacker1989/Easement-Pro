@@ -198,10 +198,27 @@ export async function InfrastructureSection(props: InfrastructureSectionProps) {
         </p>
       )}
       {result?.kind === 'lookup-failed' && (
-        <p role="note">
-          This scan did not complete — {result.reason}. Nothing else in this report depends on
-          it, and nothing below was affected. Reloading will try again.
-        </p>
+        <>
+          <p role="note">
+            This scan did not complete — {result.reason}. Nothing else in this report depends on
+            it, and nothing below was affected. Reloading will try again.
+          </p>
+          {/*
+            THE COUNTY'S ANSWER SURVIVES THE OTHER SOURCE FAILING.
+
+            Caught by checking a city address on production: OpenStreetMap was
+            down, the county layer answered cleanly with nothing, and the
+            reader saw only "the scan did not complete". That throws away the
+            more useful half — the county DID answer, and it can say why it
+            has nothing here. Two sources, two outcomes; collapsing them into
+            one sentence loses whichever one worked.
+          */}
+          {outcome?.coverageNotes.map((note) => (
+            <p key={note} role="note">
+              {note}
+            </p>
+          ))}
+        </>
       )}
       {result?.kind === 'no-parcel-geometry' && (
         <p role="note">
