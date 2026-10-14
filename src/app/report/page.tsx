@@ -1,15 +1,10 @@
 import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
+import { Suspense } from 'react';
 import { audienceCopy, BUYER_DECISION_WARNING, resolveAudience } from '@/lib/audience/audience-mode';
-import { ringCentroid } from '@/lib/geo/planar-distance';
-import { currentEntitlements } from '@/lib/entitlements/search-entitlements';
-import { lookupInfrastructure } from '@/lib/proximity/infrastructure';
-import { fetchParcelGeometry } from '@/lib/proximity/parcel-geometry';
 import {
-  assessParcelInfrastructure,
-  COVERAGE_CAVEAT,
-  GEOMETRY_IS_NOT_A_DEED,
-  type ParcelInfrastructure,
-} from '@/lib/proximity/parcel-infrastructure';
+  InfrastructurePending,
+  InfrastructureSection,
+} from './infrastructure-section';
 import { resolveStateCode } from '@/lib/parcel-resolution/us-states';
 import {
   buildRiskDisclosureReport,
@@ -337,7 +332,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   let screening: ScreeningResult | null = null;
   let irwa: ValuationEstimate | null = null;
   let remedy: RemedyPlan | null = null;
-  let parcelInfrastructure: ParcelInfrastructure | null = null;
   const acquisitionPending = searchParams.acquisitionPending === '1';
 
   if (submitted) {
@@ -362,87 +356,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       switch (lookup.status) {
         case 'found':
           unified = lookup.valuation;
-          /*
-           * THE INFRASTRUCTURE SCAN. Needs two things that only exist once a
-           * parcel has matched — the county's polygon to measure from, and a
-           * geocoded point to search around — so it hangs off this branch
-           * rather than running for every address.
-           *
-           * BOTH CALLS CAN FAIL AND NEITHER MATTERS TO ANYTHING ELSE. The
-           * whole section is an addition; the valuation, the restrictions and
-           * the hazard panels are already decided by the time this runs, and
-           * the catch below leaves `parcelInfrastructure` null, which renders
-           * as "the scan did not run" rather than as an absence of findings.
-           */
-          if (geocoded?.kind === 'matched') {
-            // Captured so the classifier closure below does not have to narrow
-            // `lookup` again inside a callback, where it cannot.
-            const matched = lookup.valuation;
-            try {
-              /*
-               * GEOMETRY FIRST, THEN THE SCAN, rather than both at once.
-               *
-               * Two reasons, both found by testing the pipeline against a
-               * real transmission corridor. The search is centred on the
-               * PARCEL rather than on the geocoded address point, so the
-               * radius means what the copy says it means — "within 400 ft of
-               * this parcel" was measured from the geocode, which is not the
-               * same place and is further from it the larger the lot.
-               *
-               * And without a ring there is nothing to measure against, so
-               * the scan cannot produce a tier however long it waits. Running
-               * them in parallel meant paying the full 3-second Overpass
-               * budget to then discard the answer. Sequencing costs one short
-               * county round trip and saves that wait entirely on the path
-               * where it was pure loss.
-               */
-              const geometry = await fetchParcelGeometry({
-                serviceUrl: matched.serviceUrl,
-                idQuery: matched.idQuery,
-              });
-              const scanCentre =
-                geometry.kind === 'ring'
-                  ? ringCentroid(geometry.ring)
-                  : ([geocoded.lon, geocoded.lat] as const);
-              const nearby = geometry.kind === 'ring'
-                ? await observe(
-                  'osm-infrastructure',
-                  (r) => ({
-                    result:
-                      r.kind === 'found'
-                        ? ('ok' as const)
-                        : r.kind === 'none-mapped'
-                          ? ('degraded' as const)
-                          : ('failed' as const),
-                    reason:
-                      r.kind === 'none-mapped'
-                        ? ('no-match' as const)
-                        : r.kind === 'lookup-failed'
-                          ? ('http-error' as const)
-                          : undefined,
-                    state,
-                    county: matched.county,
-                  }),
-                  () =>
-                    lookupInfrastructure({
-                      lat: scanCentre[1],
-                      lon: scanCentre[0],
-                      radiusFt: currentEntitlements().scanRadiusFt,
-                    }),
-                )
-                : null;
-              parcelInfrastructure =
-                nearby === null
-                  ? { kind: 'no-parcel-geometry' }
-                  : assessParcelInfrastructure(
-                      nearby,
-                      geometry.kind === 'ring' ? geometry.ring : null,
-                    );
-            } catch {
-              // Left null. The renderer says the scan did not run.
-              parcelInfrastructure = null;
-            }
-          }
           break;
         case 'not-found':
           lookupNotice =
@@ -1639,77 +1552,26 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           )}
 
           {/*
-            INFRASTRUCTURE NEAR THE PARCEL.
-
-            Renders only where a parcel matched, because the tier is measured
-            from the county's own polygon. A distance from the geocoded point
-            would be the centroid distance assessEvidenceTier explicitly
-            refuses — wrong for any parcel whose radius approaches the search
-            radius, and wrong in the direction of overstating the tier.
-
-            ALL FOUR OUTCOMES RENDER DIFFERENTLY, which is the whole point.
-            "Found something", "found nothing", "could not look" and "no
-            outline to measure from" are four different statements, and
-            collapsing any of them into "nothing near this property" would
-            hand a homeowner a clean bill of health on the strength of a gap
-            in a volunteer map.
+            STREAMED, NOT AWAITED. Measured 2026-10-14: Overpass succeeded 6
+            of 14 times, and a failure (HTTP 504) took 8.5 to 13.4 seconds to
+            arrive while a success took 1 to 8. Awaited in the page body it
+            added up to 3 seconds to a ~2 second report, most of the time for
+            nothing. Suspense puts the wait where it belongs — on the section
+            that is waiting — and a reader who never scrolls this far has
+            waited nothing for it.
           */}
-          <h2>Infrastructure near {copy.propertyPhrase}</h2>
-          {parcelInfrastructure === null && (
-            <p role="note">
-              This scan did not run. It needs both a matched county parcel and a geocoded
-              location, and one of them was not available for this address.
-            </p>
-          )}
-          {parcelInfrastructure?.kind === 'lookup-failed' && (
-            <p role="note">
-              This scan did not complete — {parcelInfrastructure.reason}. Nothing else in this
-              report depends on it, and nothing below was affected. Reloading will try again.
-            </p>
-          )}
-          {parcelInfrastructure?.kind === 'no-parcel-geometry' && (
-            <p role="note">
-              The county matched this parcel but did not return its outline, so there is no
-              boundary to measure distances from. Measuring from the middle of the lot instead
-              would overstate how close things are, so no finding is offered.
-            </p>
-          )}
-          {parcelInfrastructure?.kind === 'none-mapped' && (
-            <>
-              <p>
-                Nothing is mapped within {parcelInfrastructure.radiusFt} ft of this parcel.
-              </p>
-              <p role="note">
-                <strong>{COVERAGE_CAVEAT}</strong>
-              </p>
-            </>
-          )}
-          {parcelInfrastructure?.kind === 'assessed' && (
-            <>
-              <ul className="facts">
-                {parcelInfrastructure.findings.map((finding) => (
-                  <li key={`${finding.feature.label}-${finding.assessment.distanceFt}`}>
-                    <span className="k">
-                      {finding.feature.label}
-                      {finding.feature.operator ? ` — ${finding.feature.operator}` : ''}
-                    </span>
-                    <span className="v">
-                      {finding.assessment.distanceFt === 0
-                        ? 'crosses the parcel'
-                        : `${Math.round(finding.assessment.distanceFt)} ft away`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p>
-                <strong>{parcelInfrastructure.findings[0]!.assessment.basis}</strong>{' '}
-                {parcelInfrastructure.findings[0]!.assessment.implication}
-              </p>
-              <p role="note">{GEOMETRY_IS_NOT_A_DEED}</p>
-              <p className="muted">
-                <small>{COVERAGE_CAVEAT}</small>
-              </p>
-            </>
+          {unified !== null && geocoded?.kind === 'matched' && (
+            <Suspense fallback={<InfrastructurePending propertyPhrase={copy.propertyPhrase} />}>
+              <InfrastructureSection
+                serviceUrl={unified.serviceUrl}
+                idQuery={unified.idQuery}
+                county={unified.county}
+                state={state}
+                lat={geocoded.lat}
+                lon={geocoded.lon}
+                propertyPhrase={copy.propertyPhrase}
+              />
+            </Suspense>
           )}
 
           {/*
