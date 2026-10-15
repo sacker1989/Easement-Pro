@@ -1,4 +1,8 @@
 import type { Metadata } from 'next';
+import {
+  WORKED_EXAMPLE_DISCLAIMER,
+  workedExampleFor,
+} from '@/lib/easements/worked-examples';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
@@ -90,6 +94,7 @@ export default function GuidePage({ params }: { params: { type: string } }) {
   if (!isGuideType(params.type)) {
     notFound();
   }
+  const example = workedExampleFor(params.type);
   const record = RESPONSIBILITIES_BY_TYPE[params.type];
   const g = guideFor(params.type);
 
@@ -137,6 +142,42 @@ export default function GuidePage({ params }: { params: { type: string } }) {
       <p>
         <strong>One free thing you can do today:</strong> {record.freeNextStep}
       </p>
+
+      {/*
+        A WORKED EXAMPLE, which answers the question the rest of this page
+        does not: "fine, but what do I DO with this?" Understanding an
+        easement and acting on one are different things, and the gap between
+        them is where most readers stop.
+
+        ILLUSTRATION, NOT CASE STUDY, and the disclaimer says so above the
+        example rather than below it. Nobody here is real and no outcome here
+        happened — a fabricated testimonial would be the most persuasive thing
+        this product could publish and the least defensible. The outcome of
+        each example is an ACTION COMPLETED rather than a sum recovered, for
+        the reason recorded in worked-examples.ts.
+      */}
+      <h2>What you would do with this</h2>
+      <p role="note">{WORKED_EXAMPLE_DISCLAIMER}</p>
+      <div className="panel">
+        <ul className="facts">
+          <li>
+            <span className="k">The situation</span>
+            <span className="v">{example.situation}</span>
+          </li>
+          <li>
+            <span className="k">What the report shows</span>
+            <span className="v">{example.whatTheReportShows}</span>
+          </li>
+          <li>
+            <span className="k">What you do</span>
+            <span className="v">{example.whatYouDo}</span>
+          </li>
+          <li>
+            <span className="k">What that gets you</span>
+            <span className="v">{example.whatThatGetsYou}</span>
+          </li>
+        </ul>
+      </div>
 
       <h2>How it affects home value</h2>
       <p>{record.valueAndProtection}</p>
