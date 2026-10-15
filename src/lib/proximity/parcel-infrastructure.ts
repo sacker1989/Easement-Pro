@@ -108,28 +108,24 @@ export const COVERAGE_CAVEAT =
   'and your plat is the authority; this is a prompt to go and look.';
 
 /**
- * Said wherever findings are shown, because the obvious next question has no
- * answer here and silence would imply one.
+ * One line, because the question was asked and then set aside.
  *
- * ASKED DIRECTLY, AND CHECKED ACROSS EVERY SOURCE. Orange publishes
- * `InstallDate` and `AsBuiltDate` fields and both are empty on every record
- * sampled; San Diego, LA County and the California Energy Commission have no
- * construction-date field at all. San Diego's two condition columns are
- * populated on 6% and 8% of records, which is too sparse to say anything
- * about one parcel — and an empty cell in a 92%-empty column is not evidence
- * of good condition.
+ * CHECKED ACROSS EVERY SOURCE BEFORE DROPPING IT. Orange carries
+ * InstallDate and AsBuiltDate and both are 0% populated over 300 records;
+ * San Diego, LA County and the California Energy Commission have no
+ * construction-date field at all. San Diego’s two condition columns sit at
+ * 6% and 8%, too sparse to say anything about one parcel — and an empty
+ * cell in a 92%-empty column is not evidence of good condition.
  *
- * SO NO FAILURE RISK IS OFFERED. Predicting that a line will fail in a storm
- * or a fire would need outage histories matched to assets, and nothing here
- * publishes them. A risk score without that is the same invented number as a
- * percentage easement likelihood, wearing safety language instead.
+ * NO FAILURE SCORE WAS BUILT, and none should be. Predicting that a line
+ * fails in a storm needs outage histories matched to assets, which nothing
+ * here publishes; a number without that is the invented percentage this
+ * codebase has rejected twice, wearing safety language. The sentence stays
+ * only so silence is not read as "nothing wrong with it".
  */
 export const AGE_AND_CONDITION_UNKNOWN =
-  'None of these sources publishes when this infrastructure was installed, and none publishes a ' +
-  'usable condition record, so this report cannot tell you how old it is or what state it is in. ' +
-  'What it can tell you is the material and whether a line runs overhead or underground, both of ' +
-  'which are above. The operator holds the maintenance history; for a line that worries you, they ' +
-  'are who to ask, and their answer is a record rather than an inference.';
+  'Age and condition are not published by any of these sources. The operator holds the ' +
+  'maintenance history and is who to ask.';
 
 /** Said wherever a tier is shown, so geometry is never read as a document. */
 export const GEOMETRY_IS_NOT_A_DEED =
