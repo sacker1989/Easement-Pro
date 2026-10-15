@@ -75,6 +75,43 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
         'not maintain sewer at this address, which is not the same as there being none.',
     },
   ],
+  'Orange County': [
+    {
+      layerUrl: 'https://www.ocgis.com/arcpub/rest/services/Flood/Stormwater_Network/MapServer/7',
+      outFields: ['Material', 'CrossSectionShape', 'SourceSize', 'LifecycleStatus', 'OwnedBy'],
+      describe: (a) => {
+        const size = typeof a['SourceSize'] === 'string' && a['SourceSize'].trim() !== '' ? `${a['SourceSize']} ` : '';
+        const shape =
+          { Circular: 'circular', Rectangular: 'box', Arch: 'arch' }[String(a['CrossSectionShape'] ?? '')] ?? '';
+        const material =
+          { RC: 'reinforced concrete', RCP: 'reinforced concrete', CMP: 'corrugated metal', PVC: 'PVC' }[
+            String(a['Material'] ?? '')
+          ] ?? '';
+        /*
+         * OWNERSHIP IS THE PART A HOMEOWNER CARES ABOUT. Roughly three in four
+         * of these are OwnedBy "Private" — a privately owned storm drain
+         * crossing a residential lot is the drainage-easement case, and it
+         * raises a different question from a city-owned line: who maintains
+         * it, and under what document. Said plainly rather than buried in a
+         * code.
+         */
+        const owner =
+          String(a['OwnedBy'] ?? '') === 'Private'
+            ? ' (privately owned, not the city’s)'
+            : typeof a['OwnedBy'] === 'string' && a['OwnedBy'] !== 'Unknown'
+              ? ` (${a['OwnedBy']})`
+              : '';
+        const described = [size, shape, material].filter(Boolean).join(' ').trim();
+        return `${described ? `${described} ` : ''}storm drain${owner}`;
+      },
+      publisher: 'Orange County Public Works stormwater network',
+      coverage:
+        'This layer is the Orange County stormwater network, which is mapped city by city and is ' +
+        'far more complete in some jurisdictions than others. Finding nothing here means no storm ' +
+        'drain is recorded in this layer at this address — not that none exists. A city that ' +
+        'maintains its own records may simply not have contributed them.',
+    },
+  ],
 };
 
 export type CountyUtilityResult =
