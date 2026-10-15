@@ -47,8 +47,67 @@ export interface CountyUtilitySource {
   readonly coverage: string;
 }
 
+/**
+ * WHAT THESE SOURCES DO NOT PUBLISH, checked across all of them rather than
+ * assumed, because it was asked for directly and the answer is no.
+ *
+ * INSTALLATION DATE IS NOT AVAILABLE. Orange carries `InstallDate` and
+ * `AsBuiltDate` fields and both are 0% populated across a 300-feature sample.
+ * San Diego, LA County and the CEC have no construction-date field at all.
+ * Nothing here can say how old a pipe or a line is.
+ *
+ * CONDITION IS NOT AVAILABLE EITHER. San Diego publishes `SPOT_REPAIRS` and
+ * `MAINTENANCE_CODE`, populated on 6% and 8% of records — too sparse to say
+ * anything about a particular parcel, and silence in a 92%-empty column is
+ * not evidence of good condition.
+ *
+ * SO NO FAILURE RISK IS COMPUTED, and the reason is the one that governs the
+ * screening range and the easement likelihood: a number with no ground truth
+ * behind it anchors a reader harder than a caveat can loosen. Predicting that
+ * a line will fail in extreme weather would need outage histories matched to
+ * assets, which no source here publishes.
+ *
+ * WHAT IS PUBLISHED AND IS WORTH SAYING: material, on 100% of records
+ * everywhere; whether a line is abandoned or in service; and — for
+ * transmission — whether it runs OVERHEAD or UNDERGROUND, which is the single
+ * most relevant fact this product can report about wildfire exposure, and is
+ * stated as a fact rather than a forecast.
+ */
+
 /** Sources by county, as `county-dispatch.ts` names them. */
 export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtilitySource[]>> = {
+  'Los Angeles County': [
+    {
+      layerUrl: 'https://dpw.gis.lacounty.gov/dpw/rest/services/Sewer_Network/MapServer/5',
+      outFields: ['PIPE_DIAMETER', 'PIPE_MATERIAL', 'STATUS', 'CITY_OR_COMMUNITY'],
+      describe: (a) => {
+        const diameter =
+          typeof a['PIPE_DIAMETER'] === 'number' && a['PIPE_DIAMETER'] > 0
+            ? `${a['PIPE_DIAMETER']}-inch `
+            : '';
+        /*
+         * LA spells its materials out — "VITRIFIED CLAY PIPE" — so they are
+         * lower-cased rather than expanded from a code. An unfamiliar value
+         * is printed as it stands; guessing at an abbreviation is how a
+         * report starts stating things the county did not.
+         */
+        const material = typeof a['PIPE_MATERIAL'] === 'string' && a['PIPE_MATERIAL'].trim() !== ''
+          ? `${a['PIPE_MATERIAL'].toLowerCase().replace(/ pipe$/, '')} `
+          : '';
+        const status =
+          typeof a['STATUS'] === 'string' && a['STATUS'].toUpperCase() !== 'IN SERVICE'
+            ? ` (${a['STATUS'].toLowerCase()})`
+            : '';
+        return `${diameter}${material}gravity sewer main${status}`;
+      },
+      publisher: 'Los Angeles County Department of Public Works',
+      coverage:
+        'This layer is LA County Public Works’ own sewer network — the county’s mains, serving ' +
+        'unincorporated areas and the cities it contracts with. The City of Los Angeles and many ' +
+        'other cities run their own systems and are not in it. Finding nothing here means the ' +
+        'county does not maintain sewer at this address, not that there is none.',
+    },
+  ],
   'San Diego County': [
     {
       layerUrl:
@@ -114,6 +173,57 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
   ],
 };
 
+/**
+ * Sources that are published state-wide rather than county by county.
+ *
+ * KEYED BY STATE BECAUSE THE PUBLISHER IS A STATE AGENCY. The California
+ * Energy Commission maps transmission for the whole of California; listing it
+ * under each county separately would imply three datasets where there is one,
+ * and would quietly exclude any California county added later.
+ *
+ * WHY THIS BEATS THE ALTERNATIVES, measured rather than assumed. HIFLD's
+ * transmission layer returned `OWNER: "NOT AVAILABLE"` on every feature near
+ * the test parcel. OpenStreetMap carries operator on some lines and nothing
+ * on others. The CEC layer has kV, Owner, Status and Type populated on 100%
+ * of a 300-feature sample: "220kV OH SCE, Operational".
+ */
+export const STATE_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtilitySource[]>> = {
+  CA: [
+    {
+      layerUrl:
+        'https://services3.arcgis.com/bWPjFyq029ChCGur/arcgis/rest/services/Transmission_Line/FeatureServer/2',
+      outFields: ['Name', 'kV', 'Owner', 'Status', 'Type'],
+      describe: (a) => {
+        const kv = typeof a['kV'] === 'number' && a['kV'] > 0 ? `${a['kV']}kV ` : '';
+        /*
+         * OVERHEAD VERSUS UNDERGROUND IS THE POINT, and it is why this source
+         * is here at all. This product's second pillar is what happens when a
+         * utility corridor is not maintained, and the motivating cases were
+         * wildfires started by overhead equipment. An overhead line is a
+         * different thing to live beside from a buried one, and the CEC says
+         * which on every record. It is reported as the fact it is — not as a
+         * prediction about what the line will do.
+         */
+        const type =
+          { OH: 'overhead', UG: 'underground' }[String(a['Type'] ?? '')] ?? '';
+        const owner = typeof a['Owner'] === 'string' && a['Owner'].trim() !== '' ? ` (${a['Owner']})` : '';
+        const status =
+          typeof a['Status'] === 'string' && a['Status'] !== 'Operational'
+            ? ` — ${a['Status'].toLowerCase()}`
+            : '';
+        return `${kv}${type ? `${type} ` : ''}electricity transmission line${owner}${status}`;
+      },
+      publisher: 'California Energy Commission',
+      coverage:
+        'This layer is the California Energy Commission’s map of TRANSMISSION lines — the high ' +
+        'voltage towers that move power between regions. It does not include distribution: the ' +
+        'poles and wires along ordinary streets, which is what most homes are served by and what ' +
+        'most utility easements concern. Finding no transmission line here is the normal case and ' +
+        'says nothing about the lines on your street.',
+    },
+  ],
+};
+
 export type CountyUtilityResult =
   | {
       readonly kind: 'found';
@@ -134,6 +244,8 @@ function defaultFetch(): typeof fetch {
 
 export interface CountyUtilityQuery {
   readonly county: string;
+  /** Two-letter state code, for sources published state-wide. */
+  readonly state: string;
   /** Parcel bounding box, padded by the caller's search radius. */
   readonly envelope: readonly [number, number, number, number];
   readonly fetchImpl?: typeof fetch;
@@ -148,8 +260,16 @@ export interface CountyUtilityQuery {
 export async function lookupCountyUtilities(
   query: CountyUtilityQuery,
 ): Promise<CountyUtilityResult> {
-  const sources = COUNTY_UTILITY_SOURCES[query.county];
-  if (sources === undefined || sources.length === 0) return { kind: 'no-source' };
+  /*
+   * COUNTY AND STATE SOURCES TOGETHER. A county sewer layer and a state
+   * transmission layer answer different questions and neither substitutes
+   * for the other, so both are queried and the findings merge.
+   */
+  const sources = [
+    ...(COUNTY_UTILITY_SOURCES[query.county] ?? []),
+    ...(STATE_UTILITY_SOURCES[query.state] ?? []),
+  ];
+  if (sources.length === 0) return { kind: 'no-source' };
 
   const doFetch = query.fetchImpl ?? defaultFetch();
   const features: InfrastructureFeature[] = [];

@@ -6,6 +6,7 @@ import { lookupInfrastructure } from '@/lib/proximity/infrastructure';
 import { fetchParcelGeometry } from '@/lib/proximity/parcel-geometry';
 import {
   assessParcelInfrastructure,
+  AGE_AND_CONDITION_UNKNOWN,
   COVERAGE_CAVEAT,
   GEOMETRY_IS_NOT_A_DEED,
   type ParcelInfrastructure,
@@ -97,6 +98,7 @@ async function scan(props: InfrastructureSectionProps): Promise<ScanOutcome | nu
     const ys = geometry.ring.map((p) => p[1]);
     const county = await lookupCountyUtilities({
       county: props.county,
+      state: props.state,
       envelope: [
         Math.min(...xs) - padDegrees,
         Math.min(...ys) - padDegrees,
@@ -272,6 +274,13 @@ export async function InfrastructureSection(props: InfrastructureSectionProps) {
             {result.findings[0]!.assessment.implication}
           </p>
           <p role="note">{GEOMETRY_IS_NOT_A_DEED}</p>
+          {/*
+            THE OBVIOUS NEXT QUESTION, ANSWERED WITH ITS ABSENCE. A reader
+            looking at "vitrified clay sewer main" asks how old it is, and
+            none of these sources publishes that. Saying so is better than
+            leaving a gap the reader fills in for themselves.
+          */}
+          <p role="note">{AGE_AND_CONDITION_UNKNOWN}</p>
           {/*
             ATTRIBUTION WHERE THE COUNTY SUPPLIED SOMETHING. A reader weighing
             a finding should be able to tell a county's own record of its own
