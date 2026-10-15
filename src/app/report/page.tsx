@@ -819,6 +819,65 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         </p>
       )}
 
+      {/*
+        THE SHORT VERSION, AND WHY IT IS ALLOWED TO BE FIRST.
+
+        Measured on a real report: 7,552 words, a 38-minute read at ordinary
+        speed, across fifteen sections — and a third of the paragraph text is
+        caveats and fine print. Every one of those was added for a reason and
+        none should go. But a homeowner who typed an address and pressed a
+        button is owed an answer before they are owed the footnotes, and
+        nothing here was answering them in the first screen.
+
+        FACTS ONLY, WHICH IS WHAT MAKES IT LEGAL TO SIT ABOVE THE LIMITS.
+        page-ordering.test.ts holds the rule: no ESTIMATE renders above "What
+        this report does not tell you", and the county parcel panel is
+        exempted because an assessed value is a published figure rather than
+        something this product produced. The same reasoning covers this
+        summary — a parcel size, a restriction, a distance and a maintenance
+        duty are all published facts or doctrine. Not one money figure appears
+        here, and the ordering test would catch it if one did.
+      */}
+      {submitted && report !== null && (
+        <div className="panel" aria-labelledby="short-version">
+          <h2 id="short-version" style={{ marginTop: 0 }}>
+            The short version
+          </h2>
+          <ul className="facts">
+            <li>
+              <span className="k">This parcel</span>
+              <span className="v">
+                {unified !== null
+                  ? `${Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft, ${unified.county}`
+                  : 'Not matched to a county record'}
+              </span>
+            </li>
+            <li>
+              <span className="k">What this easement restricts</span>
+              <span className="v">
+                {report.restrictionChecklist.filter((i) => i.restricted).length > 0
+                  ? report.restrictionChecklist
+                      .filter((i) => i.restricted)
+                      .map((i) => i.activity)
+                      .join(', ')
+                  : 'Nothing on the standard list'}
+              </span>
+            </li>
+            <li>
+              <span className="k">Who normally maintains it</span>
+              <span className="v">{responsibilitiesFor(easementType).heading}</span>
+            </li>
+          </ul>
+          <p style={{ marginBottom: 0 }}>
+            <small>
+              Everything below expands on those three. The money questions come after{' '}
+              <a href="#limits">what this report cannot tell you</a>, which is deliberate — the
+              limits matter more than the figures.
+            </small>
+          </p>
+        </div>
+      )}
+
       {error && <p role="alert">{error}</p>}
 
       {lookupNotice && <p role="status">{lookupNotice}</p>}
@@ -1277,7 +1336,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
       {referral && referralText && (
         <>
-          <h2>What this report does not tell you</h2>
+          <h2 id="limits">What this report does not tell you</h2>
           <p>
             This is the part most worth reading. Each item below is a question this report does not
             answer, why it cannot, and who can. It is not a disclaimer bolted onto the end — it is

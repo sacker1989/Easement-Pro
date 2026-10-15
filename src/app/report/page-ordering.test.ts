@@ -27,10 +27,22 @@ import { describe, expect, it } from 'vitest';
  */
 const PAGE = readFileSync(new URL('./page.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
-/** Heading text in the order a reader meets it. */
+/**
+ * Heading text in the order a reader meets it.
+ *
+ * TOLERATES ATTRIBUTES ON THE TAG, which it did not until an `id` was added
+ * to the limits heading so the summary could link to it. The old form matched
+ * `<h2>` literally and every ordering assertion failed at once.
+ *
+ * Loosened deliberately and narrowly: this guard is about the ORDER a reader
+ * meets sections in, never about the markup they are written with. Matching
+ * the tag plus its text preserves exactly what it was built to protect — and
+ * a guard that breaks on an id would be training whoever hits it next to
+ * work around the rule rather than respect it.
+ */
 function headingIndex(text: string): number {
-  const i = PAGE.indexOf(`<h2>${text}`);
-  return i;
+  const match = new RegExp(`<h2[^>]*>\\s*${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).exec(PAGE);
+  return match?.index ?? -1;
 }
 
 describe('no estimate renders above the limits', () => {
@@ -190,7 +202,8 @@ describe('the fire section sits with the value-and-protection findings', () => {
     // panel and before the limits section.
     const floodAt = PAGE.indexOf('FLOOD_ZONE_DISCLOSURE');
     const fireAt = PAGE.indexOf('buildFireSafetyContent(easementType, fireSeverity)');
-    const limitsAt = PAGE.indexOf('<h2>What this report does not tell you</h2>');
+    // Via headingIndex for the reason it gives: the tag carries an id now.
+    const limitsAt = headingIndex('What this report does not tell you');
     expect(floodAt).toBeGreaterThan(-1);
     expect(fireAt).toBeGreaterThan(-1);
     expect(limitsAt).toBeGreaterThan(-1);
@@ -209,5 +222,55 @@ describe('the fire section sits with the value-and-protection findings', () => {
     expect(allIdx).toBeGreaterThan(-1);
     expect(fireIdx).toBeGreaterThan(allIdx);
     expect(femaIdx).toBeGreaterThan(allIdx);
+  });
+});
+
+describe('the short version answers first, and stays factual', () => {
+  /*
+   * WHY IT EXISTS, measured on a real report before it was added: 7,552
+   * words, a 38-minute read at ordinary speed, across fifteen sections, with
+   * a third of the paragraph text given to caveats and fine print. Every
+   * caveat was added for a reason and none was removed. What was missing was
+   * an answer in the first screen for someone who typed an address and
+   * pressed a button.
+   */
+  it('renders above the limits, where only facts may go', () => {
+    const summaryAt = headingIndex('The short version');
+    expect(summaryAt).toBeGreaterThan(-1);
+    expect(summaryAt).toBeLessThan(headingIndex('What this report does not tell you'));
+  });
+
+  it('carries no money, which is what entitles it to be first', () => {
+    /*
+     * THE RULE THIS SECTION LIVES UNDER. No estimate may render above the
+     * limits; the county parcel panel is exempt because an assessed value is
+     * a published figure rather than one this product produced. A parcel
+     * size, a restriction, and a maintenance duty are the same kind of thing.
+     * A dollar sign here would break the rule the whole page is ordered by.
+     */
+    const start = PAGE.indexOf('The short version');
+    const end = PAGE.indexOf('</div>', PAGE.indexOf('Everything below expands on those three'));
+    const block = PAGE.slice(start, end);
+    /*
+     * A RENDERED dollar sign, not `${` — the summary is full of legitimate
+     * template interpolation and an earlier version of this test flagged all
+     * of it. What must never appear is a currency symbol the reader sees.
+     */
+    expect(block).not.toMatch(/\$(?!\{)/);
+    for (const money of ['landValue', 'valueAtRisk', 'screening', 'economicImpact']) {
+      expect(block, `money leaked into the summary: ${money}`).not.toContain(money);
+    }
+  });
+
+  it('points the reader at the limits rather than past them', () => {
+    // The summary's job is to orient, not to let someone skip the part that
+    // matters most. It links to the limits by name.
+    expect(PAGE).toContain('href="#limits"');
+    // Whitespace collapsed: the copy is line-wrapped in the source.
+    expect(PAGE.replace(/\s+/g, ' ')).toMatch(/the limits matter more than the figures/);
+  });
+
+  it('only renders once there is something to summarise', () => {
+    expect(PAGE).toMatch(/\{submitted && report !== null && \(/);
   });
 });
