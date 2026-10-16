@@ -374,3 +374,71 @@ from our own code as if it meant survey accuracy.
 §1 recorded this in August as a reason to prefer OSM and nothing downstream
 handled it, so it rendered as the name of the owning utility. Three of eight
 rows sampled near Chicago carry it. Now suppressed.
+
+## San Diego County DPW layer 36 "Easement" — found 2026-10-15, NOT wired
+
+963 easement polygons in `DPW/WASTEWATER/MapServer/36` (959 in
+`DPW/ENGINEERING/MapServer/103`, apparently the same set). This is the first
+easement-footprint layer found in any of the four served counties, and
+§2 of this document says more than once that none exists. **It still should
+not be rendered**, for reasons that took one query each.
+
+**They do sit on homes.** 20 polygons sampled, 20 touched a parcel, 20 touched
+one with a situs address: Del Rio, Calavo, Jamacha, Madrid, Barcelona,
+Hillridge, Pinkard, Fanita, Sohail — `ASR_LANDUSE` 11 (single-family) on most.
+So the value to a homeowner would be real if it were usable.
+
+**But there is no document to go and read.** The schema has the right columns
+and nobody filled them:
+
+| field | populated |
+|---|---|
+| `DOCUMENT_NUMBER` | **1 of 963** — and it reads `Lot Grade L-14035`, which is not a recording reference |
+| `DATE_RECORDED` | **0** |
+| `ASBUILT_FILE` | 11 |
+
+**And the county is not publishing it.** The service's own description is
+`"DPW Wastewater for intranet site."` — an internal staff layer that happens
+to be reachable. Layer 36 has no description and no copyright text.
+
+Rendering it would mean telling a homeowner that the county maps a sewer
+easement across their land, with no document number, no recording date, and
+no public dataset behind it. `summariseTiers(fromRecordedEasements = true)`
+ends "Confirm the terms and dimensions against the referenced document" —
+there is no referenced document. That is the product manufacturing authority,
+which is the one thing it exists not to do.
+
+**What it is actually good for:** calibration. The tier calibration had to go
+to Lawrence, Kansas for ground truth. This host carries easement polygons,
+parcels and sewer mains together, which is the same combination. An internal
+layer is far more defensible as an input to a measurement we publish the
+method for than as a sentence shown to a homeowner. The limit is that these
+are *sewer* easements only, so it cannot produce a Lawrence-style base rate
+for easements in general — only "does this parcel carry a county sewer
+easement", which is close to a restatement of the predictor.
+
+**To make this usable, ask the county** whether layer 36 is the authoritative
+sewer easement record and whether document numbers exist anywhere. That is a
+phone call, not a code change.
+
+### Noted while there: the wired San Diego source lives on that same intranet service
+
+`DPW/WASTEWATER/MapServer/6` (Gravity Main) is in the service described as
+intranet. The distinction that makes it acceptable: a pipe's location is a
+physical fact, reported as one and already carrying the geometry-is-not-a-deed
+caveat, whereas an easement polygon is a legal claim. The stability risk is
+real either way and belongs in the gap register, not hidden here.
+
+### Also noted: do not take San Diego sewer data from AGOL search results
+
+Searching ArcGIS Online for "City of San Diego sewer" returns `SEWER_MAIN_SD`,
+`Sewer_Main_SD`, `WastewaterGravityMainCityofSanDiego` and a dozen more. Every
+one is owned by a **private account** — a consultant, an Esri sales engineer,
+two university accounts, individuals. They are republished copies of SanGIS
+extracts with no update commitment and no agency behind them. Wiring one would
+attribute city data to a publisher that is not the city. The City of San
+Diego does not appear to publish its sewer network as a public REST service;
+`gis.sandiego.gov`, `geo.sandiego.gov` and `sampg.sandiego.gov` do not
+resolve, the `cosd_warehouse` folder on the county host holds only
+environmental justice layers and parcels, and the SanGIS/SANDAG open data
+catalog returns no utility line datasets.
