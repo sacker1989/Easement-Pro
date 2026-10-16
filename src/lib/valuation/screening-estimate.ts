@@ -293,8 +293,16 @@ export function screeningEstimate(inputs: ScreeningInputs): ScreeningResult {
     appliedToLabel = 'assessed land value of the encumbered strip';
     derivation =
       `${inputs.encumberedAreaSqFt!.toLocaleString()} sq ft × ` +
+      /*
+       * "OF ASSESSED LAND VALUE", NOT "OF LAND". The multiplicand is a roll
+       * figure, and in a state that assesses at a statutory fraction — Cook
+       * County publishes $0.35/sq ft in Sauk Village — the product reads as a
+       * market amount while being a fraction of one. appliedToLabel two lines
+       * up already said "assessed"; the derivation a reader actually sees did
+       * not.
+       */
       `$${inputs.landValuePerSqFt!.toFixed(2)}/sq ft = $${Math.round(appliedTo).toLocaleString()} ` +
-      `of land under the easement, × ${(published.low * 100).toFixed(0)}–` +
+      `of assessed land value under the easement, × ${(published.low * 100).toFixed(0)}–` +
       `${(published.high * 100).toFixed(0)}%.`;
   }
 

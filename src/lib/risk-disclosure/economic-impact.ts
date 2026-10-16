@@ -22,8 +22,63 @@ export interface DataCoverageLabel {
   label: string;
 }
 
+/**
+ * States whose assessment roll is a statutory FRACTION of market value.
+ *
+ * WHY THIS IS NOT THE SAME CAVEAT AS STALENESS. The existing county caveat
+ * says an assessed value "is an assessment rather than an appraisal" and that
+ * how closely it tracks market value "cannot be read off the roll". For
+ * California that is the whole story: Proposition 13 assesses at market as of
+ * the base year, so the figure was a market value once and may now be stale.
+ *
+ * Illinois is a different relationship. Cook County publishes a fraction of
+ * market value BY DESIGN, in the current year, so the figure was never the
+ * number a homeowner wants. Telling an Illinois reader their value "may be
+ * stale" describes the wrong problem and understates it by about an order of
+ * magnitude.
+ *
+ * MEASURED 2026-10-15, from the county's own layer rather than from statute.
+ * Median published CURRENTVALUE_TOTAL for residential parcels with a building
+ * over 400 sq ft, 200 parcels each:
+ *
+ *   Sauk Village   $8,508      Chicago    $12,700
+ *   Evanston      $42,001      Winnetka  $250,584
+ *
+ * A median of $42,001 for an Evanston house, or $9,267 for a 1,376 sq ft
+ * frame-and-masonry house in Sauk Village, is not a market price. The reader
+ * can see that for themselves from the panel, which is why the wording points
+ * at the county's own total rather than asserting a ratio.
+ *
+ * NO RATIO IS APPLIED. Scaling the figure would need a cited assessment level
+ * — the Illinois Department of Revenue's annual assessment/sales ratio study
+ * is the right source and is not wired. Until it is, the product says what
+ * the figure is and what it is not, and declines to convert it. Writing a
+ * ratio from memory into a number that prices someone's property is exactly
+ * what the deleted national $220/sq ft was.
+ */
+const FRACTIONAL_ASSESSMENT_STATES: Readonly<Record<string, string>> = {
+  IL:
+    'Illinois assesses property at a statutory fraction of market value rather than at it, so ' +
+    'the figures below are a fraction of what the land would sell for — not an estimate of it, ' +
+    'and not merely an out-of-date one. You can see this on the parcel panel above: the total ' +
+    'value the county publishes for the whole property is far below any price it would fetch. ' +
+    'This tool does not scale the figure up, because the conversion needs the state’s published ' +
+    'assessment-to-sales ratio and inventing one would be worse than declining. Treat the ' +
+    'dollar amounts here as a floor, and read the percentage band as the useful part.',
+};
+
+/** The extra sentence a fractional-assessment state needs, or null. */
+export function fractionalAssessmentCaveat(state: string | undefined): string | null {
+  return FRACTIONAL_ASSESSMENT_STATES[String(state ?? '').toUpperCase()] ?? null;
+}
+
 export interface DataCoverageFacts {
   isLaCounty: boolean;
+  /**
+   * Two-letter state code, read only to tell a fractional-assessment roll
+   * from a market-at-base-year one. See FRACTIONAL_ASSESSMENT_STATES.
+   */
+  state?: string;
   /** Present only when a live assessor lookup actually returned a record. */
   assessorValuation?: AssessorParcelValuation;
   /** True when the price was modelled forward by the house-price index. */
@@ -123,21 +178,34 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
        * that already travels with the valuation says so per county. An
        * unknown vintage is not a verified price.
        */
+      const perSqFt = v.perSqFt.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const fractional = fractionalAssessmentCaveat(facts.state);
       return {
         tier: 'likely-with-caveat',
         value: {
-          label:
-            `Verified against the ${v.county} assessment roll (land value ` +
-            `$${v.perSqFt.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}/sq ft)`,
+          /*
+           * "VERIFIED ... (LAND VALUE $0.35/SQ FT)" WAS WRONG FOR ILLINOIS and
+           * shipped that way. Verified is true of the provenance and false of
+           * the quantity: $0.35/sq ft is a tenth-ish of a land price, and a
+           * label reading "verified land value" invites a reader to treat it
+           * as one. The word stays where the roll is a market figure and the
+           * label says "assessed" where it is a statutory fraction.
+           */
+          label: fractional
+            ? `From the ${v.county} assessment roll — an assessed figure, ` +
+              `$${perSqFt}/sq ft, which is a fraction of market value`
+            : `Verified against the ${v.county} assessment roll (land value $${perSqFt}/sq ft)`,
         },
         caveat:
           'This is the county’s own assessed land value for your parcel, not a national ' +
           'average. It is an assessment rather than an appraisal, and this county publishes no ' +
           'base year with it, so how closely it tracks current market value cannot be read off ' +
-          'the roll.',
+          'the roll.' +
+          // The sentence that travels with the figure for a fractional state.
+          (fractional ? ` ${fractional}` : ''),
       };
     },
   },
@@ -441,6 +509,7 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
   const reworkCostCenter = lostBuildableAreaSqFt * constructionCost.costPerSqFt;
   const dataCoverage = classifyDataCoverage({
     isLaCounty: inputs.isLaCounty,
+    state: inputs.state,
     assessorValuation: inputs.assessorValuation,
     marketIndexed: resolved?.source === 'market-indexed',
     countyLandValue: inputs.countyLandValue,

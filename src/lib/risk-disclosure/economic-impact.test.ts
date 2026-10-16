@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildEconomicImpactEstimate,
   classifyDataCoverage,
+  fractionalAssessmentCaveat,
   type DollarRange,
   type EconomicImpactEstimate,
 } from './economic-impact';
@@ -432,5 +433,76 @@ describe('the counties that are not LA still have a land value', () => {
     });
     expect(result.methodology).toContain('market-indexed');
     expect(result.methodology).not.toContain('Orange County');
+  });
+});
+
+describe('a roll that is a fraction of market value says so', () => {
+  /*
+   * FOUND BY experiments/report-sweep.mjs, which renders real addresses and
+   * reads the result. A Sauk Village report said:
+   *
+   *   "800 sq ft x $0.35/sq ft = $280 of land under the easement"
+   *   "Verified against the Cook County assessment roll (land value $0.35/sq ft)"
+   *
+   * Both are sourced and both mislead. Illinois assesses at a statutory
+   * fraction of market value, in the current year, by design — so $0.35/sq ft
+   * was never a land price and "Verified ... land value" invites reading it as
+   * one. The existing caveat said only that an assessed value "may not track
+   * current market value", which is the California story: Proposition 13
+   * assesses at market as of the base year, so a CA figure was a market value
+   * once. Telling an Illinois reader theirs might be stale describes the wrong
+   * problem and understates it by about an order of magnitude.
+   *
+   * MEASURED FROM THE COUNTY'S OWN LAYER on 2026-10-15 — median published
+   * CURRENTVALUE_TOTAL for residential parcels: Sauk Village $8,508, Chicago
+   * $12,700, Evanston $42,001, Winnetka $250,584. $42,001 for an Evanston
+   * house is not a market price.
+   *
+   * The product still does not scale the figure. That needs the Illinois
+   * Department of Revenue's assessment/sales ratio study, and a ratio written
+   * from memory into a number that prices property is what the deleted
+   * national $220/sq ft was.
+   */
+  const cook = { county: 'Cook County', perSqFt: 0.35 };
+
+  it('drops the word "Verified" where the quantity is a fraction', () => {
+    const r = classifyDataCoverage({ isLaCounty: false, state: 'IL', countyLandValue: cook });
+    expect(r.tier).not.toBe('flagged-ambiguous');
+    if (r.tier === 'flagged-ambiguous') return;
+    expect(r.value.label).not.toMatch(/Verified/);
+    expect(r.value.label).toMatch(/an assessed figure/);
+    expect(r.value.label).toMatch(/fraction of market value/);
+  });
+
+  it('keeps "Verified" for a state whose roll is a market figure', () => {
+    const r = classifyDataCoverage({
+      isLaCounty: false,
+      state: 'CA',
+      countyLandValue: { county: 'Orange County', perSqFt: 73.02 },
+    });
+    if (r.tier === 'flagged-ambiguous') throw new Error('expected a label');
+    expect(r.value.label).toMatch(/Verified against the Orange County assessment roll/);
+    expect(r.value.label).not.toMatch(/fraction of market value/);
+  });
+
+  it('adds the fractional sentence to the caveat, and only there', () => {
+    expect(fractionalAssessmentCaveat('IL')).toMatch(/statutory fraction of market value/);
+    expect(fractionalAssessmentCaveat('il')).not.toBeNull();
+    expect(fractionalAssessmentCaveat('CA')).toBeNull();
+    expect(fractionalAssessmentCaveat(undefined)).toBeNull();
+  });
+
+  it('does not invent a conversion', () => {
+    const text = fractionalAssessmentCaveat('IL') ?? '';
+    // No ratio, multiplier or scaled figure may appear.
+    expect(text).not.toMatch(/\b10\s*%|\bmultiply\b|\bdivide by\b|\btimes ten\b/i);
+    expect(text).toMatch(/does not scale the figure up/);
+    // And it says what IS usable, rather than only what is not.
+    expect(text).toMatch(/floor/);
+    expect(text).toMatch(/percentage band/);
+  });
+
+  it('points the reader at evidence they can see rather than asserting a ratio', () => {
+    expect(fractionalAssessmentCaveat('IL')).toMatch(/parcel panel above/);
   });
 });
