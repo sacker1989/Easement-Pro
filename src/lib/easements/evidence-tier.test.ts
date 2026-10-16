@@ -173,3 +173,36 @@ describe('EvidenceTier is branded against StateTier', () => {
     expect(`tier ${t}`).toBe('tier B');
   });
 });
+
+describe('tier C does not read as a clean bill of health', () => {
+  /*
+   * MEASURED, NOT ASSUMED. The Lawrence calibration (2026-10-15,
+   * docs/easement-tier-calibration.md) ran 2,702 parcels against recorded
+   * easement polygons: 90% carried one, and of the 245 parcels the tier put
+   * in C, 191 — 78% — still had a recorded easement overlapping the lot.
+   *
+   * "No encumbrance is implied" is accurate about the infrastructure and
+   * reads, to a homeowner, as "you probably have no easement". Four in five
+   * tier-C parcels would have been misled by that reading.
+   */
+  const c = assessEvidenceTier(500);
+
+  it('scopes the statement to the infrastructure, not the parcel', () => {
+    expect(c.implication).toMatch(/BY THIS INFRASTRUCTURE/);
+  });
+
+  it('says outright that it is not evidence of no easement', () => {
+    expect(c.implication).toMatch(/not evidence that your parcel is free of easements/);
+  });
+
+  it('points at the deed and the plat as the only authority', () => {
+    expect(c.implication).toMatch(/only the deed and the plat will say/);
+  });
+
+  it('keeps the base-rate claim hedged to where it was measured', () => {
+    // 90% is Lawrence, Kansas. Quoting it as a national or Californian figure
+    // would be the invented number this codebase keeps removing.
+    expect(c.implication).toMatch(/where that has been measured/);
+    expect(c.implication).not.toMatch(/90%|\b9 in 10\b/);
+  });
+});

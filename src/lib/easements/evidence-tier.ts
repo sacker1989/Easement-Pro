@@ -135,10 +135,23 @@ export function assessEvidenceTier(
     tier: evidenceTier('C'),
     distanceFt,
     basis: `The infrastructure is ${Math.round(distanceFt)} ft away and does not touch the parcel.`,
+    /*
+     * THE SECOND SENTENCE WAS ADDED AFTER MEASUREMENT, and it exists because
+     * the first one is easy to misread in the dangerous direction.
+     *
+     * "No encumbrance is implied" is accurate about THIS infrastructure and
+     * reads, to a homeowner, as "you probably have no easement". The
+     * Lawrence calibration says otherwise: of 245 tier-C parcels, 191 —
+     * 78% — carried a recorded easement overlapping the lot. The tier is not
+     * a test for whether an easement exists and must never be read as one.
+     * See docs/easement-tier-calibration.md.
+     */
     implication:
-      'No encumbrance on this parcel is implied. Infrastructure near a property is not an easement ' +
-      'on it, and nearby lines usually run in the public right of way or across other parcels. ' +
-      'This is reported as context only.',
+      'No encumbrance on this parcel is implied BY THIS INFRASTRUCTURE. Something near a property ' +
+      'is not an easement on it, and nearby lines usually run in the public right of way or across ' +
+      'other parcels. This is reported as context only. It is not evidence that your parcel is ' +
+      'free of easements — where that has been measured, most platted lots carry at least one ' +
+      'recorded easement whatever is or is not nearby, and only the deed and the plat will say.',
     mayValue: false,
   };
 }
