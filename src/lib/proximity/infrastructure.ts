@@ -59,6 +59,30 @@ export type InfrastructureCategory =
   | 'pipeline'
   | 'communications';
 
+/**
+ * Whether a feature's published position was observed or reconstructed.
+ *
+ * WHY THIS IS A FIELD AND NOT A FOOTNOTE. The evidence tier is a distance
+ * measured to the foot against a parcel boundary, and the boundary strip that
+ * separates tier B from tier C is 15 ft wide. That arithmetic is only
+ * meaningful if the line is actually where the layer says it is.
+ *
+ * The federal transmission layer marks each record `INFERRED`, and in Cook
+ * County 453 of 517 lines are inferred — the route was reconstructed from
+ * aerial imagery and EIA utility filings rather than surveyed. In Los Angeles
+ * it is 3 of 205 and in San Diego 0 of 60, so this is not a small uniform
+ * caveat to bury in the coverage note: it is the dominant case in one of the
+ * counties served and nearly absent in the others.
+ *
+ * Feeding an inferred alignment into a 15 ft threshold manufactures a finding.
+ * `assessEvidenceTier` therefore refuses to derive tier A or B from one.
+ */
+export type GeometryQuality =
+  /** The publisher asserts this is where the thing is. */
+  | 'mapped'
+  /** The publisher says the route was reconstructed, not observed. */
+  | 'inferred';
+
 export interface InfrastructureFeature {
   readonly category: InfrastructureCategory;
   /** Plain-language description, e.g. "overhead power line". */
@@ -67,6 +91,14 @@ export interface InfrastructureFeature {
   readonly operator: string | null;
   /** Positions in [lng, lat]; one for a node, several for a way. */
   readonly geometry: readonly LngLat[];
+  /**
+   * Required rather than optional, deliberately.
+   *
+   * An optional field defaulting to 'mapped' would let a new source silently
+   * claim survey accuracy it does not have, which is the exact mistake this
+   * exists to prevent. Every source must say which it is.
+   */
+  readonly geometryQuality: GeometryQuality;
 }
 
 export type InfrastructureResult =
@@ -210,6 +242,18 @@ export async function lookupInfrastructure(query: InfrastructureQuery): Promise<
           label: kind.label,
           operator: element.tags?.['operator'] ?? null,
           geometry,
+          /*
+           * OSM IS TREATED AS MAPPED, which is a judgment worth stating.
+           * A volunteer tracing a pole line from imagery is doing much what
+           * the federal layer calls "inferred", and OSM carries no flag
+           * saying which records were surveyed. But OSM's weakness is
+           * OMISSION rather than displacement — the measured failure is
+           * streets with nothing on them at all, which COVERAGE_CAVEAT
+           * already tells the reader. Marking every OSM feature inferred
+           * would suppress the tier everywhere and make the field mean
+           * "not the federal layer" instead of what it says.
+           */
+          geometryQuality: 'mapped',
         },
       ];
     });

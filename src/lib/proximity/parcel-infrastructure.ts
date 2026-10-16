@@ -81,7 +81,17 @@ export function assessParcelInfrastructure(
     .map((feature): InfrastructureFinding | null => {
       const distanceFt = featureToParcelFt(feature.geometry, ring, scale);
       if (!Number.isFinite(distanceFt)) return null;
-      return { feature, assessment: assessEvidenceTier(distanceFt) };
+      /*
+       * THE FEATURE'S OWN ACCOUNT OF ITS POSITION GOES WITH THE DISTANCE.
+       * Measuring to the foot against an alignment the publisher says it
+       * reconstructed produces a precise number about an imprecise thing;
+       * assessEvidenceTier is where that is refused, and it can only refuse
+       * it if it is told.
+       */
+      return {
+        feature,
+        assessment: assessEvidenceTier(distanceFt, { geometryQuality: feature.geometryQuality }),
+      };
     })
     .filter((f): f is InfrastructureFinding => f !== null)
     .sort(strongestFirst);

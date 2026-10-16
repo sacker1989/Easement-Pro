@@ -256,3 +256,53 @@ describe('the coverage caveat', () => {
     expect(DEFAULT_SCAN_RADIUS_FT).toBeLessThanOrEqual(1000);
   });
 });
+
+describe('the join carries each feature\'s own account of its position', () => {
+  /*
+   * assessParcelInfrastructure measures to the foot. evidence-tier.ts refuses
+   * to build a tier A or B claim out of an inferred alignment — but it can
+   * only refuse if the join passes the flag along, and nothing else in the
+   * suite would notice if that argument were dropped. Checked behaviourally
+   * rather than by reading the source, because the behaviour is the point.
+   */
+  const crossing = (quality: 'mapped' | 'inferred') =>
+    assessParcelInfrastructure(
+      {
+        kind: 'found',
+        radiusFt: 400,
+        queriedOn: '2026-10-15',
+        features: [
+          {
+            category: 'overhead-power',
+            label: '345kV overhead electricity transmission line',
+            operator: 'COMMONWEALTH EDISON CO',
+            // Straight through the middle of the ring: unambiguously tier A
+            // geometry, so only the quality flag can change the outcome.
+            geometry: [
+              [-118.6212, 34.22002],
+              [-118.6203, 34.22002],
+            ],
+            geometryQuality: quality,
+          },
+        ],
+      },
+      FAUST_RING,
+    );
+
+  it('grades a surveyed line through the parcel as tier A', () => {
+    const r = crossing('mapped');
+    expect(r.kind).toBe('assessed');
+    if (r.kind !== 'assessed') return;
+    expect(r.findings[0]!.assessment.tier).toBe('A');
+    expect(r.findings[0]!.assessment.mayValue).toBe(true);
+  });
+
+  it('refuses tier A for the same geometry when the publisher inferred it', () => {
+    const r = crossing('inferred');
+    expect(r.kind).toBe('assessed');
+    if (r.kind !== 'assessed') return;
+    expect(r.findings[0]!.assessment.tier).toBe('C');
+    expect(r.findings[0]!.assessment.mayValue).toBe(false);
+    expect(r.findings[0]!.assessment.basis).toMatch(/inferred/i);
+  });
+});

@@ -72,6 +72,17 @@ export interface TierAssessment {
    * proximity to `flagged` regardless of tier.
    */
   readonly mayValue: boolean;
+  /**
+   * True when the tier was capped because the publisher inferred the position.
+   *
+   * A FLAG RATHER THAN A STRING MATCH ON `basis`. Without it, anything
+   * downstream that needs to treat a capped finding differently — a summary
+   * line, a referral package, a renderer — has to recognise the wording,
+   * which breaks the moment the wording is edited. A tier C finding that was
+   * capped and one that is genuinely 300 ft away are not the same claim and
+   * must stay distinguishable without reading prose.
+   */
+  readonly positionInferred: boolean;
 }
 
 export class EvidenceTierError extends Error {
@@ -92,12 +103,48 @@ export class EvidenceTierError extends Error {
  */
 export function assessEvidenceTier(
   distanceFt: number,
-  options: { boundaryStripFt?: number } = {},
+  options: { boundaryStripFt?: number; geometryQuality?: 'mapped' | 'inferred' } = {},
 ): TierAssessment {
-  const { boundaryStripFt = BOUNDARY_STRIP_FT } = options;
+  const { boundaryStripFt = BOUNDARY_STRIP_FT, geometryQuality = 'mapped' } = options;
 
   if (!Number.isFinite(distanceFt) || distanceFt < 0) {
     throw new EvidenceTierError('Distance must be a non-negative finite number of feet');
+  }
+
+  /*
+   * AN INFERRED ALIGNMENT CANNOT SUPPORT TIER A OR B, whatever the arithmetic
+   * says. Tier A means "this crosses the land" and tier B means "this is
+   * within 15 ft of the boundary"; both are claims about position, and the
+   * publisher of an inferred record has declined to make one. The federal
+   * transmission layer reconstructs those routes from aerial imagery and EIA
+   * filings and states no positional tolerance, so a 4 ft reading and a 40 ft
+   * reading are not distinguishable at parcel scale.
+   *
+   * THIS CHECK RUNS FIRST, BEFORE THE DISTANCE BRANCHES, because the harm is
+   * one-directional. An inferred line drawn a few feet off its true route
+   * would promote an ordinary parcel to "infrastructure crosses your land" —
+   * the strongest thing this product ever says, the only tier that permits a
+   * valuation, and in Cook County it would be said off inferred geometry 88%
+   * of the time. Degrading in the other direction costs the reader a prompt
+   * to go and look; the distance is still reported, and so is the reason.
+   */
+  if (geometryQuality === 'inferred') {
+    return {
+      tier: evidenceTier('C'),
+      distanceFt,
+      basis:
+        `The published route passes ${Math.round(distanceFt)} ft from this parcel, but the ` +
+        'publisher marks this line’s position as inferred — reconstructed from aerial imagery ' +
+        'and utility filings rather than surveyed.',
+      implication:
+        'The line is there; where exactly it runs is not established. No tier is assigned from ' +
+        'this distance, because the publisher states no positional tolerance and at the scale of ' +
+        'a house lot the difference matters. Treat it as a reason to look at your plat and to ask ' +
+        'the operator for the recorded alignment, not as a measurement of how close it is to ' +
+        'your boundary.',
+      mayValue: false,
+      positionInferred: true,
+    };
   }
 
   if (distanceFt === 0) {
@@ -112,6 +159,7 @@ export function assessEvidenceTier(
         'compensation rather than burdened. Which of those applies cannot be determined from ' +
         'geometry; it turns on the recorded documents and the history of the use.',
       mayValue: true,
+      positionInferred: false,
     };
   }
 
@@ -128,6 +176,7 @@ export function assessEvidenceTier(
         'parcel geometry does not show — or may sit entirely on the neighbouring parcel or in the ' +
         'public right of way. The plat will distinguish these; the geometry will not.',
       mayValue: false,
+      positionInferred: false,
     };
   }
 
@@ -153,6 +202,7 @@ export function assessEvidenceTier(
       'free of easements — where that has been measured, most platted lots carry at least one ' +
       'recorded easement whatever is or is not nearby, and only the deed and the plat will say.',
     mayValue: false,
+    positionInferred: false,
   };
 }
 
@@ -188,10 +238,31 @@ export function summariseTiers(
   const c = n(evidenceTier('C'));
 
   if (a === 0 && b === 0) {
-    return c === 0
-      ? 'No infrastructure was found within the search radius in the layers checked.'
-      : `No infrastructure touches this parcel. ${c} feature${c === 1 ? '' : 's'} ` +
-        `${c === 1 ? 'was' : 'were'} found nearby, none of which implies an encumbrance here.`;
+    if (c === 0) return 'No infrastructure was found within the search radius in the layers checked.';
+    /*
+     * "NO INFRASTRUCTURE TOUCHES THIS PARCEL" IS A CLAIM THIS CANNOT MAKE
+     * WHEN A FINDING WAS CAPPED. An inferred transmission route can be
+     * published running straight across the lot — one did, 0 ft from the test
+     * ring at a ComEd corridor near Cicero — and it lands in tier C only
+     * because the position is not established, not because the line is
+     * elsewhere. Asserting it does not touch the parcel would launder the
+     * refusal into a reassurance, which is the single failure this whole flag
+     * exists to prevent.
+     */
+    const inferred = findings.filter((f) => f.positionInferred).length;
+    if (inferred > 0) {
+      return (
+        `Nothing with an established position touches this parcel. ${c} feature` +
+        `${c === 1 ? ' was' : 's were'} found nearby, and for ${inferred} of them the publisher ` +
+        `marks the route as inferred rather than surveyed — so whether ${
+          inferred === 1 ? 'it crosses' : 'they cross'
+        } the land cannot be read off the map. Your plat and the operator’s records can say.`
+      );
+    }
+    return (
+      `No infrastructure touches this parcel. ${c} feature${c === 1 ? '' : 's'} ` +
+      `${c === 1 ? 'was' : 'were'} found nearby, none of which implies an encumbrance here.`
+    );
   }
 
   const parts: string[] = [];

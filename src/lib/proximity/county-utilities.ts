@@ -1,6 +1,10 @@
 import { createResilientFetch } from '@/lib/net/resilient-fetch';
 import type { LngLat } from '@/lib/geo/planar-distance';
-import type { InfrastructureFeature } from './infrastructure';
+import type {
+  GeometryQuality,
+  InfrastructureCategory,
+  InfrastructureFeature,
+} from './infrastructure';
 
 /**
  * Utility infrastructure published by the public agency that records it.
@@ -44,6 +48,24 @@ export interface CountyUtilitySource {
   readonly outFields: readonly string[];
   /** Turns one feature's attributes into a phrase a homeowner recognises. */
   readonly describe: (attributes: Readonly<Record<string, unknown>>) => string;
+  /**
+   * What kind of thing this layer carries.
+   *
+   * Previously hardcoded to 'pipeline' for every source, which was already
+   * wrong for the transmission layers and would have become wrong in a way
+   * someone relied on. Nothing reads it yet; it is set correctly now so that
+   * whatever reads it first is not reading a lie.
+   */
+  readonly category: InfrastructureCategory;
+  /**
+   * Whether this layer's positions are surveyed or reconstructed, per record.
+   *
+   * A FUNCTION, NOT A CONSTANT, because the federal transmission layer mixes
+   * both in one table and flags them individually — 88% inferred in Cook
+   * County, 1.5% in Los Angeles. A per-layer constant would have to pick one
+   * and be wrong for most of the rows in at least one county.
+   */
+  readonly quality: (attributes: Readonly<Record<string, unknown>>) => GeometryQuality;
   /** Who publishes it, for attribution on the page. */
   readonly publisher: string;
   /**
@@ -109,6 +131,9 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
             : '';
         return `${diameter}${material}gravity sewer main${status}`;
       },
+      category: 'pipeline',
+      // An as-built utility record: the operator is asserting where its own pipe is.
+      quality: () => 'mapped',
       publisher: 'Los Angeles County Department of Public Works',
       coverage:
         'This layer is LA County Public Works’ own sewer network — the county’s mains, serving ' +
@@ -153,6 +178,9 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
             : '';
         return `${size}${material ? `${material} ` : ''}sewer main${street}`;
       },
+      category: 'pipeline',
+      // An as-built utility record: the operator is asserting where its own pipe is.
+      quality: () => 'mapped',
       publisher: 'City of Los Angeles Sanitation',
       coverage:
         'This layer is the City of Los Angeles’ own sewer network. It covers the city only — not ' +
@@ -179,6 +207,9 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
           ] ?? null;
         return `${diameter}${material ? `${material} ` : ''}gravity sewer main`;
       },
+      category: 'pipeline',
+      // An as-built utility record: the operator is asserting where its own pipe is.
+      quality: () => 'mapped',
       publisher: 'San Diego County Department of Public Works',
       coverage:
         'This layer is San Diego County DPW’s own sewer network, which serves county service ' +
@@ -216,6 +247,9 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
         const described = [size, shape, material].filter(Boolean).join(' ').trim();
         return `${described ? `${described} ` : ''}storm drain${owner}`;
       },
+      category: 'pipeline',
+      // An as-built utility record: the operator is asserting where its own pipe is.
+      quality: () => 'mapped',
       publisher: 'Orange County Public Works stormwater network',
       coverage:
         'This layer is the Orange County stormwater network, which is mapped city by city and is ' +
@@ -266,6 +300,15 @@ export const STATE_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtili
             : '';
         return `${kv}${type ? `${type} ` : ''}electricity transmission line${owner}${status}`;
       },
+      category: 'overhead-power',
+      /*
+       * SURVEYED, AND THE UNDERGROUND RECORDS ARE TOO. The CEC layer carries
+       * no inference flag and is compiled from the utilities' own filings of
+       * their own corridors. Note the category is 'overhead-power' for the
+       * layer as a whole while `describe` reads Type per record — the
+       * category is what the layer is for, not a claim about each row.
+       */
+      quality: () => 'mapped',
       publisher: 'California Energy Commission',
       coverage:
         'This layer is the California Energy Commission’s map of TRANSMISSION lines — the high ' +
@@ -276,6 +319,77 @@ export const STATE_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtili
     },
   ],
 };
+
+/**
+ * Sources that cover the whole country, queried whatever the address.
+ *
+ * WHY THIS TIER EXISTS. Cook County was the one served county with no agency
+ * utility source at all — every Chicago address fell back to OpenStreetMap
+ * alone. The gap is not an oversight to be fixed by looking harder: Cook
+ * County's GIS has no utility network (its "Utilities" folder is Esri's
+ * geometry and printing services), the Chicago data portal publishes no sewer
+ * or water main geometry, and MWRD — which actually operates the interceptors
+ * — publishes watersheds, outfalls and treatment plants but no pipe
+ * alignments. Three hosts checked, by name, on 2026-10-15. Chicago withholds
+ * buried utility geometry; Los Angeles happens to publish it.
+ *
+ * What IS available nationally is the federal transmission layer, which is
+ * what closes the Illinois gap — not for sewers, which remain unavailable
+ * there, but for the overhead lines this product's safety pillar is about.
+ */
+export const NATIONAL_UTILITY_SOURCES: readonly CountyUtilitySource[] = [
+  {
+    layerUrl:
+      'https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0',
+    outFields: ['OWNER', 'VOLTAGE', 'VOLT_CLASS', 'TYPE', 'STATUS', 'INFERRED'],
+    describe: (a) => {
+      const kv = typeof a['VOLTAGE'] === 'number' && a['VOLTAGE'] > 0 ? `${a['VOLTAGE']}kV ` : '';
+      /*
+       * TYPE READS "AC; OVERHEAD" OR "AC; UNDERGROUND" — the same
+       * overhead-versus-buried fact the CEC layer gives, and the one that
+       * matters most to a reader living beside it.
+       */
+      const raw = String(a['TYPE'] ?? '').toUpperCase();
+      const type = raw.includes('UNDERGROUND')
+        ? 'underground '
+        : raw.includes('OVERHEAD')
+          ? 'overhead '
+          : '';
+      /*
+       * "NOT AVAILABLE" IS A LITERAL VALUE IN THIS COLUMN, not a null, and it
+       * appears on real rows — three of the eight sampled near Chicago. Left
+       * in, it would render "(NOT AVAILABLE)" as if it were an operator's
+       * name. An unnamed owner is reported as unnamed by saying nothing.
+       */
+      const rawOwner = String(a['OWNER'] ?? '').trim();
+      const owner =
+        rawOwner !== '' && rawOwner.toUpperCase() !== 'NOT AVAILABLE' ? ` (${rawOwner})` : '';
+      const status =
+        typeof a['STATUS'] === 'string' && a['STATUS'].toUpperCase() !== 'IN SERVICE'
+          ? ` — ${a['STATUS'].toLowerCase()}`
+          : '';
+      return `${kv}${type}electricity transmission line${owner}${status}`;
+    },
+    category: 'overhead-power',
+    /*
+     * THE WHOLE REASON GeometryQuality EXISTS. This layer flags each record,
+     * and the flag is not a rounding error: 453 of 517 lines intersecting
+     * Cook County are INFERRED='Y', against 3 of 205 in Los Angeles and 0 of
+     * 60 in San Diego. An inferred route was reconstructed from aerial
+     * imagery and EIA filings, and `assessEvidenceTier` refuses to turn one
+     * into a tier A or B claim about a particular lot.
+     */
+    quality: (a) => (String(a['INFERRED'] ?? '').toUpperCase() === 'Y' ? 'inferred' : 'mapped'),
+    publisher: 'U.S. Homeland Infrastructure Foundation-Level Data (HIFLD)',
+    coverage:
+      'This is the federal map of high voltage TRANSMISSION lines, which covers the whole ' +
+      'country. It does not include distribution — the poles and wires along ordinary streets, ' +
+      'which serve most homes and are what most utility easements concern — and it does not ' +
+      'include sewers, water or gas. Finding no transmission line here is the normal case for a ' +
+      'residential address. Where a sewer layer is not listed above, no agency publishes one for ' +
+      'that area: Chicago and Cook County do not publish buried utility geometry at all.',
+  },
+];
 
 export type CountyUtilityResult =
   | {
@@ -321,7 +435,15 @@ export async function lookupCountyUtilities(
   const sources = [
     ...(COUNTY_UTILITY_SOURCES[query.county] ?? []),
     ...(STATE_UTILITY_SOURCES[query.state] ?? []),
+    ...NATIONAL_UTILITY_SOURCES,
   ];
+  /*
+   * 'no-source' IS NOW UNREACHABLE, and the case is kept rather than removed.
+   * A national source means every address has at least one layer queried, so
+   * this branch cannot fire today. It stays because the alternative is a
+   * caller that handles three outcomes where the type says four, and because
+   * the national source is one URL away from being withdrawn.
+   */
   if (sources.length === 0) return { kind: 'no-source' };
 
   const doFetch = query.fetchImpl ?? defaultFetch();
@@ -375,10 +497,11 @@ export async function lookupCountyUtilities(
             .map(([lng, lat]): LngLat => [lng, lat]);
           if (geometry.length === 0) continue;
           features.push({
-            category: 'pipeline',
+            category: source.category,
             label: source.describe(feature.attributes ?? {}),
             operator: source.publisher,
             geometry,
+            geometryQuality: source.quality(feature.attributes ?? {}),
           });
         }
       }

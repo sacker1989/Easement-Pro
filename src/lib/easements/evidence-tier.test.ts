@@ -206,3 +206,87 @@ describe('tier C does not read as a clean bill of health', () => {
     expect(c.implication).not.toMatch(/90%|\b9 in 10\b/);
   });
 });
+
+describe('an inferred alignment cannot earn tier A or B', () => {
+  /*
+   * MEASURED, NOT HYPOTHETICAL. The federal transmission layer flags each
+   * record's position as surveyed or inferred, and the mix is wildly uneven:
+   * 453 of 517 lines intersecting Cook County are inferred, against 3 of 205
+   * in Los Angeles and 0 of 60 in San Diego (2026-10-15).
+   *
+   * A probe at 41.80170,-87.82247 — a ComEd corridor near Cicero — returned
+   * 14 features, all inferred, the nearest measuring 0 ft from the test ring.
+   * Without this refusal that parcel would be told "infrastructure crosses
+   * your land": the strongest claim the product makes, the only tier that
+   * permits a valuation, derived from a route reconstructed out of aerial
+   * imagery and EIA filings. In Cook County that would be the usual case.
+   */
+  it('holds at C even when the published route crosses the parcel', () => {
+    const a = assessEvidenceTier(0, { geometryQuality: 'inferred' });
+    expect(a.tier).toBe('C');
+    expect(a.mayValue).toBe(false);
+  });
+
+  it('holds at C inside the boundary strip', () => {
+    expect(assessEvidenceTier(BOUNDARY_STRIP_FT - 1, { geometryQuality: 'inferred' }).tier).toBe('C');
+    expect(assessEvidenceTier(1, { geometryQuality: 'inferred' }).tier).toBe('C');
+  });
+
+  it('still reports the distance, and says why it is not being relied on', () => {
+    const a = assessEvidenceTier(48, { geometryQuality: 'inferred' });
+    expect(a.distanceFt).toBe(48);
+    expect(a.basis).toMatch(/inferred/i);
+    expect(a.basis).toMatch(/rather than surveyed/i);
+    expect(a.implication).toMatch(/no tier is assigned/i);
+  });
+
+  it('does not tell the reader the line is not there', () => {
+    // The line exists; its position is what is unestablished. Saying "no
+    // encumbrance is implied" — tier C's ordinary wording — would be the
+    // wrong refusal, and the one a reader is most likely to over-read.
+    const a = assessEvidenceTier(0, { geometryQuality: 'inferred' });
+    expect(a.implication).toMatch(/The line is there/);
+    expect(a.implication).not.toMatch(/No encumbrance/);
+  });
+
+  it('leaves surveyed geometry alone', () => {
+    expect(assessEvidenceTier(0).tier).toBe('A');
+    expect(assessEvidenceTier(0, { geometryQuality: 'mapped' }).tier).toBe('A');
+    expect(assessEvidenceTier(5, { geometryQuality: 'mapped' }).tier).toBe('B');
+  });
+});
+
+describe('the summary does not launder a capped finding into reassurance', () => {
+  const capped = assessEvidenceTier(0, { geometryQuality: 'inferred' });
+  const genuinelyFar = assessEvidenceTier(300);
+
+  it('refuses to say nothing touches the parcel when a position is unestablished', () => {
+    /*
+     * The capped finding above is 0 ft: the published route runs across the
+     * lot. It sits in tier C because the position is not established, not
+     * because the line is somewhere else. "No infrastructure touches this
+     * parcel" would turn the refusal into a clean bill of health.
+     */
+    const s = summariseTiers([capped]);
+    expect(s).not.toMatch(/No infrastructure touches this parcel/);
+    expect(s).toMatch(/inferred rather than surveyed/);
+    expect(s).toMatch(/cannot be read off the map/);
+  });
+
+  it('still says it plainly when every nearby finding is surveyed', () => {
+    expect(summariseTiers([genuinelyFar])).toMatch(/No infrastructure touches this parcel/);
+  });
+
+  it('mentions the capped ones even when mixed with surveyed ones', () => {
+    const s = summariseTiers([capped, genuinelyFar]);
+    expect(s).toMatch(/for 1 of them/);
+    expect(s).toMatch(/2 features were found nearby/);
+  });
+
+  it('marks the flag only where the cap applied', () => {
+    expect(capped.positionInferred).toBe(true);
+    expect(genuinelyFar.positionInferred).toBe(false);
+    expect(assessEvidenceTier(0).positionInferred).toBe(false);
+    expect(assessEvidenceTier(5).positionInferred).toBe(false);
+  });
+});
