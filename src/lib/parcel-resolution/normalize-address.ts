@@ -16,11 +16,27 @@ export function normalizeAddress(input: AddressInput): NormalizedAddress {
   const state = input.state.trim().toUpperCase();
   const zipMatch = ZIP_PATTERN.exec(input.zip.trim());
 
+  /*
+   * THESE MESSAGES ARE SHOWN TO READERS VERBATIM. The report page renders
+   * `err.message` from this error straight into a role="alert", so "city is
+   * required" — lower case, no guidance, written as an internal assertion —
+   * was what a homeowner saw. Every other sentence on that page is written
+   * for them; these were not, and nothing marked the difference.
+   *
+   * Each one now says what is missing and what to do, and nothing about
+   * validation, fields or input. Kept short, because it appears above the
+   * form the reader is about to correct.
+   */
   if (!street) {
-    throw new InvalidAddressError('street is required');
+    throw new InvalidAddressError(
+      'This needs a street address to look anything up — house number and street name.',
+    );
   }
   if (!city) {
-    throw new InvalidAddressError('city is required');
+    throw new InvalidAddressError(
+      'This needs the city as well as the street, because the same street name repeats across ' +
+        'a county. Add it and generate the report again.',
+    );
   }
   if (!US_STATE_CODES.has(state)) {
     throw new InvalidAddressError(`"${input.state}" is not a recognized US state or DC code`);

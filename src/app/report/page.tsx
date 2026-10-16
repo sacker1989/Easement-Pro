@@ -701,6 +701,26 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         </small>
       </p>
 
+      {/*
+        ABOVE THE FORM, BECAUSE THAT IS WHERE SOMEONE WHO JUST SUBMITTED
+        LOOKS. This block used to render after the form and after the summary
+        panel, so a request that failed validation showed the form again with
+        "city is required" below the easement-type explanation and level with
+        the footer links. role="alert" meant screen readers were told; sighted
+        readers saw a form that had silently done nothing.
+
+        Found by experiments/report-sweep.mjs on 648 San Ysidro Blvd, where
+        the county publishes a blank SITUS_COMMUNITY so the sweep sent no
+        city. The City input carries `required`, so an ordinary submission
+        cannot reach this — it needs a hand-edited or truncated URL. That is
+        a narrow path and it is also exactly the path that produced this
+        project's two live 500s.
+
+        Safe to move: `error` is only ever set where no report was built, and
+        the page-ordering tests key on h2 headings rather than on this.
+      */}
+      {error && <p role="alert">{error}</p>}
+
       <form>
         <input type="hidden" name="submitted" value="1" />
         <fieldset>
@@ -934,8 +954,12 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         </div>
       )}
 
-      {error && <p role="alert">{error}</p>}
-
+      {/*
+        The notice stays here, unlike the error above it. A notice describes
+        the report that follows — "no parcel matched, so figures below use
+        national benchmarks" — so it belongs beside that report rather than
+        beside the form.
+      */}
       {lookupNotice && <p role="status">{lookupNotice}</p>}
 
       {lookup?.status === 'ambiguous' && (

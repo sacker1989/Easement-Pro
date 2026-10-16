@@ -153,3 +153,38 @@ describe('the lot area row says whose lot it is', () => {
     expect(PAGE_CODE).toMatch(/Lot area \(county geometry\)/);
   });
 });
+
+describe('a request that fails validation says so where the reader is looking', () => {
+  /*
+   * FOUND BY experiments/report-sweep.mjs on 648 San Ysidro Blvd, where San
+   * Diego publishes a blank SITUS_COMMUNITY so the sweep sent no city. The
+   * page rendered the form again with "city is required" below the
+   * easement-type explanation, level with the footer links — 21,000 bytes of
+   * page with the one actionable sentence at the bottom of it.
+   *
+   * The City input carries `required`, so an ordinary submission cannot reach
+   * this; it needs a hand-edited or truncated URL. That is narrow, and it is
+   * also the path that produced both of this project's live 500s.
+   */
+  it('renders the error above the form, not below it', () => {
+    const alertAt = PAGE_CODE.indexOf('{error && <p role="alert">');
+    const formAt = PAGE_CODE.indexOf('<form>');
+    expect(alertAt).toBeGreaterThan(-1);
+    expect(formAt).toBeGreaterThan(-1);
+    expect(alertAt).toBeLessThan(formAt);
+  });
+
+  it('keeps the lookup notice beside the report it describes', () => {
+    // A notice is about the figures below it ("no parcel matched, so figures
+    // below use national benchmarks"), so it does not move with the error.
+    const noticeAt = PAGE_CODE.indexOf('{lookupNotice && <p role="status">');
+    const formAt = PAGE_CODE.indexOf('<form>');
+    expect(noticeAt).toBeGreaterThan(formAt);
+  });
+
+  it('renders the error exactly once', () => {
+    // Showing it in two places is worse than showing it in the wrong one.
+    const count = PAGE_CODE.split('{error && <p role="alert">').length - 1;
+    expect(count).toBe(1);
+  });
+});
