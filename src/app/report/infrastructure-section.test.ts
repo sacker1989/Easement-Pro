@@ -124,12 +124,14 @@ describe('county coverage is stated, because absence is ambiguous', () => {
     expect(SECTION).toContain('coverageNotes.map');
   });
 
-  it('attributes findings that came from the county', () => {
-    // A reader weighing a finding should be able to tell a county's record of
-    // its own pipes from a volunteer map; the next step differs too, since a
-    // facility id is something you can ring the county about.
+  it('attributes findings to the agency that published them', () => {
+    // A reader weighing a finding should be able to tell an operator's record
+    // of its own pipes from a volunteer map; the next step differs too, since
+    // a facility id is something you can ring that operator about. The
+    // publisher is named rather than characterised — see the attribution
+    // describe block below for why the characterisation had to go.
     expect(SECTION).toContain('outcome.publishers');
-    expect(SECTION).toMatch(/record of its own network/);
+    expect(SECTION).toMatch(/records\s*\n?\s*of the infrastructure itself/);
   });
 
   it('lets one source survive the other failing', () => {
@@ -159,5 +161,36 @@ describe('two sources, two outcomes, neither swallowing the other', () => {
   it('shows it when nothing was mapped too', () => {
     const emptyBranch = SECTION.slice(SECTION.indexOf("result?.kind === 'none-mapped'"));
     expect(emptyBranch.slice(0, 1400)).toContain('coverageNotes.map');
+  });
+});
+
+describe('attribution names a level of government it can defend', () => {
+  /*
+   * SHIPPED WRONG AND CAUGHT ON PRODUCTION. The attribution sentence read
+   * "Some of these come from City of Los Angeles Sanitation — the county's own
+   * record of its own network". It is a city department. The sentence had been
+   * written when every wired source was a county one, and the first city
+   * source made it false without touching the component.
+   *
+   * This matters past pedantry: the whole point of naming the publisher is
+   * that the reader can ring them, and "the county" sends them to the wrong
+   * office. COUNTY_UTILITY_SOURCES now holds county departments, a city
+   * department and a state agency, so the rendered copy may describe the
+   * publishers collectively only in terms true of all of them.
+   */
+  const ATTRIBUTION = visibleCopy(SECTION);
+
+  it('does not call every publisher a county', () => {
+    expect(ATTRIBUTION).not.toMatch(/the county[’']s own/i);
+    expect(ATTRIBUTION).not.toMatch(/county[’']s own record/i);
+  });
+
+  it('still distinguishes an agency record from the volunteer map', () => {
+    expect(ATTRIBUTION).toMatch(/public agency records/i);
+    expect(ATTRIBUTION).toMatch(/volunteer map/i);
+  });
+
+  it('still refuses to let the stronger source imply a deed', () => {
+    expect(ATTRIBUTION).toMatch(/not a record of who may cross your land/i);
   });
 });

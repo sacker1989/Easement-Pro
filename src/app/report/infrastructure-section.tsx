@@ -282,18 +282,28 @@ export async function InfrastructureSection(props: InfrastructureSectionProps) {
           */}
           <p role="note">{AGE_AND_CONDITION_UNKNOWN}</p>
           {/*
-            ATTRIBUTION WHERE THE COUNTY SUPPLIED SOMETHING. A reader weighing
-            a finding should be able to tell a county's own record of its own
+            ATTRIBUTION WHERE AN AGENCY SUPPLIED SOMETHING. A reader weighing a
+            finding should be able to tell an operator's own record of its own
             pipes from a volunteer map, because those carry very different
-            weight — and the next step differs too: a county facility id is
-            something you can ring the county about.
+            weight — and the next step differs too: a published facility id is
+            something you can ring the operator about.
+
+            "THE COUNTY'S OWN RECORD" WAS WRONG AND SHIPPED. This sentence said
+            that for every publisher, and the first non-county source made it
+            false in production: City of Los Angeles Sanitation is a city
+            department, and the California Energy Commission is a state agency
+            that compiles transmission lines it does not own. Naming the wrong
+            level of government is the same class of error as the rest of this
+            page guards against — it tells the reader to go and ask the wrong
+            office. The wording now claims only what is true of all of them:
+            that a public agency published it, not who runs it.
           */}
           {outcome !== null && outcome.publishers.length > 0 && (
             <p className="muted">
               <small>
-                Some of these come from {outcome.publishers.join(' and ')} — the county&rsquo;s own
-                record of its own network, which is a stronger source than the volunteer map below
-                and still not a record of who may cross your land.
+                Some of these come from {outcome.publishers.join(' and ')} — public agency records
+                of the infrastructure itself, which carry more weight than the volunteer map below
+                and are still not a record of who may cross your land.
               </small>
             </p>
           )}

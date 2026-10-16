@@ -3,7 +3,16 @@ import type { LngLat } from '@/lib/geo/planar-distance';
 import type { InfrastructureFeature } from './infrastructure';
 
 /**
- * Utility infrastructure published by a county itself.
+ * Utility infrastructure published by the public agency that records it.
+ *
+ * "COUNTY" IN THE FILENAME IS NOW A MISNOMER, kept because renaming it buys
+ * nothing. Three kinds of publisher live here: a county department (LA County
+ * DPW, San Diego County DPW, Orange County Public Works), a city department
+ * (City of Los Angeles Sanitation), and a state agency compiling lines it does
+ * not own (the California Energy Commission). The distinction is not cosmetic
+ * — it decides which office a reader rings — so nothing rendered from these
+ * entries may describe a publisher as "the county". See the attribution note
+ * in app/report/infrastructure-section.tsx, where exactly that shipped.
  *
  * WHY THIS EXISTS ALONGSIDE OPENSTREETMAP. OSM maps long-distance
  * transmission well and ordinary residential distribution poorly — measured
@@ -13,8 +22,8 @@ import type { InfrastructureFeature } from './infrastructure';
  * features and San Diego County's sewer layer returned twenty-two to
  * twenty-nine, each with a diameter, a material and a facility id.
  *
- * AUTHORITATIVE, AND STILL NOT A DEED. A county sewer layer is the county's
- * own record of its own pipes, which is a far stronger thing than a volunteer
+ * AUTHORITATIVE, AND STILL NOT A DEED. A sewer layer is its operator's own
+ * record of its own pipes, which is a far stronger thing than a volunteer
  * map — and it is still not a record of who may cross your land. A main
  * running through a parcel is evidence worth chasing, not a finding that an
  * easement exists; `evidence-tier.ts` says this at more length and says it to
