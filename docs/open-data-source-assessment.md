@@ -313,3 +313,64 @@ Los Angeles address.
 The point lands on the street segment, which can be tens of metres from the
 building. That is disclosed to the user along with the matched address, because a
 point near a flood-zone boundary can fall on the wrong side of it.
+
+---
+
+## Cook County publishes no utility network — checked 2026-10-15
+
+Cook was the one served county with no agency utility source, so every Chicago
+address fell back to OpenStreetMap alone. **This is not a gap to be closed by
+looking harder.** Three hosts, by name:
+
+| host | what it has | sewer/water lines |
+|---|---|---|
+| `gis12.cookcountyil.gov/traditional` | 34 folders; `Utilities` holds Esri's `Geometry`, `PrintingTools`, `GeocodingTools` | **none** |
+| `data.cityofchicago.org` (Socrata) | "sewer" → 2 wastewater *epidemiology* datasets; "water main" → 0; "easement" → 0 | **none** |
+| MWRD (`owner:MWRDGC`, 252 items) | watersheds, CSO outfalls, treatment plants, municipality sewer *types*, boundaries | **none** — and MWRD operates the interceptors |
+
+Chicago withholds buried utility geometry. Los Angeles happens to publish it,
+which is a policy difference, not a data-quality one. The coverage note the
+reader sees now says this outright, because silence here would be read as
+absence of pipes rather than absence of a published map.
+
+`gis.cookcountyil.gov/arcgis` 404s — the services live on `gis12`.
+
+## HIFLD transmission — wired 2026-10-15, as the fallback §1 called for
+
+The August verdict stands: OSM carries operators and voltages where HIFLD
+carries `OWNER: "NOT AVAILABLE"`. HIFLD is wired *alongside* OSM and the
+agency layers, not in front of them. It is what closes Illinois.
+
+`services1.arcgis.com/Hp6G80Pky0om7QvQ/.../Electric_Power_Transmission_Lines/FeatureServer/0`
+— 52,244 lines nationally; `OWNER, VOLTAGE, VOLT_CLASS, TYPE, STATUS, INFERRED`.
+
+### The INFERRED flag is the finding, and it is county-specific
+
+| county | lines intersecting | `INFERRED='Y'` |
+|---|---|---|
+| Cook, IL | 517 | **453 — 88%** |
+| Los Angeles, CA | 205 | 3 — 1.5% |
+| Orange, CA | 55 | 1 |
+| San Diego, CA | 60 | 0 |
+
+An inferred route was reconstructed from aerial imagery and EIA 860/861
+filings. **The layer states no positional tolerance**, and the evidence tier's
+boundary strip is 15 ft wide. A probe on a ComEd corridor near Cicero
+(41.80170, −87.82247) returned 14 features, all inferred, nearest 0 ft from
+the test ring — i.e. the published route crosses the lot.
+
+Untreated, that renders as *"infrastructure crosses your land"*: the strongest
+claim the product makes and the only tier permitting a valuation. In Cook
+County it would have been the usual case. `assessEvidenceTier` now caps an
+inferred finding at tier C and says why; see `GeometryQuality` in
+`proximity/infrastructure.ts`.
+
+**Do not read the 88% as a defect in the data.** HIFLD is doing the honest
+thing by flagging it. The defect would have been consuming the flag's absence
+from our own code as if it meant survey accuracy.
+
+### `OWNER: "NOT AVAILABLE"` is a literal value, not a null
+
+§1 recorded this in August as a reason to prefer OSM and nothing downstream
+handled it, so it rendered as the name of the owning utility. Three of eight
+rows sampled near Chicago carry it. Now suppressed.
