@@ -34,6 +34,18 @@ const UA = 'SafeHomeValue/1.0 (internal report sweep)';
 
 const j = async (u) => (await fetch(u, { headers: { 'User-Agent': UA } })).json();
 
+/**
+ * A city name, never a blank one.
+ *
+ * `String(x || fallback).trim()` is not enough: a field holding "   " is
+ * truthy, so it survives `||` and trims to "". Counties publish exactly that
+ * — San Diego's SITUS_ZIP for 648 San Ysidro Blvd is ten spaces.
+ */
+function buildCity(value, fallback) {
+  const t = String(value ?? '').trim();
+  return t === '' ? fallback : t;
+}
+
 /** Each county's own addresses, with the fields needed to build a query. */
 const COUNTIES = [
   {
@@ -41,10 +53,12 @@ const COUNTIES = [
     state: 'CA',
     url: 'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query',
     fields: 'APN,SitusHouseNo,SitusDirection,SitusStreet,SitusCity,SitusZIP',
+    // resultOffset needs a deterministic sort, and the APN is the natural one.
+    orderBy: 'APN',
     where: "SitusStreet<>'' AND SitusHouseNo<>'' AND Roll_LandValue>0",
     build: (a) => ({
       street: [a.SitusHouseNo, (a.SitusDirection || '').trim(), a.SitusStreet].filter(Boolean).join(' '),
-      city: (a.SitusCity || 'Los Angeles').trim(),
+      city: buildCity(a.SitusCity, 'Los Angeles'),
       zip: String(a.SitusZIP || '').slice(0, 5),
     }),
   },
@@ -53,10 +67,11 @@ const COUNTIES = [
     state: 'CA',
     url: 'https://www.ocgis.com/arcpub/rest/services/LegalLotsAttributeOpenData/MapServer/0/query',
     fields: 'AssessmentNo,SiteAddress,SiteCityState,SiteZip5',
+    orderBy: 'AssessmentNo',
     where: "SiteAddress<>'' AND SiteAddress NOT LIKE 'SITUS%' AND LandVal IS NOT NULL",
     build: (a) => ({
       street: a.SiteAddress,
-      city: String(a.SiteCityState || 'Anaheim').split(',')[0].trim(),
+      city: buildCity(String(a.SiteCityState ?? '').split(',')[0], 'Anaheim'),
       zip: String(a.SiteZip5 || ''),
     }),
   },
@@ -65,13 +80,22 @@ const COUNTIES = [
     state: 'CA',
     url: 'https://gis-public.sandiegocounty.gov/arcgis/rest/services/LAFCO/parcels/MapServer/0/query',
     fields: 'APN,SITUS_ADDRESS,SITUS_PRE_DIR,SITUS_STREET,SITUS_SUFFIX,SITUS_ZIP,SITUS_COMMUNITY',
+    orderBy: 'APN',
     where: "SITUS_STREET<>'' AND SITUS_ADDRESS>0 AND ASR_LAND>0",
     build: (a) => ({
       street: [a.SITUS_ADDRESS, (a.SITUS_PRE_DIR || '').trim(), a.SITUS_STREET, (a.SITUS_SUFFIX || '').trim()]
         .filter(Boolean)
         .join(' '),
-      city: String(a.SITUS_COMMUNITY || 'San Diego').trim(),
-      zip: String(a.SITUS_ZIP || '').slice(0, 5),
+      /*
+       * SITUS_COMMUNITY IS SOMETIMES BLANK, and `||` does not catch a string
+       * of spaces — 648 San Ysidro Blvd publishes "" for the community and
+       * "          " for the ZIP, so the sweep sent neither and the page
+       * rightly asked for a city. A real user cannot submit a blank city, the
+       * input being `required`, so sending one tested a path no reader walks.
+       * buildCity falls back rather than sending nothing.
+       */
+      city: buildCity(a.SITUS_COMMUNITY, 'San Diego'),
+      zip: String(a.SITUS_ZIP || '').trim().slice(0, 5),
     }),
   },
   {
@@ -79,10 +103,11 @@ const COUNTIES = [
     state: 'IL',
     url: 'https://gis12.cookcountyil.gov/traditional/rest/services/CookViewer3Parcels/MapServer/0/query',
     fields: 'PIN14_dash,street_address,CITYNAME,ZIP1',
+    orderBy: 'PIN14_dash',
     where: "street_address<>'' AND CURRENTVALUE_LAND>0",
     build: (a) => ({
       street: a.street_address,
-      city: String(a.CITYNAME || 'Chicago').trim(),
+      city: buildCity(a.CITYNAME, 'Chicago'),
       zip: String(a.ZIP1 || ''),
     }),
   },
@@ -188,18 +213,47 @@ const CHECKS = [
   },
 ];
 
-/** The disambiguation screen, which is a success rather than a short report. */
+/**
+ * Pages that are legitimately short, and so are not suppressed reports.
+ *
+ * THE PICKER. When several parcels share a street address — 850 Del Mar Downs
+ * Rd has three — the product shows the candidate list rather than guessing.
+ * Scoring that as a defect is the same mistake the address match-rate metric
+ * made before it was corrected.
+ *
+ * THE REQUEST FOR MORE INPUT. A county row with a blank situs city makes this
+ * sweep send none, and the page then asks for one. That is correct, and
+ * `buildCity` now avoids sending a blank in the first place, so this arm
+ * should rarely fire — but a check that reports correct behaviour as a
+ * finding gets ignored, and then so do the real ones.
+ */
 function isPicker(text) {
-  return /(more than one parcel|which parcel|several parcels|choose|select the parcel)/i.test(text);
+  return (
+    /(more than one parcel|which parcel|several parcels|choose|select the parcel)/i.test(text) ||
+    /This needs the (city|street)/i.test(text)
+  );
 }
 
-/** Fetches rows from a county, tolerating a service that declines. */
+/**
+ * Fetches rows from a county, tolerating a service that declines.
+ *
+ * THE OFFSET IS WHY THIS IS NOT 20 REPORTS ABOUT ONE STREET. A plain
+ * resultRecordCount returns the first N rows in layer order, which is
+ * physical order, so the first 80-report run tested twenty Cook addresses on
+ * 223rd and 224th St in Sauk Village and reported a count that implied far
+ * more coverage than it had. A random offset per county per run walks a
+ * different slice each time, so repeated runs accumulate breadth instead of
+ * re-checking one neighbourhood.
+ */
 async function sample(c) {
+  const offset = Math.floor(Math.random() * 40000);
   const u = `${c.url}?${new URLSearchParams({
     f: 'json',
     where: c.where,
     outFields: c.fields,
     returnGeometry: 'false',
+    orderByFields: c.orderBy,
+    resultOffset: String(offset),
     resultRecordCount: String(PER_COUNTY),
   })}`;
   try {
