@@ -59,3 +59,68 @@ describe('buildRiskDisclosureReport', () => {
     ).toThrow(InvalidRiskDisclosureInputError);
   });
 });
+
+describe('why a dollar range is unavailable', () => {
+  /*
+   * SHIPPED WRONG FOR AN HOUR AND CAUGHT BY READING THE RENDERED PAGE. The
+   * condominium refusal reused the only reason the module had: "No land value
+   * is published for this address… Your county assessor publishes an assessed
+   * land value — that is the number this needs." For a unit in a
+   * common-interest development the county publishes one, the report shows it
+   * in the parcel panel immediately above, and the reader was being sent to
+   * the assessor for a figure they could already see. Being confidently wrong
+   * about who to ask is the same defect as calling a city department "the
+   * county", which shipped the same evening.
+   */
+  const base = {
+    easementPurpose: 'utility' as const,
+    lotAreaSqFt: 135871,
+    easementAreaSqFt: 800,
+    isLaCounty: false,
+    state: 'CA',
+  };
+
+  it('tells a condominium owner the figures cannot be divided, not that they are missing', () => {
+    const r = buildRiskDisclosureReport({ ...base, noPriceReason: 'undivided-interest' });
+    const v = r.economicImpact.valueAtRisk;
+    expect(v.status).toBe('unavailable');
+    if (v.status !== 'unavailable') return;
+    expect(v.reason).toMatch(/not missing data/i);
+    expect(v.reason).toMatch(/every unit in the project carries the same lot area/i);
+    expect(v.reason).not.toMatch(/No land value is published/);
+  });
+
+  it('points them at the declaration rather than the assessor', () => {
+    const r = buildRiskDisclosureReport({ ...base, noPriceReason: 'undivided-interest' });
+    const v = r.economicImpact.valueAtRisk;
+    if (v.status !== 'unavailable') throw new Error('expected unavailable');
+    expect(v.reason).toMatch(/CC&Rs/);
+    expect(v.reason).toMatch(/association/i);
+    // The errand that was being sent before.
+    expect(v.reason).not.toMatch(/that is the number this needs/i);
+  });
+
+  it('refuses to multiply the fractional share back out', () => {
+    const r = buildRiskDisclosureReport({ ...base, noPriceReason: 'undivided-interest' });
+    const v = r.economicImpact.valueAtRisk;
+    if (v.status !== 'unavailable') throw new Error('expected unavailable');
+    expect(v.reason).toMatch(/burdens the development rather than your unit/i);
+  });
+
+  it('keeps the original reason where the land value really is absent', () => {
+    const r = buildRiskDisclosureReport(base);
+    const v = r.economicImpact.valueAtRisk;
+    if (v.status !== 'unavailable') throw new Error('expected unavailable');
+    expect(v.reason).toMatch(/No land value is published for this address/);
+    expect(v.reason).not.toMatch(/CC&Rs/);
+  });
+
+  it('still prices a parcel that has a land value', () => {
+    const r = buildRiskDisclosureReport({
+      ...base,
+      lotAreaSqFt: 6756,
+      countyLandValue: { county: 'Orange County', perSqFt: 73.02 },
+    });
+    expect(r.economicImpact.valueAtRisk.status).toBe('range');
+  });
+});

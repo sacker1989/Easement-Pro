@@ -7,6 +7,7 @@ import {
   OrangeCountyLookupError,
   ORANGE_COUNTY_STALENESS_CAVEAT,
   parseMoneyField,
+  REQUIRED_FIELDS,
   toOrangeCountyParcelValuation,
 } from './orange-county-assessor-provider';
 
@@ -211,5 +212,92 @@ describe('ORANGE_COUNTY_STALENESS_CAVEAT', () => {
   it('names the missing base year and refuses to call the figure an estimate', () => {
     expect(ORANGE_COUNTY_STALENESS_CAVEAT).toMatch(/base\s+year/i);
     expect(ORANGE_COUNTY_STALENESS_CAVEAT).toMatch(/floor on land value, not an estimate/);
+  });
+});
+
+describe('a unit in a common-interest development', () => {
+  /*
+   * MEASURED 2026-10-15. All 489 parcels in the 930-18 book publish the
+   * identical Shape.STArea() of 135,871.237 sq ft — the whole development —
+   * against a per-unit LandVal. 142 Paramount came out at $3.44/sq ft where a
+   * fee lot in Santa Ana sits at $73.02. The easement valuation multiplies
+   * that quotient, so a fifth of the county's addressed parcels (166,052 of
+   * 894,009) were being handed a land price understated ~20x.
+   *
+   * THE SIGNAL IS THE LEGAL DESCRIPTION. LotType reads "Lot" for a fee parcel
+   * and a condominium unit alike, and GPLU_DESC, ZC_DESCR and ZCLASS are null
+   * on every row sampled.
+   */
+  const LIVE_PARAMOUNT = {
+    AssessmentNo: '930-18-697',
+    SiteAddress: '142 PARAMOUNT',
+    SiteZip5: '92618',
+    LandVal: '467827',
+    ImprovedVal: '0',
+    AssdAmt: null,
+    'Shape.STArea()': 135871.23733243317,
+    LegalDescr:
+      'LOT 1 OF TRACT 17740 OF CONDO PROJECT 930-18 LOCATED ON APN 580-602-04, TOGETHER WITH ' +
+      'AN UND 1/12 INT IN POR. OF LOT 1',
+  };
+
+  /** The other wording, which says PROJECT rather than CONDO PROJECT. */
+  const LIVE_CIENEGA = {
+    ...LIVE_PARAMOUNT,
+    AssessmentNo: '934-74-344',
+    SiteAddress: '55 CIENEGA',
+    'Shape.STArea()': 16923.4,
+    LegalDescr:
+      'TRACT 16899 LOT 7, OF PROJECT 934-74 LOCATED ON APN 580-091-26 TOGETHER WITH AN UND ' +
+      '1/10 INT IN LOT 7',
+  };
+
+  it('is detected from the undivided interest, not the word CONDO', () => {
+    /*
+     * Matching "CONDO" would have missed 134,000 parcels: only 32,053
+     * addressed parcels say CONDO while 166,052 declare an undivided
+     * interest. Both wordings must be caught.
+     */
+    expect(toOrangeCountyParcelValuation(LIVE_PARAMOUNT).lotTenure).toBe('undivided-interest');
+    expect(toOrangeCountyParcelValuation(LIVE_CIENEGA).lotTenure).toBe('undivided-interest');
+  });
+
+  it('refuses to derive a price per square foot', () => {
+    const v = toOrangeCountyParcelValuation(LIVE_PARAMOUNT);
+    expect(v.landValuePerSqFt).toBe(0);
+    // Not 467827/135871.24 = 3.44.
+    expect(v.landValuePerSqFt).not.toBeCloseTo(3.44, 2);
+    // Both published figures are still reported unchanged.
+    expect(v.lotAreaSqFt).toBeCloseTo(135871.24, 1);
+    expect(v.landValue).toBe(467827);
+  });
+
+  it('leaves an ordinary fee lot deriving a price as before', () => {
+    /*
+     * The fixtures have no LegalDescr at all, which is also the case for a
+     * row the field was not requested on — so this doubles as a check that an
+     * absent description does not silently suppress every valuation in the
+     * county.
+     */
+    const v = toOrangeCountyParcelValuation(LIVE_ALAMO_ST);
+    expect(v.lotTenure).toBe('whole-parcel');
+    expect(v.landValuePerSqFt).toBeCloseTo(531538 / 6278.8101519153415, 6);
+  });
+
+  it('does not fire on a fee lot\'s own legal description', () => {
+    // The three real wordings sampled, none of which is a shared interest.
+    for (const legal of [
+      'P-BOOK: 381 PAGE: 23 PAR: 2',
+      'A-TRACT: LIVINGSTON ADD BLOCK: LOT: 21 TR 434',
+      'N-TRACT: 17611 BLOCK: LOT: 79',
+    ]) {
+      expect(
+        toOrangeCountyParcelValuation({ ...LIVE_ALAMO_ST, LegalDescr: legal }).lotTenure,
+      ).toBe('whole-parcel');
+    }
+  });
+
+  it('reads the field it depends on', () => {
+    expect(REQUIRED_FIELDS).toContain('LegalDescr');
   });
 });

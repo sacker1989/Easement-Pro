@@ -474,6 +474,16 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               unified && unified.landValuePerSqFt > 0
                 ? { county: unified.county, perSqFt: unified.landValuePerSqFt }
                 : undefined,
+            /*
+             * WHY, NOT JUST WHETHER. Without this the condominium case got
+             * the "no land value is published for this address… your county
+             * assessor publishes one" sentence, directly beneath a panel
+             * displaying the land value the county published. The county has
+             * the figure; what it does not have is a lot area belonging to
+             * this owner alone.
+             */
+            noPriceReason:
+              unified?.lotTenure === 'undivided-interest' ? 'undivided-interest' : undefined,
           });
 
           // The referral package: what a licensed appraiser or attorney would
@@ -974,8 +984,19 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 two below has always handled its own absence like this; these
                 two rows were asserting a zero instead.
               */}
+              {/*
+                THE LABEL CARRIES THE DISTINCTION, not just the caveat below.
+                For a condominium unit this figure is the whole development's
+                area — every unit in the 930-18 book publishes 135,871 sq ft —
+                and a row headed "Lot area" reads as the reader's own lot
+                whatever the caveat further down says.
+              */}
               <li>
-                <span className="k">Lot area (county geometry)</span>
+                <span className="k">
+                  {unified.lotTenure === 'undivided-interest'
+                    ? 'Shared lot area (whole development)'
+                    : 'Lot area (county geometry)'}
+                </span>
                 <span className="v">
                   {unified.lotAreaSqFt > 0
                     ? `${Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft`

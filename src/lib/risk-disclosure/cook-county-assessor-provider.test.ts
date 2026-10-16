@@ -319,3 +319,66 @@ describe('a parcel the assessor publishes no land area for', () => {
     expect(r.valuation.lotAreaSqFt).toBe(0);
   });
 });
+
+describe('a condominium unit does not get the building\'s land price', () => {
+  /*
+   * MEASURED AT 222 N COLUMBUS DR, CHICAGO on 2026-10-15. Every unit in the
+   * tower publishes LANDSF 41,068 — the building's footprint — against a
+   * per-unit CURRENTVALUE_LAND between $1,239 and $2,299. Dividing gives
+   * $0.03/sq ft, and that quotient is what an easement valuation multiplies,
+   * so a unit owner was being handed a figure understated by roughly the
+   * number of units in their building.
+   *
+   * The detection is the county's own encoding, not a heuristic: a PIN's last
+   * four digits are the unit, and -0000 means the parcel is undivided.
+   * 467,398 of Cook's 1,865,928 parcels carry a unit suffix.
+   */
+  const unit = {
+    ...ROW,
+    PIN14_dash: '17-10-316-033-1307',
+    street_address: '222 N COLUMBUS DR 3102',
+    LANDSF: 41068,
+    CURRENTVALUE_LAND: 2103,
+  };
+
+  it('marks a unit-suffixed PIN as an undivided interest', async () => {
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([unit]) }).findByAddress(
+      '222 N Columbus Dr',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    expect(r.valuation.lotTenure).toBe('undivided-interest');
+  });
+
+  it('refuses to derive a price per square foot from it', async () => {
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([unit]) }).findByAddress(
+      '222 N Columbus Dr',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    // Not 2103/41068 = 0.051. Zero routes into the refusal paths that
+    // buildValuationEstimate and screeningEstimate already have and test.
+    expect(r.valuation.landValuePerSqFt).toBe(0);
+    // The area and value are still reported as the county published them.
+    expect(r.valuation.lotAreaSqFt).toBe(41068);
+    expect(r.valuation.landValue).toBe(2103);
+  });
+
+  it('leaves a whole parcel alone', async () => {
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([ROW]) }).findByAddress(
+      '400 N Lake Shore Dr',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    expect(r.valuation.lotTenure).toBe('whole-parcel');
+    expect(r.valuation.landValuePerSqFt).toBeCloseTo(1120035 / 74671, 6);
+  });
+
+  it('does not treat a unit suffix of other digits as whole', async () => {
+    // -0000 is the only undivided form. -1001, -1307, -0001 are all units.
+    for (const pin of ['17-10-316-033-1001', '17-10-316-033-0001', '17-10-316-033-9999']) {
+      const r = await createCookCountyAssessorProvider({
+        fetchImpl: stub([{ ...unit, PIN14_dash: pin }]),
+      }).findByAddress('x');
+      if (r.status !== 'found') throw new Error('expected found');
+      expect(r.valuation.lotTenure).toBe('undivided-interest');
+    }
+  });
+});

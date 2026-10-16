@@ -46,6 +46,44 @@ import { createResilientFetch } from '@/lib/net/resilient-fetch';
 import { observe } from '@/lib/observability/outcome-log';
 import type { NormalizedAddress } from '@/lib/parcel-resolution/types';
 
+/**
+ * Whether `lotAreaSqFt` describes the owner's own parcel or a shared one.
+ *
+ * THIS IS NOT A COSMETIC DISTINCTION — IT DECIDES WHETHER THE AREA CAN BE
+ * DIVIDED INTO ANYTHING. In a common-interest development the county
+ * publishes the land VALUE per unit and the land AREA of the whole
+ * development, and every unit carries the same area. Dividing one by the
+ * other produces a land price per square foot that is wrong by a factor of
+ * however many units there are, and that quotient is what the easement
+ * valuation multiplies.
+ *
+ * Measured 2026-10-15:
+ *
+ *   222 N Columbus Dr, Chicago — every unit carries LANDSF 41,068, the
+ *   tower's footprint, against a unit land value of $1,239–$2,299. That is
+ *   $0.03/sq ft.
+ *
+ *   142 Paramount, Irvine — all 489 parcels in the 930-18 book carry
+ *   135,871.237 sq ft, against a unit land value of $467,827: $3.44/sq ft,
+ *   where a fee lot two books away sits at $73/sq ft.
+ *
+ * 464,428 of Cook's 1,865,928 parcels and 166,052 of Orange's 894,009
+ * addressed parcels are in this position — a quarter and a fifth of two of
+ * the four counties served.
+ *
+ * WHAT THE PRODUCT DOES ABOUT IT IS REFUSE, not estimate. The undivided
+ * fraction is in the legal description, so the arithmetic is tempting: 1/12
+ * of 135,871 is 11,322 sq ft. But an easement over common area burdens the
+ * development, and what one owner is owed for it turns on the declaration and
+ * the CC&Rs rather than on dividing by twelve. A number derived that way
+ * would read exactly like the measured one.
+ */
+export type LotTenure =
+  /** The published area is this parcel's own. */
+  | 'whole-parcel'
+  /** The published area is a shared lot; this owner holds a fraction of it. */
+  | 'undivided-interest';
+
 /** A valuation normalised across counties, with the differences preserved. */
 export interface UnifiedParcelValuation {
   readonly apn: string;
@@ -55,8 +93,19 @@ export interface UnifiedParcelValuation {
   readonly situsAddress: string;
   readonly zip: string | null;
   readonly lotAreaSqFt: number;
+  /** See LotTenure. Governs whether lotAreaSqFt may be divided into. */
+  readonly lotTenure: LotTenure;
   readonly landValue: number;
   readonly improvementValue: number;
+  /**
+   * Zero where no price per square foot can be derived.
+   *
+   * Zero for an undivided interest, deliberately and not as a sentinel of
+   * convenience: the existing refusal paths in buildValuationEstimate and
+   * screeningEstimate both reject a non-positive figure already, and they are
+   * tested. Routing this through them means the refusal is the same refusal
+   * as for a county that publishes no land value at all.
+   */
   readonly landValuePerSqFt: number;
   /**
    * Null where the county publishes none. NEVER defaulted to the roll year:
@@ -237,8 +286,54 @@ export async function lookupParcel(
        */
       county: r.status === 'found' ? r.valuation.county : (r.county ?? undefined),
     }),
-    () => lookupParcelUninstrumented(address, options),
+    () => withTenureCaveat(lookupParcelUninstrumented(address, options)),
   );
+}
+
+/**
+ * What a reader is told when the published area is not their lot.
+ *
+ * NOT OPTIONAL, BECAUSE THE REFUSAL IS OTHERWISE SILENT. Setting
+ * landValuePerSqFt to 0 makes the estimate come back "no estimate is
+ * possible", which is correct and, on its own, unexplained — the reader can
+ * see a lot area and a land value on the same page and will reasonably wonder
+ * why the two cannot be combined. This says why, and says what would answer
+ * it, which is the declaration rather than a better dataset.
+ */
+export const UNDIVIDED_INTEREST_CAVEAT =
+  'The lot area above is the whole development’s, not yours alone. The county records this ' +
+  'parcel as an undivided fractional interest — a condominium or common-interest unit — and ' +
+  'publishes one land value per unit against the area of the entire project, so every unit ' +
+  'shows the same lot size. No land value per square foot is derived from those two figures ' +
+  'here, because dividing them would understate it by roughly the number of units. An easement ' +
+  'over common area burdens the development rather than one unit, and what an individual owner ' +
+  'is owed for it turns on the recorded declaration and the CC&Rs. Your HOA or association ' +
+  'manager holds those, and they are the right place to start.';
+
+/**
+ * Attaches UNDIVIDED_INTEREST_CAVEAT wherever tenure says it is needed.
+ *
+ * DONE AT THE FUNNEL RATHER THAN IN EACH BRANCH. Four counties construct
+ * their own valuation object, and a caveat added per branch is a caveat the
+ * fifth county forgets. Tenure is the only input, so the caveat cannot
+ * disagree with the field that caused it.
+ */
+async function withTenureCaveat(
+  pending: Promise<CountyLookupResult>,
+): Promise<CountyLookupResult> {
+  const result = await pending;
+  if (result.status !== 'found' || result.valuation.lotTenure !== 'undivided-interest') {
+    return result;
+  }
+  if (result.valuation.caveats.includes(UNDIVIDED_INTEREST_CAVEAT)) return result;
+  return {
+    ...result,
+    valuation: {
+      ...result.valuation,
+      // First, not appended: it changes how every figure above it reads.
+      caveats: [UNDIVIDED_INTEREST_CAVEAT, ...result.valuation.caveats],
+    },
+  };
 }
 
 async function lookupParcelUninstrumented(
@@ -291,6 +386,14 @@ async function lookupParcelUninstrumented(
           situsAddress: v.situsFullAddress,
           zip: address.zip,
           lotAreaSqFt: v.lotAreaSqFt,
+          /*
+           * UNMEASURED, AND SAID SO RATHER THAN ASSUMED. Cook and Orange were
+           * both found to publish a whole building or development area against a
+           * per-unit land value; this county has not been checked for the same
+           * thing. Declaring whole-parcel here preserves current behaviour and is
+           * a claim, so it is logged as an open item rather than left implicit.
+           */
+          lotTenure: 'whole-parcel',
           landValue: v.landValue,
           improvementValue: v.improvementValue,
           landValuePerSqFt: v.landValuePerSqFt,
@@ -338,6 +441,7 @@ async function lookupParcelUninstrumented(
           situsAddress: v.situsFullAddress,
           zip: address.zip,
           lotAreaSqFt: v.lotAreaSqFt,
+          lotTenure: v.lotTenure ?? 'whole-parcel',
           landValue: v.landValue,
           improvementValue: v.improvementValue,
           landValuePerSqFt: v.landValuePerSqFt,
@@ -391,6 +495,7 @@ async function lookupParcelUninstrumented(
           situsAddress: v.siteAddress,
           zip: v.zip,
           lotAreaSqFt: v.lotAreaSqFt,
+        lotTenure: v.lotTenure,
           landValue: v.landValue,
           improvementValue: v.improvementValue,
           landValuePerSqFt: v.landValuePerSqFt,
@@ -430,6 +535,14 @@ async function lookupParcelUninstrumented(
         situsAddress: v.situsFullAddress,
         zip: v.zip,
         lotAreaSqFt: v.lotAreaSqFt,
+        /*
+         * UNMEASURED, AND SAID SO RATHER THAN ASSUMED. Cook and Orange were
+         * both found to publish a whole building or development area against a
+         * per-unit land value; this county has not been checked for the same
+         * thing. Declaring whole-parcel here preserves current behaviour and is
+         * a claim, so it is logged as an open item rather than left implicit.
+         */
+        lotTenure: 'whole-parcel',
         landValue: v.landValue,
         improvementValue: v.improvementValue,
         landValuePerSqFt: v.landValuePerSqFt,

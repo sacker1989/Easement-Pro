@@ -166,6 +166,24 @@ function toValuation(attrs: Record<string, unknown>): AssessorParcelValuation {
   const polygonSqFt = numberOrZero(attrs['Shape.STArea()']);
   const lotAreaSqFt = assessorLandSqFt > 0 ? assessorLandSqFt : polygonSqFt;
 
+  /*
+   * A PIN NOT ENDING -0000 IS A UNIT INSIDE A CONDOMINIUM, and the county's
+   * own encoding says so: the final four digits are the unit, and 0000 means
+   * the parcel is undivided. 467,398 of Cook's 1,865,928 parcels have a unit
+   * suffix; 464,428 of those carry a positive LANDSF.
+   *
+   * AND THE LANDSF THEY CARRY IS THE BUILDING'S, NOT THE UNIT'S. Measured at
+   * 222 N Columbus Dr on 2026-10-15: every unit publishes LANDSF 41,068 —
+   * the tower's footprint — against a unit land value between $1,239 and
+   * $2,299. landValue / lotAreaSqFt is $0.03/sq ft there, and that quotient
+   * is what an easement valuation multiplies. A quarter of the county was
+   * being handed a land price understated by roughly the number of units in
+   * their building.
+   *
+   * The fraction is not computed instead. See LotTenure in county-dispatch.ts.
+   */
+  const lotTenure = /-0{4}$/.test(pin) ? 'whole-parcel' : 'undivided-interest';
+
   return {
     // The county's own identifier in both slots. LA distinguishes AIN from
     // APN; Cook has one number and inventing a second formatting of it would
@@ -207,7 +225,16 @@ function toValuation(attrs: Record<string, unknown>): AssessorParcelValuation {
      * fabricating a California concept for a state that does not have one.
      */
     landBaseYear: null,
-    landValuePerSqFt: lotAreaSqFt > 0 ? landValue / lotAreaSqFt : 0,
+    lotTenure,
+    /*
+     * ZERO FOR A UNIT, because the division is between two figures that
+     * describe different things. The refusal paths downstream already reject
+     * a non-positive price per square foot, so this routes into the same
+     * "no estimate is possible" the product gives a county that publishes no
+     * land value — rather than a new branch that could drift from it.
+     */
+    landValuePerSqFt:
+      lotTenure === 'undivided-interest' || lotAreaSqFt <= 0 ? 0 : landValue / lotAreaSqFt,
   };
 }
 

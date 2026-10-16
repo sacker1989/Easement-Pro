@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { setOutcomeSink, type OutcomeSink } from '@/lib/observability/outcome-log';
-import { lookupParcel, normaliseCountyName, SUPPORTED_COUNTIES } from './county-dispatch';
+import {
+  lookupParcel,
+  normaliseCountyName,
+  SUPPORTED_COUNTIES,
+  UNDIVIDED_INTEREST_CAVEAT,
+} from './county-dispatch';
 import { ORANGE_COUNTY_STALENESS_CAVEAT } from '@/lib/risk-disclosure';
 import type { NormalizedAddress } from '@/lib/parcel-resolution/types';
 
@@ -315,5 +320,75 @@ describe('the lookup is on the record, because once it was not', () => {
         expect(serialised, `address leaked into the log: ${secret}`).not.toContain(secret);
       }
     }
+  });
+});
+
+describe('an undivided interest is explained, not just refused', () => {
+  /*
+   * Setting landValuePerSqFt to 0 makes the estimate come back "no estimate
+   * is possible", which is correct and unexplained on its own: the reader can
+   * see a lot area and a land value on the same page and will reasonably ask
+   * why the two cannot be combined. The caveat says why, and says that the
+   * answer is in the declaration rather than in better data.
+   *
+   * ATTACHED AT THE FUNNEL, NOT PER COUNTY. Four branches build their own
+   * valuation object; a caveat added in each is one the fifth county forgets.
+   */
+  const CONDO_OC = {
+    ...OC_ATTRS,
+    AssessmentNo: '930-18-697',
+    SiteAddress: '142 PARAMOUNT',
+    LandVal: '467827',
+    'Shape.STArea()': 135871.23733243317,
+    LegalDescr:
+      'LOT 1 OF TRACT 17740 OF CONDO PROJECT 930-18, TOGETHER WITH AN UND 1/12 INT IN POR. OF LOT 1',
+  };
+
+  it('attaches the caveat when the county reports a shared lot', async () => {
+    const r = await lookupParcel(address('Orange County'), {
+      fetchImpl: stubFetch({ features: [{ attributes: CONDO_OC }] }),
+    });
+    expect(r.status).toBe('found');
+    if (r.status !== 'found') return;
+    expect(r.valuation.lotTenure).toBe('undivided-interest');
+    expect(r.valuation.caveats).toContain(UNDIVIDED_INTEREST_CAVEAT);
+  });
+
+  it('puts it first, because it changes how every figure above reads', async () => {
+    const r = await lookupParcel(address('Orange County'), {
+      fetchImpl: stubFetch({ features: [{ attributes: CONDO_OC }] }),
+    });
+    if (r.status !== 'found') throw new Error('expected found');
+    expect(r.valuation.caveats[0]).toBe(UNDIVIDED_INTEREST_CAVEAT);
+    // The county's own caveat is kept rather than displaced.
+    expect(r.valuation.caveats).toContain(ORANGE_COUNTY_STALENESS_CAVEAT);
+  });
+
+  it('does not attach it to a whole parcel', async () => {
+    const r = await lookupParcel(address('Orange County'), {
+      fetchImpl: stubFetch({ features: [{ attributes: OC_ATTRS }] }),
+    });
+    if (r.status !== 'found') throw new Error('expected found');
+    expect(r.valuation.lotTenure).toBe('whole-parcel');
+    expect(r.valuation.caveats).not.toContain(UNDIVIDED_INTEREST_CAVEAT);
+  });
+
+  it('names the declaration and the association, which is the actual next step', () => {
+    // Not "ask the county" — the county published exactly what it has. What
+    // one owner is owed for an easement over common area is in the CC&Rs.
+    expect(UNDIVIDED_INTEREST_CAVEAT).toMatch(/CC&Rs/);
+    expect(UNDIVIDED_INTEREST_CAVEAT).toMatch(/declaration/i);
+    expect(UNDIVIDED_INTEREST_CAVEAT).toMatch(/HOA|association/i);
+  });
+
+  it('does not offer the reader the division it refused to do', () => {
+    /*
+     * The legal description carries the fraction, so 1/12 of 135,871 is one
+     * step away. It is not taken: an easement over common area burdens the
+     * development, and a number derived by dividing would read exactly like a
+     * measured one.
+     */
+    expect(UNDIVIDED_INTEREST_CAVEAT).not.toMatch(/divide by|your share is|per unit area/i);
+    expect(UNDIVIDED_INTEREST_CAVEAT).toMatch(/would understate/i);
   });
 });

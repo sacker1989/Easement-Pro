@@ -1,4 +1,8 @@
-import { buildEconomicImpactEstimate, type EconomicImpactEstimate } from './economic-impact';
+import {
+  buildEconomicImpactEstimate,
+  type EconomicImpactEstimate,
+  type NoPriceReason,
+} from './economic-impact';
 import type { AssessorParcelValuation } from './la-county-assessor-provider';
 import { buildRestrictionChecklist, type EasementPurpose, type RestrictionChecklistItem } from './restriction-checklist';
 
@@ -24,6 +28,8 @@ export interface RiskDisclosureInput {
   assessorValuation?: AssessorParcelValuation;
   /** Land value from a non-LA county roll. See economic-impact.ts. */
   countyLandValue?: { readonly county: string; readonly perSqFt: number };
+  /** Why no price per sq ft is available, where the caller knows. */
+  noPriceReason?: NoPriceReason;
   /** Set false to price off the raw assessed value instead of indexing it forward. */
   applyMarketIndex?: boolean;
   /** Two-letter state code, used to pick a regional construction cost. */
@@ -60,6 +66,7 @@ export function buildRiskDisclosureReport(input: RiskDisclosureInput): RiskDiscl
       pricePerSqFtOverride: input.pricePerSqFtOverride,
       assessorValuation: input.assessorValuation,
       countyLandValue: input.countyLandValue,
+      noPriceReason: input.noPriceReason,
       applyMarketIndex: input.applyMarketIndex,
       state: input.state,
     }),

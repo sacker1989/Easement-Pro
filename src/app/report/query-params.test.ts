@@ -136,3 +136,20 @@ describe('a county that publishes no lot area does not lose its report', () => {
     expect(PAGE_CODE).not.toMatch(/lotAreaSqFt: unified\?\.lotAreaSqFt \?\?/);
   });
 });
+
+describe('the lot area row says whose lot it is', () => {
+  /*
+   * A row headed "Lot area" reads as the reader's own lot, whatever a caveat
+   * further down the page says. For a condominium unit the figure is the
+   * whole development's — every parcel in Orange's 930-18 book publishes
+   * 135,871 sq ft — so the label itself has to carry the distinction.
+   */
+  it('relabels a shared lot rather than relying on the caveat alone', () => {
+    expect(PAGE_CODE).toMatch(/unified\.lotTenure === 'undivided-interest'/);
+    expect(PAGE_CODE).toMatch(/Shared lot area \(whole development\)/);
+  });
+
+  it('keeps the ordinary label for a whole parcel', () => {
+    expect(PAGE_CODE).toMatch(/Lot area \(county geometry\)/);
+  });
+});

@@ -263,6 +263,16 @@ export interface EconomicImpactInputs {
    * county shape exists to prevent.
    */
   countyLandValue?: { readonly county: string; readonly perSqFt: number };
+  /**
+   * Why no price could be resolved, when the caller already knows.
+   *
+   * THE RESOLVER CANNOT WORK THIS OUT FOR ITSELF. A condominium unit arrives
+   * carrying a perfectly positive land value and a lot area that is simply
+   * not the owner's, which is indistinguishable here from any other parcel.
+   * The caller holds the tenure; this is how it states that fact without
+   * composing prose, which this module owns so the two cannot drift.
+   */
+  noPriceReason?: NoPriceReason;
 }
 
 /**
@@ -369,6 +379,39 @@ const NO_LAND_VALUE_REASON =
   'so a single national figure would not tell you the scale of anything. Your county assessor ' +
   'publishes an assessed land value — that is the number this needs.';
 
+/**
+ * The same refusal, for the opposite reason.
+ *
+ * NO_LAND_VALUE_REASON IS FALSE FOR A CONDOMINIUM AND SHIPPED THAT WAY FOR AN
+ * HOUR. It says no land value is published and tells the reader to get one
+ * from their assessor. For a unit in a common-interest development the county
+ * publishes a land value, the report displays it in the panel immediately
+ * above — $467,827 for the Irvine case — and what is missing is a lot area
+ * belonging to that owner alone. Sending them to the assessor for a figure
+ * the assessor already published, and that they can see on the page, is the
+ * same mistake as describing a city department as "the county": it is
+ * confidently wrong about who to ask.
+ *
+ * The module owns both sentences so the caller states a fact rather than
+ * composing prose, and so the two cannot drift apart.
+ */
+const UNDIVIDED_INTEREST_REASON =
+  'A dollar range is not estimated for this parcel, and the reason is not missing data. The ' +
+  'county publishes a land value for this unit and a lot area for the whole development, and ' +
+  'those two numbers cannot be divided into a price per square foot — every unit in the project ' +
+  'carries the same lot area, so the result would be understated by roughly the number of units. ' +
+  'Nor is your fractional share simply multiplied back out: an easement over common area ' +
+  'burdens the development rather than your unit, and what you are owed for it is governed by ' +
+  'the recorded declaration and the CC&Rs, not by arithmetic on the assessment roll. Those ' +
+  'documents, and your association, are where this question is actually answered.';
+
+/** Why no price per square foot could be resolved. */
+export type NoPriceReason =
+  /** The county publishes no land value at all. */
+  | 'not-published'
+  /** It publishes one, against a lot this owner shares. See LotTenure. */
+  | 'undivided-interest';
+
 export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): EconomicImpactEstimate {
   const resolved = resolvePricePerSqFt(inputs);
   const adjustment = resolved?.adjustment;
@@ -389,7 +432,13 @@ export function buildEconomicImpactEstimate(inputs: EconomicImpactInputs): Econo
    */
   const valueAtRisk: ValueAtRisk =
     resolved === null
-      ? { status: 'unavailable', reason: NO_LAND_VALUE_REASON }
+      ? {
+          status: 'unavailable',
+          reason:
+            inputs.noPriceReason === 'undivided-interest'
+              ? UNDIVIDED_INTEREST_REASON
+              : NO_LAND_VALUE_REASON,
+        }
       : {
           status: 'range',
           range: dollarRange(

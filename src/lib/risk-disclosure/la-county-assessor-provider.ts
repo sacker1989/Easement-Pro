@@ -49,6 +49,17 @@ export interface AssessorParcelValuation {
   readonly landBaseYear: string | null;
   /** Derived: landValue / lotAreaSqFt. Reflects the base year, not the market. */
   readonly landValuePerSqFt: number;
+  /**
+   * Whether lotAreaSqFt is this parcel's own area or a shared lot's.
+   *
+   * Optional on this interface and absent means 'whole-parcel', which is the
+   * one place in tonight's work an optional field is the right call: the two
+   * providers that have been MEASURED set it, and a provider that has not
+   * been measured must not be made to assert either answer by a type default
+   * it did not choose. LA and San Diego are unmeasured — see LotTenure in
+   * county-dispatch.ts and the gap register.
+   */
+  readonly lotTenure?: 'whole-parcel' | 'undivided-interest';
 }
 
 /** Minimal identity for one of several parcels sharing a street address. */

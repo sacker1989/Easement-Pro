@@ -61,13 +61,42 @@ const OC_LEGAL_LOTS_QUERY_URL =
   'https://www.ocgis.com/arcpub/rest/services/LegalLotsAttributeOpenData/MapServer/0/query';
 
 /** Fields required to derive a per-sq-ft land value. */
-const REQUIRED_FIELDS = [
+export const REQUIRED_FIELDS = [
   'AssessmentNo',
   'SiteAddress',
   'SiteZip5',
   'LandVal',
   'ImprovedVal',
+  /*
+   * READ ONLY TO ANSWER ONE QUESTION: does this owner hold the whole lot?
+   * The legal description is the only field in this layer that says so.
+   * LotType is "Lot" for a fee parcel and for a condominium unit alike, and
+   * GPLU_DESC, ZC_DESCR and ZCLASS are null on every row sampled.
+   */
+  'LegalDescr',
 ] as const;
+
+/**
+ * Whether the legal description claims a fraction of a shared lot.
+ *
+ * THE COUNTY'S OWN WORDS, NOT AN INFERENCE FROM THE APN. Two wordings appear
+ * and both carry the fraction:
+ *
+ *   "LOT 1 OF TRACT 17740 OF CONDO PROJECT 930-18 … TOGETHER WITH AN
+ *    UND 1/12 INT IN POR. OF LOT 1"
+ *   "TRACT 16899 LOT 7, OF PROJECT 934-74 … TOGETHER WITH AN
+ *    UND 1/10 INT IN LOT 7"
+ *
+ * MATCHING ON "CONDO" ALONE WOULD HAVE MISSED 134,000 PARCELS — only 32,053
+ * addressed parcels say CONDO while 166,052 declare an undivided interest.
+ * The APN prefix is worse in both directions: 9,305 non-9xx parcels hold a
+ * fractional interest and 30,972 9xx parcels do not. An ordinary fee lot
+ * reads "P-BOOK: 381 PAGE: 23 PAR: 2" and matches nothing here.
+ * Counts measured 2026-10-15.
+ */
+function declaresUndividedInterest(legalDescr: unknown): boolean {
+  return /\bUND\b[^.]{0,40}\bINT\b/i.test(String(legalDescr ?? ''));
+}
 
 /**
  * Text for the methodology section wherever an Orange County figure is shown.
@@ -100,8 +129,15 @@ export interface OrangeCountyParcelValuation {
    * assuming a base year exists — see ORANGE_COUNTY_STALENESS_CAVEAT.
    */
   readonly landBaseYear: null;
-  /** Derived: landValue / lotAreaSqFt. Reflects an unknown base year. */
+  /**
+   * Derived: landValue / lotAreaSqFt. Reflects an unknown base year.
+   *
+   * ZERO FOR AN UNDIVIDED INTEREST, where the numerator is one unit's land
+   * value and the denominator is the whole development's area.
+   */
   readonly landValuePerSqFt: number;
+  /** Whether lotAreaSqFt is this owner's lot. See declaresUndividedInterest. */
+  readonly lotTenure: 'whole-parcel' | 'undivided-interest';
 }
 
 /** Minimal identity for one of several parcels sharing a street address. */
@@ -165,6 +201,13 @@ export function toOrangeCountyParcelValuation(
     throw new OrangeCountyLookupError('Assessor record reports a non-positive parcel area');
   }
 
+  /*
+   * READ BEFORE THE LAND VALUE IS CHECKED, because a unit's land value is
+   * perfectly positive and passes every check below. Nothing about the
+   * numbers reveals this; only the legal description does.
+   */
+  const undivided = declaresUndividedInterest(attrs['LegalDescr']);
+
   const landValue = parseMoneyField(attrs['LandVal']);
   if (landValue === null) {
     throw new OrangeCountyLookupError('Assessor record publishes no land value');
@@ -191,7 +234,17 @@ export function toOrangeCountyParcelValuation(
     landValue,
     improvementValue: parseMoneyField(attrs['ImprovedVal']) ?? 0,
     landBaseYear: null,
-    landValuePerSqFt: landValue / lotAreaSqFt,
+    lotTenure: undivided ? 'undivided-interest' : 'whole-parcel',
+    /*
+     * THE DIVISION IS REFUSED WHERE THE TWO FIGURES DESCRIBE DIFFERENT
+     * THINGS. For a unit in a common-interest development the county
+     * publishes a per-unit land value and the whole development's area: all
+     * 489 parcels in the 930-18 book carry 135,871.237 sq ft, so
+     * 142 Paramount came out at $3.44/sq ft where a fee lot two books away
+     * sits at $73. The non-positive result routes into the same refusal that
+     * the exempt-parcel branch above uses.
+     */
+    landValuePerSqFt: undivided ? 0 : landValue / lotAreaSqFt,
   };
 }
 
