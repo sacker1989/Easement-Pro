@@ -103,9 +103,53 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
       publisher: 'Los Angeles County Department of Public Works',
       coverage:
         'This layer is LA County Public Works’ own sewer network — the county’s mains, serving ' +
-        'unincorporated areas and the cities it contracts with. The City of Los Angeles and many ' +
-        'other cities run their own systems and are not in it. Finding nothing here means the ' +
-        'county does not maintain sewer at this address, not that there is none.',
+        'unincorporated areas and the cities it contracts with. Many cities run their own systems ' +
+        'and are not in it. Finding nothing here means the county does not maintain sewer at this ' +
+        'address, not that there is none.',
+    },
+    {
+      /*
+       * THE CITY OF LOS ANGELES, WHICH THE COUNTY LAYER DOES NOT COVER.
+       *
+       * The county serves unincorporated areas and contract cities. The City
+       * of LA runs its own sewers and is the largest population centre in the
+       * county by a wide margin — so the county layer alone left the single
+       * biggest group of users in the product's best-covered county with
+       * "nothing is mapped". 8321 Faust Ave, the test address used all week,
+       * is in Canoga Park and returned nothing from the county; the city
+       * layer has an 8-inch VCP main in Faust Ave itself.
+       *
+       * 162,433 pipes with size, material, shape and street name.
+       *
+       * LATERALS ARE DELIBERATELY NOT WIRED. The same service publishes
+       * 539,352 sewer laterals, and a lateral crossing your parcel is your
+       * own connection to the main — every house has one, so the finding
+       * would fire on essentially every address and imply an encumbrance
+       * where there is none. A lateral serving a DIFFERENT property across
+       * your land would be a real easement question, and nothing in the data
+       * distinguishes the two.
+       */
+      layerUrl: 'https://maps.lacity.org/lahub/rest/services/Sewer_Information/MapServer/9',
+      outFields: ['PIPE_SIZE', 'PIPE_MAT', 'PIPE_SHAPE', 'STREET'],
+      describe: (a) => {
+        const size =
+          typeof a['PIPE_SIZE'] === 'number' && a['PIPE_SIZE'] > 0 ? `${a['PIPE_SIZE']}-inch ` : '';
+        const material =
+          { VCP: 'vitrified clay', RCP: 'reinforced concrete', DIP: 'ductile iron', PVC: 'PVC' }[
+            String(a['PIPE_MAT'] ?? '')
+          ] ?? '';
+        const street =
+          typeof a['STREET'] === 'string' && a['STREET'].trim() !== ''
+            ? ` in ${a['STREET'].trim()}`
+            : '';
+        return `${size}${material ? `${material} ` : ''}sewer main${street}`;
+      },
+      publisher: 'City of Los Angeles Sanitation',
+      coverage:
+        'This layer is the City of Los Angeles’ own sewer network. It covers the city only — not ' +
+        'the eighty-odd other cities in the county, and not unincorporated areas. Finding nothing ' +
+        'here means the city does not maintain sewer at this address, which for most of the ' +
+        'county is simply because the address is not in the city.',
     },
   ],
   'San Diego County': [
