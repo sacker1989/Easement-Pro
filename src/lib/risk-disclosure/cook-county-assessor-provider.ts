@@ -75,6 +75,8 @@ export const COOK_FIELDS = [
   'UNITDESC',
   'UNITNO',
   'LANDSF',
+  // The polygon's own area, used only when LANDSF is 0. See toValuation.
+  'Shape.STArea()',
   'CURRENTVALUE_LAND',
   'CURRENTVALUE_BLDG',
   'TAXYR',
@@ -136,8 +138,33 @@ function buildWhere(streetLine: string, zip?: string): string {
 
 function toValuation(attrs: Record<string, unknown>): AssessorParcelValuation {
   const pin = text(attrs.PIN14_dash);
-  const lotAreaSqFt = numberOrZero(attrs.LANDSF);
   const landValue = numberOrZero(attrs.CURRENTVALUE_LAND);
+
+  /*
+   * LANDSF FIRST, THE POLYGON WHEN LANDSF IS ZERO.
+   *
+   * CAUGHT ON PRODUCTION. 5801 W Cermak Rd, Cicero is `EX (Exempt Property)`
+   * and carries `LANDSF: 0` with `Shape.STArea(): 16778.78`. Returning 0
+   * there did not degrade the report — it destroyed it: the page compares the
+   * easement area against the lot area and refuses to build anything when the
+   * easement is larger, so every such address got the sentence "Easement area
+   * (800 sq ft) exceeds this parcel's actual lot area of 0 sq ft" and no
+   * report at all. 92,118 of Cook's 1,865,928 parcels have LANDSF = 0 —
+   * 4.9%, measured 2026-10-15, overwhelmingly exempt classes.
+   *
+   * The preference for LANDSF is unchanged and the reason still holds where
+   * it is populated: it is the assessor's own land figure, so it is
+   * consistent with the land VALUE assessed against it. That argument says
+   * nothing about the case where the assessor publishes no figure, and a zero
+   * is not a measurement of a lot that plainly has an area.
+   *
+   * The unit question was already settled in this file: the layer's spatial
+   * reference is EPSG:3435, Illinois State Plane East in US survey feet, so
+   * the shape area is already square feet and needs no conversion.
+   */
+  const assessorLandSqFt = numberOrZero(attrs.LANDSF);
+  const polygonSqFt = numberOrZero(attrs['Shape.STArea()']);
+  const lotAreaSqFt = assessorLandSqFt > 0 ? assessorLandSqFt : polygonSqFt;
 
   return {
     // The county's own identifier in both slots. LA distinguishes AIN from

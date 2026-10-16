@@ -238,3 +238,84 @@ describe('Illinois is not California', () => {
     expect(r.valuation.landValue).toBe(ROW.CURRENTVALUE_LAND);
   });
 });
+
+describe('a parcel the assessor publishes no land area for', () => {
+  /*
+   * CAUGHT ON PRODUCTION, AND IT WAS NOT A DEGRADED REPORT — IT WAS NO
+   * REPORT. 5801 W Cermak Rd, Cicero is class `EX (Exempt Property)`: the
+   * county returns `LANDSF: 0` and `Shape.STArea(): 16778.78`. Returning 0
+   * made the page compare an 800 sq ft easement against a 0 sq ft lot, decide
+   * the easement was larger than the parcel, and render "exceeds this
+   * parcel's actual lot area of 0 sq ft" in place of the whole report.
+   *
+   * 92,118 of Cook's 1,865,928 parcels have LANDSF = 0 — 4.9%, measured
+   * 2026-10-15. 1,647 tests passed through this the entire time, which is why
+   * these exist.
+   */
+  const exempt = {
+    ...ROW,
+    PIN14_dash: '16-29-203-003-0000',
+    street_address: '5801 W CERMAK RD',
+    CITYNAME: 'CICERO',
+    ZIP1: '60804',
+    LANDSF: 0,
+    'Shape.STArea()': 16778.78041862204,
+    CURRENTVALUE_LAND: null,
+    CURRENTVALUE_BLDG: null,
+    TAXYR: 2026,
+  };
+
+  it('falls back to the polygon area rather than reporting zero', async () => {
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([exempt]) }).findByAddress(
+      '5801 W Cermak Rd',
+      '60804',
+    );
+    expect(r.status).toBe('found');
+    if (r.status !== 'found') return;
+    expect(r.valuation.lotAreaSqFt).toBeCloseTo(16778.78, 1);
+  });
+
+  it('requests the field it falls back to', () => {
+    /*
+     * The comment on COOK_FIELDS warns that a field parsed but not requested
+     * is undefined at runtime with no type error. The fallback was written
+     * before the field was added to the list, which is exactly that bug.
+     */
+    expect(COOK_FIELDS).toContain('Shape.STArea()');
+  });
+
+  it('still prefers LANDSF when the assessor publishes one', async () => {
+    // The reason for the preference is unchanged: LANDSF is the figure the
+    // land value is assessed against, so the two stay consistent. The
+    // polygon area here is deliberately different and must be ignored.
+    const both = { ...ROW, LANDSF: 74671, 'Shape.STArea()': 99999 };
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([both]) }).findByAddress(
+      '400 N Lake Shore Dr',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    expect(r.valuation.lotAreaSqFt).toBe(74671);
+  });
+
+  it('does not invent a land value per sq ft from an unpublished value', async () => {
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([exempt]) }).findByAddress(
+      '5801 W Cermak Rd',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    // The area is now known and the value is not. A quotient of 0 is correct
+    // here precisely because it is not presented as a price: resolvePricePerSqFt
+    // rejects a non-positive figure rather than passing it through.
+    expect(r.valuation.landValue).toBe(0);
+    expect(r.valuation.landValuePerSqFt).toBe(0);
+  });
+
+  it('reports zero only when neither figure exists', async () => {
+    const neither = { ...ROW, LANDSF: 0, 'Shape.STArea()': 0 };
+    const r = await createCookCountyAssessorProvider({ fetchImpl: stub([neither]) }).findByAddress(
+      '400 N Lake Shore Dr',
+    );
+    if (r.status !== 'found') throw new Error('expected found');
+    // Nothing is fabricated to fill the gap; the page is responsible for not
+    // treating this zero as a measurement, and is guarded separately.
+    expect(r.valuation.lotAreaSqFt).toBe(0);
+  });
+});

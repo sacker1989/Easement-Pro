@@ -118,6 +118,27 @@ function param(value: string | string[] | undefined): string {
 }
 
 /**
+ * A lot area the county actually published, or null.
+ *
+ * ZERO IS A SENTINEL IN EVERY PROVIDER, AND `??` ACCEPTS IT. That cost the
+ * whole report on production: the page read `unified?.lotAreaSqFt ?? …`, got
+ * the zero a county publishes for a parcel it gives no land area for, and
+ * concluded an 800 sq ft easement was larger than the parcel — rendering
+ * "Easement area (800 sq ft) exceeds this parcel's actual lot area of 0 sq
+ * ft" in place of everything. 92,118 of Cook County's 1,865,928 parcels
+ * publish no LANDSF, almost all of them exempt classes.
+ *
+ * MODULE SCOPE BECAUSE THERE WERE FOUR READS, NOT ONE. Fixing the comparison
+ * left three more live: the IRWA estimate's input, the diagram's scale — where
+ * a zero makes the easement fill the entire lot — and two panels that printed
+ * "0 sq ft" as a measurement. A helper that has to be reached for is how the
+ * fifth read gets written correctly.
+ */
+function measuredArea(n: number | undefined): number | null {
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
  * Minimal, functional demo of the Step 3 module (Track 3 risk-disclosure
  * report), wired to Step 1's address resolution to derive the data-coverage
  * label — the "good first vertical slice to prove the full pipeline end to
@@ -398,10 +419,25 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         }
       }
 
-      // A matched parcel supplies the real lot area, so the typed value is only
-      // a fallback. Guard the easement against exceeding it — the real lot may
-      // be smaller than whatever was typed.
-      const lotAreaSqFt = unified?.lotAreaSqFt ?? valuation?.lotAreaSqFt ?? typedLotAreaSqFt;
+      /*
+       * A matched parcel supplies the real lot area, so the typed value is
+       * only a fallback. Guard the easement against exceeding it — the real
+       * lot may be smaller than whatever was typed.
+       *
+       * ?? WAS THE WRONG OPERATOR AND IT COST EVERY AFFECTED ADDRESS ITS
+       * WHOLE REPORT. The providers return 0 for a lot area the county does
+       * not publish, not null, so `??` accepted the zero as a measurement.
+       * The comparison below then fired on every one of them — 800 sq ft is
+       * greater than 0 — producing "exceeds this parcel's actual lot area of
+       * 0 sq ft" and no report. 92,118 Cook parcels publish no LANDSF.
+       *
+       * Checking for a POSITIVE number rather than a non-null one is the fix,
+       * and it belongs here as well as in the Cook provider: this line is the
+       * single place every county's area converges, so a sentinel from any
+       * future provider is caught once rather than per county.
+       */
+      const lotAreaSqFt =
+        measuredArea(unified?.lotAreaSqFt) ?? measuredArea(valuation?.lotAreaSqFt) ?? typedLotAreaSqFt;
 
       if (lookup.status !== 'ambiguous') {
         if (easementAreaSqFt > lotAreaSqFt) {
@@ -521,7 +557,10 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
            */
           irwa = buildValuationEstimate({
             easementType,
-            lotAreaSqFt: unified?.lotAreaSqFt ?? lotAreaSqFt,
+            // Same sentinel, same fix: an unpublished area must not reach the
+            // valuation as a measured zero. lotAreaSqFt above already
+            // resolved the fallback chain.
+            lotAreaSqFt,
             easementAreaSqFt,
             landValuePerSqFt: unified?.landValuePerSqFt ?? valuation?.landValuePerSqFt ?? null,
             valueSource:
@@ -556,7 +595,12 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     }
   }
 
-  const effectiveLotArea = valuation ? valuation.lotAreaSqFt : typedLotAreaSqFt;
+  /*
+   * DRIVES THE DIAGRAM'S SCALE, so a zero here makes the easement fill the
+   * whole lot. measured() is applied for the same reason as above: the
+   * providers publish 0 for an area the county does not give.
+   */
+  const effectiveLotArea = measuredArea(valuation?.lotAreaSqFt) ?? typedLotAreaSqFt;
   const lotSideLength = Math.sqrt(Math.max(effectiveLotArea, 1));
   const easementFraction = report
     ? Math.min(report.economicImpact.lostBuildableAreaSqFt / effectiveLotArea, 1)
@@ -847,9 +891,11 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             <li>
               <span className="k">This parcel</span>
               <span className="v">
-                {unified !== null
-                  ? `${Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft, ${unified.county}`
-                  : 'Not matched to a county record'}
+                {unified === null
+                  ? 'Not matched to a county record'
+                  : unified.lotAreaSqFt > 0
+                    ? `${Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft, ${unified.county}`
+                    : `${unified.county} — lot area not published`}
               </span>
             </li>
             <li>
@@ -921,15 +967,27 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 <span className="k">Address of record</span>
                 <span className="v">{unified.situsAddress}</span>
               </li>
+              {/*
+                ZERO MEANS NOT PUBLISHED, AND IS SAID THAT WAY. The row read
+                "0 sq ft" on production for an exempt Cook parcel, which is a
+                measurement of a lot that has an area. The Proposition 13 row
+                two below has always handled its own absence like this; these
+                two rows were asserting a zero instead.
+              */}
               <li>
                 <span className="k">Lot area (county geometry)</span>
-                <span className="v">{Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft</span>
+                <span className="v">
+                  {unified.lotAreaSqFt > 0
+                    ? `${Math.round(unified.lotAreaSqFt).toLocaleString()} sq ft`
+                    : 'not published for this parcel'}
+                </span>
               </li>
               <li>
                 <span className="k">Assessed land value</span>
                 <span className="v">
-                  ${unified.landValue.toLocaleString()}
-                  {unified.rollYear ? ` (${unified.rollYear} roll)` : ''}
+                  {unified.landValue > 0
+                    ? `$${unified.landValue.toLocaleString()}${unified.rollYear ? ` (${unified.rollYear} roll)` : ''}`
+                    : 'not published for this parcel'}
                 </span>
               </li>
               <li>
