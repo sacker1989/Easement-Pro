@@ -301,6 +301,27 @@ interface ResolvedPrice {
  * one. Every caller must handle that, which is the point.
  */
 function resolvePricePerSqFt(inputs: EconomicImpactInputs): ResolvedPrice | null {
+  /*
+   * A NON-POSITIVE PRICE IS NOT A PRICE, whichever branch produced it.
+   *
+   * CAUGHT BEFORE SHIPPING, BUT ONLY JUST. Suppressing the per-sq-ft figure
+   * for a condominium unit sets landValuePerSqFt to 0, and the assessorValuation
+   * branch below returns whatever it finds without checking the sign — via
+   * marketAdjustParcel, which happily indexes 0 forward to 0. The result would
+   * have been status 'range' with a band around $0: "your easement is worth
+   * $0 to $0", which is a far more confident claim than "no estimate is
+   * possible" and is the opposite of what the suppression was for.
+   *
+   * Guarding at the exit rather than in each branch means a future source
+   * cannot reintroduce it by returning a zero of its own.
+   */
+  const resolved = resolvePricePerSqFtUnchecked(inputs);
+  return resolved !== null && Number.isFinite(resolved.price) && resolved.price > 0
+    ? resolved
+    : null;
+}
+
+function resolvePricePerSqFtUnchecked(inputs: EconomicImpactInputs): ResolvedPrice | null {
   if (inputs.pricePerSqFtOverride !== undefined) {
     return { price: inputs.pricePerSqFtOverride, source: 'caller-override' };
   }

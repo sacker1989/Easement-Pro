@@ -56,7 +56,7 @@ import {
 const SD_PARCEL_QUERY_URL =
   'https://gis-public.sandiegocounty.gov/arcgis/rest/services/LAFCO/parcels/MapServer/0/query';
 
-const REQUIRED_FIELDS = [
+export const REQUIRED_FIELDS = [
   'APN',
   'ASR_LAND',
   'ASR_IMPR',
@@ -73,7 +73,41 @@ const REQUIRED_FIELDS = [
   // Read to classify the owner as trust/entity vs natural person. The name
   // itself is never retained on the valuation — see isTrustOrEntityOwner.
   'OWN_NAME1',
+  /*
+   * READ ONLY TO ANSWER ONE QUESTION: is the published area this owner's lot?
+   * See declaresUndividedInterest. FRACTINT looks like the field for this and
+   * is not — it is populated on 1,087,812 of 1,088,869 parcels and reads 1 on
+   * ordinary single-family lots, so it marks a whole interest rather than a
+   * fractional one.
+   */
+  'LEGLDESC',
 ] as const;
+
+/**
+ * Whether the legal description claims an undivided interest in a shared lot.
+ *
+ * THE SUITE NUMBER WOULD HAVE BEEN WRONG IN BOTH DIRECTIONS, which is why
+ * this reads the legal description instead. Measured 2026-10-15: of 265,453
+ * parcels declaring an undivided interest, 129,926 carry no suite at all —
+ * half the population missed — while 51,341 suite-numbered parcels declare
+ * none. One of those sits at 253 10th among 147 units: `BLK 204*LOT 15*`,
+ * 6,867 sq ft, a separate lot that merely shares a street address, and its
+ * valuation is sound.
+ *
+ *   condominium unit : "LOT 2*US222PER DOC06-519859&UND INT IN\"
+ *   single-family    : "PAR 4\"
+ *
+ * The county does not use the word "condominium" anywhere in this column —
+ * zero rows — so matching on it would have found nothing.
+ *
+ * KNOWN LIMIT: the column is fixed-width and truncates around 64 characters,
+ * so a unit whose "UND INT" phrase falls past the cut is missed. That
+ * under-detects, which costs a reader a caveat rather than giving them a
+ * wrong number.
+ */
+function declaresUndividedInterest(legalDescription: unknown): boolean {
+  return /\bUND\b[^.]{0,20}\bINT\b/i.test(String(legalDescription ?? ''));
+}
 
 /**
  * DOCTYPE code meanings, CONFIRMED against the county's published data
@@ -208,7 +242,10 @@ export interface SanDiegoParcelValuation {
   readonly totalValue: number;
   /** Living area in sq ft, or null. Used to normalise across house sizes. */
   readonly livingAreaSqFt: number | null;
+  /** Zero for an undivided interest; see declaresUndividedInterest. */
   readonly landValuePerSqFt: number;
+  /** Whether lotAreaSqFt is this owner's lot or a shared one. */
+  readonly lotTenure: 'whole-parcel' | 'undivided-interest';
   /** Prop 13 vintage recovered from DOCDATE. Branch on `reliability`. */
   readonly vintage: ReassessmentVintage;
 }
@@ -431,6 +468,12 @@ export function toSanDiegoParcelValuation(
     throw new SanDiegoLookupError('Assessor record reports a non-positive parcel area');
   }
 
+  /*
+   * READ BEFORE THE VALUE CHECKS, because a unit's land value is positive and
+   * passes every one of them. Only the legal description reveals this.
+   */
+  const undivided = declaresUndividedInterest(attrs['LEGLDESC']);
+
   const landValue = Number(attrs['ASR_LAND']);
   if (!Number.isFinite(landValue)) {
     throw new SanDiegoLookupError('Assessor record publishes no land value');
@@ -460,7 +503,16 @@ export function toSanDiegoParcelValuation(
     improvementValue,
     totalValue: Number(attrs['ASR_TOTAL']) || landValue + improvementValue,
     livingAreaSqFt: Number.isFinite(living) && living > 0 ? living : null,
-    landValuePerSqFt: landValue / lotAreaSqFt,
+    lotTenure: undivided ? 'undivided-interest' : 'whole-parcel',
+    /*
+     * ZEROED FOR AN UNDIVIDED INTEREST. The 147 parcels at 253 10th share one
+     * area of 42,841 sq ft and carry 119 different land values; dividing one
+     * by the other understates the price by roughly the number of units, and
+     * the easement valuation multiplies it. resolvePricePerSqFt rejects a
+     * non-positive price from every branch, so this becomes "no estimate is
+     * possible" rather than a band around $0.
+     */
+    landValuePerSqFt: undivided ? 0 : landValue / lotAreaSqFt,
     vintage: classifyVintage(attrs['DOCDATE'], attrs['DOCTYPE'], attrs['OWN_NAME1']),
   };
 }

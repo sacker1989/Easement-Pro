@@ -11,6 +11,7 @@ import {
   parseDocDate,
   parseSanDiegoAddress,
   SanDiegoLookupError,
+  REQUIRED_FIELDS as SD_REQUIRED_FIELDS,
   toSanDiegoParcelValuation,
 } from './san-diego-assessor-provider';
 import {
@@ -447,5 +448,72 @@ describe('San Diego HPI data', () => {
     for (const y of Object.keys(SAN_DIEGO_HPI_BY_YEAR)) {
       expect(SAN_DIEGO_HPI_TRACT_COUNT_BY_YEAR[Number(y)]).toBeDefined();
     }
+  });
+});
+
+describe('an undivided interest is not given the development\'s land price', () => {
+  /*
+   * MEASURED 2026-10-15. 147 parcels at 253 10th share one area of 42,841 sq
+   * ft and carry 119 different land values — the county publishes the
+   * development's area against each unit's value — so dividing understates
+   * the price by roughly the number of units, and the easement valuation
+   * multiplies it. 265,453 of the county's 1,088,869 parcels declare an
+   * undivided interest.
+   *
+   * TWO SIGNALS THAT LOOK RIGHT AND ARE NOT:
+   *
+   * FRACTINT is populated on 1,087,812 of 1,088,869 parcels and reads 1 on an
+   * ordinary single-family lot. It marks a whole interest, not a fractional
+   * one.
+   *
+   * The suite number is wrong in both directions. Of the 265,453 undivided
+   * parcels, 129,926 carry no suite — half the population — while 51,341
+   * suite-numbered parcels declare none. One of the latter sits at 253 10th
+   * among 147 units: "BLK 204*LOT 15*", 6,867 sq ft, a separate lot that
+   * merely shares a street address, whose valuation is sound.
+   */
+  const UNDIVIDED = {
+    ...LIVE_FULL_TRANSFER_1996,
+    // The trailing backslash is the county's own truncation marker, kept so
+    // the fixture is the string the service actually returns.
+    LEGLDESC: 'LOT 2*US222PER DOC06-519859&UND INT IN\\',
+  };
+
+  it('is detected from the legal description', () => {
+    expect(toSanDiegoParcelValuation(UNDIVIDED).lotTenure).toBe('undivided-interest');
+    expect(
+      toSanDiegoParcelValuation({
+        ...LIVE_FULL_TRANSFER_1996,
+        LEGLDESC: 'SEC 26-14-2W*E H*UND INT IN THAT POR OF DOC16-0669450 IN',
+      }).lotTenure,
+    ).toBe('undivided-interest');
+  });
+
+  it('refuses to derive a price per square foot', () => {
+    expect(toSanDiegoParcelValuation(UNDIVIDED).landValuePerSqFt).toBe(0);
+  });
+
+  it('leaves an ordinary parcel deriving its price', () => {
+    // The real wordings from live rows, plus the absent case.
+    for (const legal of ['PAR 4\\', 'PAR 2\\', 'BLK 204*LOT 15*', '']) {
+      const v = toSanDiegoParcelValuation({ ...LIVE_FULL_TRANSFER_1996, LEGLDESC: legal });
+      expect(v.lotTenure).toBe('whole-parcel');
+      expect(v.landValuePerSqFt).toBeGreaterThan(0);
+    }
+  });
+
+  it('does not treat FRACTINT as the signal', () => {
+    // A whole lot carrying FRACTINT 1 must keep its price.
+    const v = toSanDiegoParcelValuation({
+      ...LIVE_FULL_TRANSFER_1996,
+      FRACTINT: 1,
+      LEGLDESC: 'PAR 4\\',
+    });
+    expect(v.lotTenure).toBe('whole-parcel');
+    expect(v.landValuePerSqFt).toBeGreaterThan(0);
+  });
+
+  it('reads the field it depends on', () => {
+    expect(SD_REQUIRED_FIELDS).toContain('LEGLDESC');
   });
 });

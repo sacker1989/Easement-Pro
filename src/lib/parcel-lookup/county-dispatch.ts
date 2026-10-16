@@ -386,14 +386,9 @@ async function lookupParcelUninstrumented(
           situsAddress: v.situsFullAddress,
           zip: address.zip,
           lotAreaSqFt: v.lotAreaSqFt,
-          /*
-           * UNMEASURED, AND SAID SO RATHER THAN ASSUMED. Cook and Orange were
-           * both found to publish a whole building or development area against a
-           * per-unit land value; this county has not been checked for the same
-           * thing. Declaring whole-parcel here preserves current behaviour and is
-           * a claim, so it is logged as an open item rather than left implicit.
-           */
-          lotTenure: 'whole-parcel',
+          // Measured: LA publishes the development's area against a unit's
+          // land value for 175,129 parcels. See declaresCondominium.
+          lotTenure: v.lotTenure ?? 'whole-parcel',
           landValue: v.landValue,
           improvementValue: v.improvementValue,
           landValuePerSqFt: v.landValuePerSqFt,
@@ -535,14 +530,9 @@ async function lookupParcelUninstrumented(
         situsAddress: v.situsFullAddress,
         zip: v.zip,
         lotAreaSqFt: v.lotAreaSqFt,
-        /*
-         * UNMEASURED, AND SAID SO RATHER THAN ASSUMED. Cook and Orange were
-         * both found to publish a whole building or development area against a
-         * per-unit land value; this county has not been checked for the same
-         * thing. Declaring whole-parcel here preserves current behaviour and is
-         * a claim, so it is logged as an open item rather than left implicit.
-         */
-        lotTenure: 'whole-parcel',
+        // Measured: San Diego publishes the development's area against a
+        // unit's land value for 265,453 parcels. See declaresUndividedInterest.
+        lotTenure: v.lotTenure,
         landValue: v.landValue,
         improvementValue: v.improvementValue,
         landValuePerSqFt: v.landValuePerSqFt,

@@ -15,7 +15,7 @@ const LA_COUNTY_PARCEL_QUERY_URL =
   'https://public.gis.lacounty.gov/public/rest/services/LACounty_Cache/LACounty_Parcel/MapServer/0/query';
 
 /** Fields required to derive a per-sq-ft land value. */
-const REQUIRED_FIELDS = [
+export const REQUIRED_FIELDS = [
   'AIN',
   'APN',
   'SitusFullAddress',
@@ -25,7 +25,36 @@ const REQUIRED_FIELDS = [
   // Prop 13 base year. Without it there is no way to tell whether an assessed
   // value is current or decades stale — see market-index.ts.
   'Roll_LandBaseYear',
+  /*
+   * READ ONLY TO ANSWER ONE QUESTION: is the published area this owner's lot?
+   * See declaresCondominium. UseType and UseDescription cannot answer it —
+   * both read "Residential"/"Single" for a condominium unit, and no row in
+   * 2,433,213 contains the word "condominium" in either.
+   */
+  'LegalDescription',
 ] as const;
+
+/**
+ * Whether the legal description says this parcel is a condominium unit.
+ *
+ * MEASURED AGAINST BOTH CASES, because the obvious signal over-fires. A unit
+ * number does not mean a shared lot: 5053 109th St has 17 parcels sharing one
+ * area of 26,157 sq ft, while 1833 10th Ave has 3 parcels of 2,005, 2,017 and
+ * 3,124 sq ft — separate lots whose addresses carry unit letters, and whose
+ * valuations are perfectly sound. 279,408 LA parcels have a unit number;
+ * suppressing on that would have refused a figure to a large share of them
+ * for no reason.
+ *
+ * The legal description separates them cleanly:
+ *
+ *   "TR=72771 LOT 1 CONDO UNIT 1 (AIRSPACE AND 1/17 INT IN COMMON AREA)"
+ *   "TR=52320 LOT 8"
+ *
+ * 175,129 of 2,433,213 parcels carry it. Counts measured 2026-10-15.
+ */
+function declaresCondominium(legalDescription: unknown): boolean {
+  return /\bCONDO\b/i.test(String(legalDescription ?? ''));
+}
 
 export interface AssessorParcelValuation {
   readonly ain: string;
@@ -140,6 +169,12 @@ export function toAssessorParcelValuation(attrs: Record<string, unknown>): Asses
     throw new AssessorLookupError('Assessor record reports a non-positive parcel area');
   }
 
+  /*
+   * READ BEFORE THE VALUE CHECKS, because a unit's land value is positive and
+   * passes all of them. Only the legal description reveals this.
+   */
+  const condominium = declaresCondominium(attrs['LegalDescription']);
+
   const landValue = requireFiniteNumber(attrs, 'Roll_LandValue');
   if (landValue <= 0) {
     // Exempt and public parcels legitimately carry a zero land value. They
@@ -159,7 +194,17 @@ export function toAssessorParcelValuation(attrs: Record<string, unknown>): Asses
     improvementValue: Number(attrs['Roll_ImpValue']) || 0,
     rollYear: requireString(attrs, 'Roll_Year'),
     landBaseYear: blankToNull(attrs['Roll_LandBaseYear']),
-    landValuePerSqFt: landValue / lotAreaSqFt,
+    lotTenure: condominium ? 'undivided-interest' : 'whole-parcel',
+    /*
+     * ZEROED FOR A UNIT, because lotAreaSqFt is the whole development's and
+     * landValue is this unit's. At 5053 109th St the seventeen units share
+     * 26,157 sq ft and carry fifteen different land values; dividing gives a
+     * price roughly seventeen times too low, and the easement valuation
+     * multiplies it. resolvePricePerSqFt rejects a non-positive price from
+     * every branch, so this routes into "no estimate is possible" rather than
+     * into a $0 range.
+     */
+    landValuePerSqFt: condominium ? 0 : landValue / lotAreaSqFt,
   };
 }
 
