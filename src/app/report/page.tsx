@@ -26,6 +26,8 @@ import {
   areaIsEstablished,
   ASSUMED_AREA_CAVEAT,
   AREA_FIELD_HINT,
+  assumedAreaFromLot,
+  assumedFromLotCaveat,
   DEFAULT_EASEMENT_AREA_SQ_FT,
   easementAreaProvenance,
 } from '@/lib/valuation/easement-area-provenance';
@@ -231,7 +233,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    * so the primary funnel is always 'assumed-default'.
    */
   const areaProvenance = easementAreaProvenance(param(searchParams.easementAreaSqFt));
-  const easementAreaSqFt =
+  let easementAreaSqFt =
     areaProvenance === 'assumed-default'
       ? DEFAULT_EASEMENT_AREA_SQ_FT
       : Number(param(searchParams.easementAreaSqFt));
@@ -335,6 +337,21 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       })
     : null;
 
+  /*
+   * ONE LOT AREA FOR THE WHOLE PAGE.
+   *
+   * There were two. The calculations read "unified ?? valuation ?? typed";
+   * the diagram read "valuation ?? typed" and nothing else. For a parcel
+   * where the unified dispatch carried county geometry but the LA-shaped
+   * valuation did not — every Orange, San Diego and Cook match — the figures
+   * used the county's lot while the diagram drew the 8,000 sq ft form
+   * default. Observed on 2026-10-21: Newport Beach rendered "Lot: 8,000 sq
+   * ft" against a county lot of 3,184, while Koreatown rendered its 16,269
+   * correctly, from the same build.
+   */
+  let resolvedLotAreaSqFt: number | null = null;
+  /** True when the assumed area was derived from the matched lot. */
+  let assumedFromLot = false;
   let report: ReturnType<typeof buildRiskDisclosureReport> | null = null;
   let isLaCounty = false;
   let error: string | null = null;
@@ -439,6 +456,28 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
        */
       const lotAreaSqFt =
         measuredArea(unified?.lotAreaSqFt) ?? measuredArea(valuation?.lotAreaSqFt) ?? typedLotAreaSqFt;
+      resolvedLotAreaSqFt = lotAreaSqFt;
+
+      /*
+       * THE ASSUMED EASEMENT AREA SCALES WITH THE PARCEL, once there is one.
+       *
+       * The flat 800 sq ft default was 10% of the form's own default lot
+       * (8,000) — a proportion resolved against a placeholder and then
+       * frozen. Against real geometry it lands anywhere: 25% of a 3,184 sq ft
+       * Newport Beach lot, 4.9% of a 16,269 sq ft Koreatown one, from one
+       * constant.
+       *
+       * ONLY WHEN THE COUNTY ACTUALLY PUBLISHED AN AREA. measuredArea already
+       * rejects the 0 that providers emit for "not published", so an
+       * unmeasured lot keeps the flat placeholder rather than taking 10% of a
+       * fallback — which would be the original mistake with extra steps.
+       */
+      const lotIsMeasured =
+        measuredArea(unified?.lotAreaSqFt) !== null || measuredArea(valuation?.lotAreaSqFt) !== null;
+      if (areaProvenance === 'assumed-default' && lotIsMeasured) {
+        easementAreaSqFt = assumedAreaFromLot(lotAreaSqFt);
+        assumedFromLot = true;
+      }
 
       if (lookup.status !== 'ambiguous') {
         if (easementAreaSqFt > lotAreaSqFt) {
@@ -611,7 +650,9 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    * whole lot. measured() is applied for the same reason as above: the
    * providers publish 0 for an area the county does not give.
    */
-  const effectiveLotArea = measuredArea(valuation?.lotAreaSqFt) ?? typedLotAreaSqFt;
+  // The single source hoisted above, so the diagram and the figures cannot
+  // disagree. Falls back only when no lookup ran at all.
+  const effectiveLotArea = resolvedLotAreaSqFt ?? measuredArea(valuation?.lotAreaSqFt) ?? typedLotAreaSqFt;
   const lotSideLength = Math.sqrt(Math.max(effectiveLotArea, 1));
   const easementFraction = report
     ? Math.min(report.economicImpact.lostBuildableAreaSqFt / effectiveLotArea, 1)
@@ -1609,7 +1650,11 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                     */}
                     {areaProvenance === 'assumed-default' && (
                       <p role="note" style={{ margin: '0.75rem 0 0' }}>
-                        <strong>{ASSUMED_AREA_CAVEAT}</strong>
+                        <strong>
+                          {assumedFromLot && resolvedLotAreaSqFt !== null
+                            ? assumedFromLotCaveat(resolvedLotAreaSqFt, easementAreaSqFt)
+                            : ASSUMED_AREA_CAVEAT}
+                        </strong>
                       </p>
                     )}
                   </div>
@@ -1696,7 +1741,11 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 */}
                 {areaProvenance === 'assumed-default' && (
                   <p role="note" style={{ margin: '0.75rem 0 0' }}>
-                    <strong>{ASSUMED_AREA_CAVEAT}</strong>
+                    <strong>
+                          {assumedFromLot && resolvedLotAreaSqFt !== null
+                            ? assumedFromLotCaveat(resolvedLotAreaSqFt, easementAreaSqFt)
+                            : ASSUMED_AREA_CAVEAT}
+                        </strong>
                   </p>
                 )}
               </div>

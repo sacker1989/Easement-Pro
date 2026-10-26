@@ -129,7 +129,20 @@ describe('a county that publishes no lot area does not lose its report', () => {
      * denominator of easementFraction. A zero made the easement render as the
      * entire lot — a picture of a total taking, drawn from a missing field.
      */
-    expect(PAGE_CODE).toMatch(/effectiveLotArea = measuredArea\(valuation\?\.lotAreaSqFt\)/);
+    /*
+     * REWRITTEN 2026-10-25. The diagram now reads the single hoisted
+     * resolvedLotAreaSqFt rather than its own private expression, because
+     * having two sources is what let the diagram draw the 8,000 sq ft form
+     * default against a county lot of 3,184 on Newport Beach. The invariant
+     * is unchanged and is what this still checks: every source feeding the
+     * diagram passes through measuredArea, which rejects the 0 that providers
+     * publish for "no area given".
+     */
+    expect(PAGE_CODE).toMatch(/effectiveLotArea = resolvedLotAreaSqFt \?\?/);
+    expect(PAGE_CODE).toMatch(/resolvedLotAreaSqFt = lotAreaSqFt/);
+    expect(PAGE_CODE).toMatch(
+      /const lotAreaSqFt =\s*\n\s*measuredArea\(unified\?\.lotAreaSqFt\) \?\? measuredArea\(valuation\?\.lotAreaSqFt\)/,
+    );
   });
 
   it('does not pass an unpublished area into the valuation estimate', () => {

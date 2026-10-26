@@ -101,3 +101,62 @@ export const ASSUMED_AREA_CAVEAT =
 export const AREA_FIELD_HINT =
   `Left blank, the report assumes ${DEFAULT_EASEMENT_AREA_SQ_FT.toLocaleString()} sq ft and says ` +
   'so next to every figure. A rough guess of your own is worth more than the placeholder.';
+
+/**
+ * Typical width of a utility or drainage strip, in feet.
+ *
+ * Not measured by this project. It is the width such easements are commonly
+ * recorded at, and it is stated here as a number a reader can disagree with
+ * rather than buried in a multiplication.
+ */
+export const ASSUMED_STRIP_WIDTH_FT = 10;
+
+/**
+ * The assumed encumbered area for a parcel whose lot area the county gives.
+ *
+ * AN EASEMENT IS A STRIP, AND STRIPS SCALE WITH FRONTAGE, NOT AREA. That is
+ * the whole reason this is not a percentage.
+ *
+ * The first attempt at fixing the flat 800 sq ft placeholder took 10% of the
+ * matched lot — which is what 800 had implied against the form's own 8,000 sq
+ * ft default. It is right at residential scale and comes apart above it,
+ * because doubling a lot's area does not double the length of the boundary a
+ * utility runs along. Caught by reading the rendered page for 3700 Wilshire
+ * Blvd: a 108,177 sq ft commercial parcel produced a 10,818 sq ft assumed
+ * easement and an $11,100,096 orientation range. The old constant was wrong
+ * and bounded; a percentage is proportionate and unbounded, which is worse.
+ *
+ * So: a strip of ASSUMED_STRIP_WIDTH_FT along one side of a square lot of
+ * this area. Frontage goes as the square root, so the result grows
+ * sub-linearly, which is how strips actually behave.
+ *
+ *     2,502 sq ft lot  ->    500 sq ft   (10% would say 250)
+ *     8,000 sq ft lot  ->    894 sq ft   (the old flat default was 800)
+ *   108,177 sq ft lot  ->  3,289 sq ft   (10% would say 10,818)
+ *
+ * IT AGREES WITH THE OLD DEFAULT AT THE OLD DEFAULT LOT, which is the check
+ * that it is a reinterpretation of the existing assumption rather than a new
+ * and louder one.
+ */
+export function assumedAreaFromLot(lotAreaSqFt: number): number {
+  const frontageFt = Math.sqrt(Math.max(lotAreaSqFt, 1));
+  return Math.round(frontageFt * ASSUMED_STRIP_WIDTH_FT);
+}
+
+/**
+ * The caveat for an area derived from the matched lot.
+ *
+ * States the model, both numbers and the width, so the reader can check the
+ * arithmetic and disagree with the premise rather than only with the result.
+ */
+export function assumedFromLotCaveat(lotAreaSqFt: number, assumedSqFt: number): string {
+  return (
+    `Based on an assumed easement area of ${assumedSqFt.toLocaleString()} sq ft: a ` +
+    `${ASSUMED_STRIP_WIDTH_FT}-foot strip along one side of the ` +
+    `${Math.round(lotAreaSqFt).toLocaleString()} sq ft lot the county publishes for this parcel, ` +
+    'because no easement area was given. That is a placeholder, not a measurement — your ' +
+    'easement has a real width, recorded in the document, and it may run along a different ' +
+    'edge or across the middle. The figures scale directly with this area, so entering your own ' +
+    'is worth more than the estimate.'
+  );
+}

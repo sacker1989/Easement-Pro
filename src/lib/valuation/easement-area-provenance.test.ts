@@ -7,6 +7,9 @@ import {
   DEFAULT_EASEMENT_AREA_SQ_FT,
   easementAreaProvenance,
   type EasementAreaProvenance,
+  assumedAreaFromLot,
+  assumedFromLotCaveat,
+  ASSUMED_STRIP_WIDTH_FT,
 } from './easement-area-provenance';
 
 // readSource normalises CRLF, which this checkout produces and every pattern
@@ -97,8 +100,12 @@ describe('the report page cannot go back to asking the parcel match', () => {
      * two declarations rather than on the first mention of each name, since
      * both names also appear in the import block at the top of the file.
      */
+    // `let` since 2026-10-25: once a county lot area is known, the assumed
+    // area is re-derived as a share of it rather than staying the flat 800.
+    // The ordering this test exists for is unchanged — provenance is still
+    // read from the raw query value, before any default is substituted.
     const provenance = CODE.indexOf('const areaProvenance =');
-    const area = CODE.indexOf('const easementAreaSqFt =');
+    const area = CODE.indexOf('let easementAreaSqFt =');
     expect(provenance).toBeGreaterThan(-1);
     expect(area).toBeGreaterThan(provenance);
   });
@@ -160,5 +167,61 @@ describe('the assumption is disclosed where the figures are', () => {
     // did" — and nothing recorded it. The claim is gone, and the provenance is
     // the behaviour it described.
     expect(REPORT_PAGE).not.toMatch(/will record that you did/);
+  });
+});
+
+describe('the assumed area derives from the matched lot, as a strip', () => {
+  it('lands near the old flat default at the old default lot', () => {
+    /*
+     * The check that this REINTERPRETS the existing assumption rather than
+     * introducing a louder one. 8,000 sq ft was the form's default lot and
+     * 800 sq ft the flat default easement; a 10-foot strip across a square
+     * lot that size is 894.
+     *
+     * Not identical, and the test says 15% rather than pretending otherwise —
+     * 894 is 11.8% above 800. The two models answer slightly differently at
+     * the one point where both are defined, and that gap is the honest size
+     * of the change at residential scale.
+     */
+    const atOldDefault = assumedAreaFromLot(8_000);
+    expect(atOldDefault).toBeGreaterThan(DEFAULT_EASEMENT_AREA_SQ_FT * 0.85);
+    expect(atOldDefault).toBeLessThan(DEFAULT_EASEMENT_AREA_SQ_FT * 1.15);
+  });
+
+  it('grows sub-linearly, because a strip scales with frontage not area', () => {
+    /*
+     * THE REASON THIS IS NOT A PERCENTAGE. The first fix took 10% of the
+     * matched lot — right at residential scale, and it comes apart above it,
+     * because doubling a lot's area does not double the boundary a utility
+     * runs along. Caught by reading the page for a 108,177 sq ft commercial
+     * parcel: 10% gave a 10,818 sq ft easement and a $1.1m figure derived
+     * from it. The strip model gives 3,289.
+     */
+    const small = assumedAreaFromLot(2_502);
+    const large = assumedAreaFromLot(108_177);
+    expect(large / small).toBeLessThan((108_177 / 2_502) / 4);
+    expect(large).toBeLessThan(108_177 * 0.05);
+  });
+
+  it('never exceeds the lot it came from', () => {
+    for (const lot of [200, 1_000, 2_502, 8_000, 16_269, 108_177]) {
+      expect(assumedAreaFromLot(lot)).toBeLessThan(lot);
+    }
+  });
+
+  it('survives a degenerate lot area without returning NaN', () => {
+    for (const lot of [0, -5]) {
+      const a = assumedAreaFromLot(lot);
+      expect(Number.isFinite(a)).toBe(true);
+      expect(a).toBeGreaterThan(0);
+    }
+  });
+
+  it('states the width and both areas, so the reader can check it', () => {
+    const text = assumedFromLotCaveat(108_177, 3_289);
+    expect(text).toContain('3,289');
+    expect(text).toContain('108,177');
+    expect(text).toContain(`${ASSUMED_STRIP_WIDTH_FT}-foot strip`);
+    expect(text).toMatch(/placeholder, not a measurement/);
   });
 });
