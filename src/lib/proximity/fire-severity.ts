@@ -259,3 +259,91 @@ export const FIRE_SEVERITY_DISCLOSURE =
   'Map data: CAL FIRE / Office of the State Fire Marshal — Fire Hazard Severity Zones ' +
   '(Local Responsibility Area map dated March 24, 2025; State Responsibility Area 2024 map), ' +
   'used with attribution under CC BY.';
+
+/**
+ * What CAL FIRE says about this parcel, for every outcome — including the
+ * outcomes that are not a hazard.
+ *
+ * WHY SILENCE WAS THE WRONG ANSWER. `buildFireSafetyContent` returns null
+ * unless the easement is an overhead utility line AND the parcel sits in a
+ * mapped hazard zone, so every other parcel got no fire content at all. From
+ * a reader's side, "not in a mapped zone" and "we never looked" are the same
+ * blank page.
+ *
+ * It was reported from production on 2026-10-21 in the sharpest possible
+ * form: a Studio City report carried a VERY HIGH panel, and an Altadena
+ * address — inside the Eaton Fire burn scar — carried nothing. The reviewer
+ * called it the worst miss the product can make, and they were right about
+ * the effect while the cause was not what it looked like.
+ *
+ * THE PRODUCT WAS REPORTING CAL FIRE FAITHFULLY. Queried 2026-10-25, the LRA
+ * layer returns FHSZ -3, "NonWildland", for southern Altadena, and "Very
+ * High" a mile north at the foothills. The map is doing what it was built to
+ * do: FHSZ models WILDLAND fire hazard from terrain, fuel and weather over
+ * decades. The Eaton Fire's destruction of developed Altadena in January 2025
+ * was an urban conflagration driven by wind and structure-to-structure
+ * spread, which is a different phenomenon and is not what this layer models.
+ *
+ * So the fix is not to invent a hazard the map does not assert. It is to stop
+ * being silent, and to say what the map does and does not cover — because a
+ * homeowner reading "not in a mapped hazard zone" after their neighbourhood
+ * burned deserves to know why those two facts are compatible.
+ */
+export interface FireStatusNote {
+  readonly heading: string;
+  readonly body: string;
+  /** The limit of what the layer claims. Always present. */
+  readonly limit: string;
+  readonly source: string | null;
+}
+
+/** THE SENTENCE THAT MATTERS, and the reason this function exists. */
+const WILDLAND_ONLY =
+  'CAL FIRE\u2019s severity zones model WILDLAND fire hazard — terrain, vegetation and weather ' +
+  'over decades. They are not a record of what has burned, and they do not model urban ' +
+  'conflagration, where wind carries fire from structure to structure through a built-up ' +
+  'neighbourhood. Areas mapped as non-wildland have burned in exactly that way.';
+
+export function buildFireStatusNote(result: FireSeverityResult): FireStatusNote {
+  switch (result.kind) {
+    case 'in-hazard-zone':
+      return {
+        heading: `CAL FIRE maps this parcel as ${result.severity} fire hazard severity`,
+        body:
+          `The parcel sits inside a mapped ${result.description} Fire Hazard Severity Zone. That ` +
+          'carries real consequences: defensible-space requirements, building standards for ' +
+          'repairs and additions, and insurance that is harder and dearer to obtain.',
+        limit: WILDLAND_ONLY,
+        source: result.source,
+      };
+    case 'not-in-hazard-zone':
+      return {
+        heading: 'CAL FIRE does not map this parcel in a fire hazard severity zone',
+        body:
+          `The layer returns ${result.description ?? 'a non-hazard classification'} here, so the ` +
+          'state does not designate it Moderate, High or Very High. No defensible-space or ' +
+          'wildland building standard follows from the state map at this location.',
+        limit: WILDLAND_ONLY,
+        source: result.source,
+      };
+    case 'no-map-coverage':
+      return {
+        heading: 'CAL FIRE publishes no severity zone for this location',
+        body:
+          'Neither the local nor the state responsibility area map has a polygon here. That is ' +
+          'an absence of mapping, not a finding of low hazard, and it is the ordinary result ' +
+          'outside California.',
+        limit: WILDLAND_ONLY,
+        source: result.source,
+      };
+    case 'lookup-failed':
+      return {
+        heading: 'We could not reach CAL FIRE',
+        body:
+          'The fire hazard lookup did not complete, so this report says nothing either way about ' +
+          'fire hazard at this address. Check the CAL FIRE hazard map directly.',
+        limit: WILDLAND_ONLY,
+        source: result.source,
+      };
+  }
+}

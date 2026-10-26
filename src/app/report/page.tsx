@@ -54,6 +54,7 @@ import {
 import {
   FIRE_SEVERITY_DISCLOSURE,
   buildFireSafetyContent,
+  buildFireStatusNote,
   lookupFireSeverity,
   type FireSeverityResult,
 } from '@/lib/proximity/fire-severity';
@@ -1363,6 +1364,49 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
                 <p className="muted">
                   <small>{FIRE_SEVERITY_DISCLOSURE}</small>
                 </p>
+              </>
+            );
+          })()}
+
+          {/*
+            WHAT CAL FIRE SAYS, FOR EVERY PARCEL — not only the ones in a
+            hazard zone with an overhead line.
+
+            The rich panel above is gated twice: overhead-utility easements,
+            in a mapped hazard zone. Everything else rendered nothing, and
+            from the reader's side "not in a mapped zone" and "we never
+            looked" are the same blank page. Reported from production on
+            2026-10-21 in the sharpest form available: a Studio City report
+            carried a VERY HIGH panel while an Altadena address inside the
+            Eaton Fire burn scar carried nothing at all.
+
+            The product was reporting CAL FIRE faithfully — queried
+            2026-10-25, the layer returns "NonWildland" for southern Altadena
+            and "Very High" a mile north — so the fix is not to invent a
+            hazard the map does not assert. It is to say what the map says,
+            and to say what it does not cover, which is the part that
+            reconciles "not in a mapped zone" with a neighbourhood that
+            burned.
+
+            Suppressed when the rich panel already rendered, so a hazard-zone
+            parcel does not get the same fact twice.
+          */}
+          {(() => {
+            if (fireSeverity === null) return null;
+            if (buildFireSafetyContent(easementType, fireSeverity) !== null) return null;
+            const note = buildFireStatusNote(fireSeverity);
+            return (
+              <>
+                <h2>Fire hazard</h2>
+                <div className="panel">
+                  <p style={{ marginTop: 0 }}>
+                    <strong>{note.heading}</strong>
+                  </p>
+                  <p>{note.body}</p>
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    <small>{note.limit}</small>
+                  </p>
+                </div>
               </>
             );
           })()}

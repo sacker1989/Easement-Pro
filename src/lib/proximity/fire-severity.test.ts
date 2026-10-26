@@ -7,6 +7,7 @@ import {
   FIRE_SEVERITY_DISCLOSURE,
   lookupFireSeverity,
 } from './fire-severity';
+import { buildFireStatusNote } from './fire-severity';
 
 /**
  * CAL FIRE lookups are mocked at the fetch boundary: the tests assert the
@@ -166,5 +167,59 @@ describe('buildFireSafetyContent gating', () => {
     expect(FIRE_SEVERITY_DISCLOSURE).toContain('State Fire Marshal');
     expect(FIRE_SEVERITY_DISCLOSURE).toContain('2025');
     expect(FIRE_SEVERITY_DISCLOSURE).toContain('CC BY');
+  });
+});
+
+describe('every parcel gets a fire answer, not only hazard-zone ones', () => {
+  const base = { source: 'https://example.test/fhsz', queriedOn: '2026-10-25' } as const;
+
+  it('says plainly when the map shows no hazard zone', () => {
+    /*
+     * SILENCE WAS THE BUG. buildFireSafetyContent returns null unless the
+     * easement is overhead-utility AND the parcel is in a hazard zone, so
+     * every other parcel rendered nothing — and "not in a mapped zone" and
+     * "we never looked" are the same blank page to a reader.
+     */
+    const note = buildFireStatusNote({
+      kind: 'not-in-hazard-zone',
+      description: 'NonWildland',
+      ...base,
+    });
+    expect(note.heading).toMatch(/does not map this parcel/i);
+    expect(note.body).toContain('NonWildland');
+  });
+
+  it('never lets an absence of mapping read as an absence of hazard', () => {
+    const note = buildFireStatusNote({ kind: 'no-map-coverage', ...base });
+    expect(note.body).toMatch(/not a finding of low hazard/i);
+  });
+
+  it('says a failed lookup told us nothing, rather than saying nothing', () => {
+    const note = buildFireStatusNote({ kind: 'lookup-failed', reason: 'timeout', ...base });
+    expect(note.heading).toMatch(/could not reach/i);
+    expect(note.body).toMatch(/says nothing either way/i);
+  });
+
+  it('carries the wildland limit on EVERY outcome', () => {
+    /*
+     * THE SENTENCE THAT RECONCILES TWO TRUE THINGS. CAL FIRE maps southern
+     * Altadena as NonWildland and the Eaton Fire destroyed it in January
+     * 2025, because FHSZ models wildland fire and that was an urban
+     * conflagration. A homeowner reading "not in a mapped hazard zone" after
+     * their neighbourhood burned is owed that explanation, and it has to
+     * travel with the reassuring outcomes as much as the alarming ones.
+     */
+    const results = [
+      { kind: 'in-hazard-zone', severity: 'Very High', description: 'Very High', ...base },
+      { kind: 'not-in-hazard-zone', description: 'NonWildland', ...base },
+      { kind: 'no-map-coverage', ...base },
+      { kind: 'lookup-failed', reason: 'network', ...base },
+    ] as const;
+    for (const r of results) {
+      const note = buildFireStatusNote(r);
+      expect(note.limit, `${r.kind} lost the wildland limit`).toMatch(/WILDLAND/);
+      expect(note.limit).toMatch(/urban conflagration/i);
+      expect(note.limit).toMatch(/not a record of what has burned/i);
+    }
   });
 });
