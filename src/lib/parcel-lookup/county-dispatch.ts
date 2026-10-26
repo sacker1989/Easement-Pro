@@ -215,7 +215,7 @@ export interface CountyDispatchOptions {
  * and a module-level call would run during any accidental client import.
  */
 let sharedFetch: typeof fetch | null = null;
-function getSharedFetch(): typeof fetch {
+export function getSharedFetch(): typeof fetch {
   if (sharedFetch === null) sharedFetch = createResilientFetch();
   return sharedFetch;
 }

@@ -9,6 +9,7 @@
  * be speculative.
  */
 
+import { PROVIDER_TIMEOUT_MS } from './provider-timeout';
 import { buildSitusWhereClause, parseSitusAddress } from './situs-address';
 
 const LA_COUNTY_PARCEL_QUERY_URL =
@@ -229,7 +230,7 @@ export interface LiveProviderOptions {
 export function createLaCountyAssessorProvider(
   options: LiveProviderOptions = {},
 ): LaCountyAssessorProvider {
-  const { timeoutMs = 10_000, fetchImpl = fetch } = options;
+  const { timeoutMs = PROVIDER_TIMEOUT_MS, fetchImpl = fetch } = options;
 
   return {
     name: 'la-county-esri-parcel',

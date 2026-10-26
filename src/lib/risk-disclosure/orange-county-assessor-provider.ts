@@ -55,6 +55,7 @@
  * is the intended fallback shape. See spec §3.6.
  */
 
+import { PROVIDER_TIMEOUT_MS } from './provider-timeout';
 import { abbreviateStreetLine } from './situs-address';
 
 const OC_LEGAL_LOTS_QUERY_URL =
@@ -303,7 +304,7 @@ export interface OrangeCountyProviderOptions {
 export function createOrangeCountyAssessorProvider(
   options: OrangeCountyProviderOptions = {},
 ): OrangeCountyAssessorProvider {
-  const { timeoutMs = 10_000, fetchImpl = fetch, maxCandidates = 25 } = options;
+  const { timeoutMs = PROVIDER_TIMEOUT_MS, fetchImpl = fetch, maxCandidates = 25 } = options;
 
   return {
     name: 'orange-county-legal-lots',

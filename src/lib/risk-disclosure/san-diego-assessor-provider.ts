@@ -47,6 +47,7 @@
  * VintageReliability.
  */
 
+import { PROVIDER_TIMEOUT_MS } from './provider-timeout';
 import {
   isReliableHpiYear,
   SAN_DIEGO_HPI_BY_YEAR,
@@ -620,7 +621,7 @@ export interface SanDiegoProviderOptions {
 export function createSanDiegoAssessorProvider(
   options: SanDiegoProviderOptions = {},
 ): SanDiegoAssessorProvider {
-  const { timeoutMs = 10_000, fetchImpl = fetch, maxCandidates = 25 } = options;
+  const { timeoutMs = PROVIDER_TIMEOUT_MS, fetchImpl = fetch, maxCandidates = 25 } = options;
   const outFields = [...REQUIRED_FIELDS, 'Shape.STArea()'].join(',');
 
   return {

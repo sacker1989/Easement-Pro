@@ -81,7 +81,7 @@ interface CacheEntry {
   readonly headers: [string, string][];
 }
 
-const DEFAULTS = {
+export const DEFAULTS = {
   maxAttempts: 3,
   timeoutMs: 10_000,
   totalBudgetMs: 25_000,
