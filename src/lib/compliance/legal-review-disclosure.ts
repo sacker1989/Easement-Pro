@@ -8,7 +8,7 @@
  * cautious, it is stale, and it teaches readers the warnings are boilerplate.
  * So this reads `resolveStateRuleSet` — the same gate `analyzeEasement` reads
  * before deciding whether to run a rule at all. One source of truth, two
- * consumers, and no way for the copy to drift from the behaviour it describes.
+ * consumers, and no way for the copy to drift from the behavior it describes.
  *
  * TODAY IT SHOWS EVERYWHERE, and that is correct. California has a rule set
  * with `review: null`; every other state has none. There is no state in which

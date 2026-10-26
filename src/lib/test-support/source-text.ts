@@ -24,7 +24,7 @@
  * anyway, and they all had the same reason: THEY ALREADY HELD THE FILE TEXT.
  * A test that asserts on both the raw source and the stripped source — common,
  * because "the code must not say X" and "the file must document why" are
- * natural neighbours — could not use a helper that insists on doing its own
+ * natural neighbors — could not use a helper that insists on doing its own
  * `readFileSync`. Reading the file twice to use the shared function is worse
  * than three lines of inline regex, so inline regex is what got written, and
  * each copy then drifted: one forgot trailing `//`, one split "sentences" that

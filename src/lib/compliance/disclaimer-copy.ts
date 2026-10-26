@@ -27,7 +27,7 @@
  *
  * Two distinct questions for counsel, easily collapsed and different:
  *   1. Is the output "self-help service" within §6400(d), or does it cross
- *      into legal advice, which no registration authorises?
+ *      into legal advice, which no registration authorizes?
  *   2. If it is within §6400(d), must this product register as an LDA?
  */
 
@@ -113,7 +113,7 @@ export const CURRENT_DISCLAIMER: DisclaimerVersion = {
   unreviewedLawText:
     'THE LEGAL RULES BEHIND THIS HAVE NOT BEEN REVIEWED BY AN ATTORNEY. Easement law is state law ' +
     'and differs materially between states — how long a right must be used before it becomes ' +
-    'permanent, which unwritten easements a state recognises and on what test, whether an ' +
+    'permanent, which unwritten easements a state recognizes and on what test, whether an ' +
     'unrecorded easement binds someone who later buys the property, and whether an old easement ' +
     'expires at all. This product applies rules assembled from published statutes by researchers ' +
     'rather than lawyers, and no attorney licensed in your state has confirmed that they are ' +

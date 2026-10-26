@@ -29,9 +29,9 @@ const review: UplReviewRecord = {
 };
 
 describe('resolveUplAuthorisation', () => {
-  it('authorises a current review from an attorney admitted in that state', () => {
+  it('authorizes a current review from an attorney admitted in that state', () => {
     const auth = resolveUplAuthorisation('CA', review, TODAY);
-    expect(auth.status).toBe('authorised');
+    expect(auth.status).toBe('authorized');
     expect(auth.scope.advice).toBe(true);
     expect(permits(auth, 'openEndedResearch')).toBe(true);
     // Scope is per-activity. An opinion approving research and advice says

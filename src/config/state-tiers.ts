@@ -60,7 +60,7 @@ const CA_UPL_BASIS: RegulatoryBasis = {
     'is an active licensee of the State Bar." Nothing in it turns on payment, and §6126 makes ' +
     'unlicensed practice a misdemeanour. Free mode therefore does nothing to this basis. ' +
     'NO COMPLIANCE PATH SHORT OF BEING A LAWYER — there is no registration, bond or filing that ' +
-    'authorises a non-attorney, which is why this is the harder of the two regimes even though ' +
+    'authorizes a non-attorney, which is why this is the harder of the two regimes even though ' +
     'it is the one that was never written down. The open question it leaves is narrower than the ' +
     'one free mode closed: not "may we sell this" but "is what we produce the practice of law at ' +
     'all". The product\'s answer is its existing posture — report what public records say, refuse ' +
@@ -153,7 +153,7 @@ export const STATE_COMPLIANCE_MATRIX: StateComplianceMatrix = {
       'changed is that §6400 stopped reaching this product, so "licensed-pathway" no longer ' +
       'describes a requirement anyone is under — LDA registration is not required of a free ' +
       'service. The flow value is retained rather than rewritten because changing it would alter ' +
-      'gating behaviour, and the reason to change it would be a counsel opinion, not a pivot in ' +
+      'gating behavior, and the reason to change it would be a counsel opinion, not a pivot in ' +
       'the business model. §6125 is now the operative basis and it is unaffected by going free.',
   },
 };

@@ -106,7 +106,7 @@ export interface ParcelCandidate {
  * `ambiguous` exists because a single street address routinely maps to many
  * parcels — a condo building yields one AIN per unit, all sharing house
  * number and street. Collapsing that to "the first result" would price an
- * arbitrary neighbour's unit and present it as the user's own, so the
+ * arbitrary neighbor's unit and present it as the user's own, so the
  * ambiguity is surfaced for the caller to resolve.
  */
 export type AddressLookupResult =

@@ -9,15 +9,15 @@
  * This module is what makes it producible.
  *
  * EQUIRECTANGULAR, AND THAT IS A DELIBERATE SIMPLIFICATION. Latitude and
- * longitude are projected onto a local flat plane centred on the parcel, with
+ * longitude are projected onto a local flat plane centered on the parcel, with
  * the longitude axis scaled by cos(latitude). Over the distances that matter
- * here — a parcel is tens of metres across and the search radius is a couple
+ * here — a parcel is tens of meters across and the search radius is a couple
  * of hundred — the error against a proper geodesic is far below a foot, which
  * is well inside the 15 ft boundary strip the tier turns on. Great-circle
  * formulae would be more precise and would not change a single tier.
  *
  * It would be wrong at continental scale. Nothing here works at that scale:
- * every caller passes points within a few hundred metres of each other, and
+ * every caller passes points within a few hundred meters of each other, and
  * `localScale` is derived per parcel rather than globally.
  */
 

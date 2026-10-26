@@ -94,7 +94,7 @@ import type { EasementType } from '@/lib/easements/easement-types';
  * a screening band and an appraised factor cannot be rendered identically.
  */
 /**
- * The recognised approaches to valuing an easement, in the order the
+ * The recognized approaches to valuing an easement, in the order the
  * literature ranks them. Recorded so the report can name the method it is NOT
  * performing, rather than implying it performed one.
  *
@@ -209,7 +209,7 @@ export const TTI_PIPELINE_CASE_EXAMPLE: EncumbranceFactor = {
  *    (2016) is blunter still in the analogous leasehold context: the method
  *    "can lead to 'gross over-valuation'", and federal courts have rejected it
  *    "even if comparable lease transactions are not available" — i.e. absence
- *    of comparables is not a licence to fall back on a percentage.
+ *    of comparables is not a license to fall back on a percentage.
  *
  * They remain useful as an order-of-magnitude sanity check on a figure produced
  * by a proper before-and-after appraisal. A number far outside these bands is

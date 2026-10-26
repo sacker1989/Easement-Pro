@@ -315,7 +315,7 @@ export function createCookCountyAssessorProvider(options: {
        * AMBIGUOUS RATHER THAN FIRST-MATCH, for the reason the LA provider
        * gives and more so here: Chicago is dense with condo buildings, where
        * one street address yields one PIN per unit. Picking the first would
-       * price an arbitrary neighbour's unit and present it as the user's own.
+       * price an arbitrary neighbor's unit and present it as the user's own.
        */
       return { status: 'ambiguous', candidates: rows.map(toCandidate) };
     },

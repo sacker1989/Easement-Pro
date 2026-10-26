@@ -75,7 +75,7 @@ consistently **1.5-1.75x above `DOCTYPE=2`** at every decade:
 
 **CONFIRMED 2026-08-01 against the county's published data dictionary** — SanGIS PARCELS metadata,
 derived from the Assessor's Master Property Record
-(https://sdplantatlas.org/pdffiles/sangis_parcels.pdf). The behavioural inference was correct:
+(https://sdplantatlas.org/pdffiles/sangis_parcels.pdf). The behavioral inference was correct:
 
 | code | official meaning | count |
 |---|---|---|

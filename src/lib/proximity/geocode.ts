@@ -3,7 +3,7 @@
  *
  * WHY THIS ONE. It is free, needs no key, covers the whole country and is run
  * by the agency that maintains the address ranges it is built on. Every
- * commercial alternative needs a key, a billing relationship and a licence
+ * commercial alternative needs a key, a billing relationship and a license
  * that usually restricts caching — none of which a free product should take on
  * to answer one question.
  *
@@ -16,7 +16,7 @@
  * HOW ACCURATE IT ACTUALLY IS, which matters more here than it usually does.
  * The Census geocoder INTERPOLATES along a street's address range. It is not a
  * rooftop geocoder: the point lands on the street segment at roughly the right
- * position, which can be tens of metres from the building and, on a long rural
+ * position, which can be tens of meters from the building and, on a long rural
  * parcel, considerably more. For a flood zone that is a real limitation — a
  * point near a zone boundary can fall on the wrong side — and it is disclosed
  * rather than buried, because the alternative is a homeowner treating an

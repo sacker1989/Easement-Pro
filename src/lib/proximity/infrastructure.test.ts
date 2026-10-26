@@ -23,7 +23,7 @@ const FAUST_RING: readonly LngLat[] = [
  * STATED PLAINLY: the non-empty elements are constructed to that shape rather
  * than captured, because all three Overpass endpoints — the main one and both
  * mirrors — were returning dispatcher errors while this was written. The
- * empty-result envelope and the error behaviour below are real; the populated
+ * empty-result envelope and the error behavior below are real; the populated
  * payload is shaped from the documented contract. Worth re-capturing against
  * a live response when the service recovers.
  */
@@ -262,8 +262,8 @@ describe('the join carries each feature\'s own account of its position', () => {
    * assessParcelInfrastructure measures to the foot. evidence-tier.ts refuses
    * to build a tier A or B claim out of an inferred alignment — but it can
    * only refuse if the join passes the flag along, and nothing else in the
-   * suite would notice if that argument were dropped. Checked behaviourally
-   * rather than by reading the source, because the behaviour is the point.
+   * suite would notice if that argument were dropped. Checked behaviorally
+   * rather than by reading the source, because the behavior is the point.
    */
   const crossing = (quality: 'mapped' | 'inferred') =>
     assessParcelInfrastructure(

@@ -6,7 +6,7 @@
  * `fetchImpl?: typeof fetch`. Matching the `fetch` signature means this drops
  * into LA, Orange and San Diego without touching a line of their parsing
  * logic, which is tested and correct. A bespoke client would have meant
- * rewriting three working modules to gain the same behaviour.
+ * rewriting three working modules to gain the same behavior.
  *
  * WHY IT IS NEEDED, CONCRETELY. `county-database.ts` records the finding
  * against Orange County verbatim: "The whole ocgis.com server returned HTTP
@@ -268,7 +268,7 @@ export interface ResilientFetch {
  * PURE AND EXPORTED SO THE DECISION IS TESTABLE. The per-attempt timeout is
  * enforced by a real setTimeout firing an AbortController, which an injected
  * clock cannot trigger — so a test that tries to observe the override through
- * fetch behaviour ends up testing its own stub. This is the actual decision,
+ * fetch behavior ends up testing its own stub. This is the actual decision,
  * and it can be asserted directly.
  */
 export function resolveHostConfig<T extends Partial<typeof DEFAULTS>>(
@@ -371,7 +371,7 @@ export function createResilientFetch(options: ResilientFetchOptions = {}): Resil
 
         const controller = new AbortController();
         // The caller's own abort must win, and must NOT be retried — a
-        // cancelled render is not a transient failure.
+        // canceled render is not a transient failure.
         const callerSignal = init?.signal ?? null;
         const onCallerAbort = () => controller.abort(callerSignal?.reason);
         callerSignal?.addEventListener('abort', onCallerAbort, { once: true });

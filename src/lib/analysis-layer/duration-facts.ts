@@ -9,7 +9,7 @@
  * have inherited California's vocabulary along with the neutral part.
  *
  * The doctrinal half stays in each state's own file. A state must be able to
- * say "this doctrine is not recognised here" without first importing a basis
+ * say "this doctrine is not recognized here" without first importing a basis
  * value that presumes it is.
  */
 

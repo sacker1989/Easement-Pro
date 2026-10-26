@@ -48,7 +48,7 @@ Verified query shape (this exact call was run and behaved correctly):
 curl -s "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0/query?geometry=-117.93,33.85&geometryType=esriGeometryPoint&inSR=4326&distance=5000&units=esriSRUnit_Foot&spatialRel=esriSpatialRelIntersects&outFields=OWNER,VOLTAGE,TYPE&returnGeometry=false&f=json"
 ```
 
-Behaviour observed: **5,000 ft returned `features: []`; 20,000 ft returned features.** Both results are
+Behavior observed: **5,000 ft returned `features: []`; 20,000 ft returned features.** Both results are
 correct for that location. This matters as a test fixture — it is a verified true negative, which is
 the only way to prove the tool is not simply returning everything.
 

@@ -29,7 +29,7 @@ import { NO_SCOPE, resolveUplAuthorisation, type UplAuthorisation, type UplScope
  * review, finds none, and then looks for a dated acceptance by a named owner
  * in COMPLIANCE_GAPS. Track 1 stays available only because that acceptance
  * exists — not because nobody checked. The difference is invisible in
- * behaviour and total in meaning: remove the acceptance and California goes
+ * behavior and total in meaning: remove the acceptance and California goes
  * dark on the next request, which is exactly what a control should do.
  */
 export type AdvocacyWizardAccessDecision =
@@ -43,8 +43,8 @@ export type AdvocacyWizardAccessDecision =
        * True when Track 1 is available DESPITE a refused UPL authorisation,
        * on the strength of a recorded risk acceptance.
        *
-       * Deliberately not folded into `available`. "Authorised" and "operating
-       * on an accepted risk" produce identical behaviour and are different
+       * Deliberately not folded into `available`. "Authorized" and "operating
+       * on an accepted risk" produce identical behavior and are different
        * statements about the world, which is the distinction compliance-gaps.ts
        * exists to preserve. An audit record needs both.
        */
@@ -63,7 +63,7 @@ export type AdvocacyWizardAccessDecision =
     };
 
 /**
- * The gap whose acceptance authorises operating a state's Track 1 without a
+ * The gap whose acceptance authorizes operating a state's Track 1 without a
  * UPL review, if one is on record.
  *
  * Looked up rather than hardcoded, so the override lives where the decision
@@ -107,7 +107,7 @@ export function evaluateAdvocacyWizardAccess(
     };
   }
 
-  if (upl.status === 'authorised') {
+  if (upl.status === 'authorized') {
     return {
       available: true,
       requiredFlow: stateCompliance.track1RequiredFlow,

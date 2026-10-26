@@ -98,7 +98,7 @@ export const MEASURED_CONCORDANCE_RATE: Readonly<Record<string, number>> = {
  * measurement exposes.
  *
  * Practical consequence: more San Diego parcels fall out as `discordant`, and
- * that is the correct behaviour rather than a threshold problem. Do not widen
+ * that is the correct behavior rather than a threshold problem. Do not widen
  * CONCORDANCE_RATIO to raise the pass rate.
  *
  * RESOLVED 2026-08-01: it was a COMPOSITION EFFECT, not a vintage-quality
@@ -259,7 +259,7 @@ export function reconcilePaths(
         `Two independent methods agree within ${CONCORDANCE_RATIO}x on this parcel ` +
         `(${pathA.source} and ${pathB.source}, ratio ${ratio.toFixed(2)}). They fail in ` +
         'different ways — one uses this parcel\'s own assessed value, the other its ' +
-        'neighbourhood — so agreement is genuine corroboration rather than the same error ' +
+        'neighborhood — so agreement is genuine corroboration rather than the same error ' +
         'twice. Between 57% and 71% of parcels agree this closely, depending on assessment ' +
         'vintage. The figure remains a screening estimate, not an appraisal.',
     };

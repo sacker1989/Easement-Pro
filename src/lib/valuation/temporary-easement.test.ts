@@ -22,7 +22,7 @@ describe('the rate must be observed, never derived', () => {
   it('rejects a rate derived from fee value', () => {
     // §4.7: improper to opine market rental value from the underlying fee.
     // Federal courts reject it even where comparable leases are unavailable,
-    // so "we had no comparables" is not a defence.
+    // so "we had no comparables" is not a defense.
     for (const s of [
       'Capitalized land value at 8%',
       '6% of fee value per year',

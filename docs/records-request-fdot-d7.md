@@ -52,7 +52,7 @@ denial does not sink the whole request.
 >
 > Under Chapter 119, Florida Statutes, I request copies of records relating to temporary
 > construction easement (TCE) parcels shown in the Department's published right-of-way GIS layers
-> `Segment3ROWParcels` and `US301_Parcels` (ArcGIS organisation `O1JpcwDW8sjYuddV`).
+> `Segment3ROWParcels` and `US301_Parcels` (ArcGIS organization `O1JpcwDW8sjYuddV`).
 >
 > **Group A — acquisition shown complete.** Parcels **705A** and **705B** in `Segment3ROWParcels`,
 > both recording ACQUIRED = COMPLETE and a right-of-way certification date of 2023-12-31.
@@ -112,7 +112,7 @@ Everything else came from FDOT's own layers:
 | **term** | **not published — Item 1** |
 | **compensation** | **not published — Item 2** |
 
-Narrow requests are cheaper to fulfil, which makes a fast answer likelier and a fee dispute less so.
+Narrow requests are cheaper to fulfill, which makes a fast answer likelier and a fee dispute less so.
 
 ## Superseded targeting
 

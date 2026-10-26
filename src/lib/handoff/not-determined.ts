@@ -151,7 +151,7 @@ const CONDITIONAL: Readonly<Record<ConditionalKey, NotDeterminedItem>> = {
       'the land without one.',
     why:
       'Geometry shows that infrastructure sits on the land; it cannot show whether that is ' +
-      'authorised. THE DIRECTION IS NOT FIXED: an operator occupying private land without a ' +
+      'authorized. THE DIRECTION IS NOT FIXED: an operator occupying private land without a ' +
       'recorded easement may OWE the owner compensation rather than the owner being burdened. ' +
       'Which applies turns on the recorded documents and the history of the use.',
     whoResolves: 'attorney',

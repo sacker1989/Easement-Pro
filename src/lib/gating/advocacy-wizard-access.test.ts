@@ -67,7 +67,7 @@ describe('evaluateAdvocacyWizardAccess', () => {
 
   describe('the review is actually consulted now', () => {
     it('refuses a Tier B state with no review and no recorded acceptance', () => {
-      // CHANGED BEHAVIOUR, AND IT IS THE POINT. This fixture used to be
+      // CHANGED BEHAVIOR, AND IT IS THE POINT. This fixture used to be
       // available purely because the gate branched on track1RequiredFlow and
       // never looked at the review. Florida has no review and no acceptance,
       // so Track 1 is refused there — which is what a Tier B state with no
@@ -123,7 +123,7 @@ describe('evaluateAdvocacyWizardAccess', () => {
     it('grants no scope on the strength of an acceptance', () => {
       // An acceptance is a decision to keep a feature running. It is not an
       // opinion and cannot widen what the product may do — otherwise accepting
-      // a risk would become a way to authorise oneself.
+      // a risk would become a way to authorize oneself.
       const decision = evaluateAdvocacyWizardAccess(ca, TODAY);
       if (!decision.available) throw new Error('expected available');
       expect(decision.scope).toEqual({
@@ -134,7 +134,7 @@ describe('evaluateAdvocacyWizardAccess', () => {
       });
     });
 
-    it('records the owner direction without letting it authorise anything', () => {
+    it('records the owner direction without letting it authorize anything', () => {
       // The 2026-10-05 direction says counsel allows open-ended research and
       // advice. It is recorded, and the gate grants neither, because a
       // direction is not an opinion. If this ever fails, the expected scope has

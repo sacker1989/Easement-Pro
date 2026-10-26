@@ -18,7 +18,7 @@ import { PROVIDER_TIMEOUT_MS } from './provider-timeout';
  * So the two deadlines fire together. The instant attempt one hits ten
  * seconds, the provider's controller aborts too, and `resilient-fetch`
  * classifies a caller abort as fatal and deliberately does not retry it — a
- * cancelled render is not a transient failure. The second and third attempts
+ * canceled render is not a transient failure. The second and third attempts
  * were unreachable from the day they were written.
  *
  * It is invisible when the services are fast, which is most of the time, and
@@ -53,7 +53,7 @@ describe('a provider deadline must not cut the retry budget short', () => {
 
   it('a retry now succeeds where it used to be killed by the caller', async () => {
     /*
-     * THE BEHAVIOURAL PROOF. Two failures then a success, with the resilient
+     * THE BEHAVIORAL PROOF. Two failures then a success, with the resilient
      * layer's per-attempt timeout well below the provider's deadline. Before
      * the fix the provider's controller fired during attempt one and the
      * retries never happened.

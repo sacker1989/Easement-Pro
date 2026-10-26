@@ -81,7 +81,7 @@ export interface DataCoverageFacts {
   state?: string;
   /** Present only when a live assessor lookup actually returned a record. */
   assessorValuation?: AssessorParcelValuation;
-  /** True when the price was modelled forward by the house-price index. */
+  /** True when the price was modeled forward by the house-price index. */
   marketIndexed?: boolean;
   /**
    * A county that is not LA, whose own assessor roll supplied the land value.
@@ -90,7 +90,7 @@ export interface DataCoverageFacts {
    * all publish an assessed land value, the report renders it in the parcel
    * panel, and every one of them still fell through to the
    * national-estimate-default rule — so a page showing a real county figure
-   * was labelled "Based on national estimates, not locally verified".
+   * was labeled "Based on national estimates, not locally verified".
    */
   countyLandValue?: { readonly county: string; readonly perSqFt: number };
 }
@@ -105,7 +105,7 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
       if (!v || !facts.marketIndexed) return null;
       // The parcel identity and lot area are verified, but the price is a
       // model output. 'clear' gates direct assertion in a paid letter, and a
-      // modelled figure must not be asserted that way.
+      // modeled figure must not be asserted that way.
       return {
         tier: 'likely-with-caveat',
         value: {
@@ -116,7 +116,7 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
         caveat:
           'The county assessment reflects a Proposition 13 base year rather than current ' +
           'market value, so it has been indexed forward using the LA County house-price ' +
-          'index. The result is a modelled estimate assuming county-median appreciation, ' +
+          'index. The result is a modeled estimate assuming county-median appreciation, ' +
           'not an appraisal or an observed sale price.',
       };
     },
@@ -160,7 +160,7 @@ const DATA_COVERAGE_RULES: ReadonlyArray<ConfidenceRule<DataCoverageFacts, DataC
   {
     /*
      * ORDERED AFTER THE LA RULES AND BEFORE THE DEFAULT, which is the whole
-     * of its behaviour: classifyByRules is first-match-wins, so this catches
+     * of its behavior: classifyByRules is first-match-wins, so this catches
      * the three counties that publish a land value and are not LA, and lets
      * everywhere else fall through to the national default as before.
      */
@@ -464,7 +464,7 @@ function dollarRange(center: number, variance: number): DollarRange {
 /** Said in place of the figure, so the gap is explained rather than blank. */
 const NO_LAND_VALUE_REASON =
   'No land value is published for this address, and this tool does not substitute a national ' +
-  'average for one. Land prices vary by more than an order of magnitude between neighbourhoods, ' +
+  'average for one. Land prices vary by more than an order of magnitude between neighborhoods, ' +
   'so a single national figure would not tell you the scale of anything. Your county assessor ' +
   'publishes an assessed land value — that is the number this needs.';
 

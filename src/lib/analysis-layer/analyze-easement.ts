@@ -84,14 +84,14 @@ function unavailableResult(
 /**
  * Runs the Analysis Layer's confidence-tiering gate.
  *
- * BEHAVIOUR CHANGE, PHASE 3. This used to throw for any state but CA. Throwing
+ * BEHAVIOR CHANGE, PHASE 3. This used to throw for any state but CA. Throwing
  * is not degrading: it forced every caller into a try/catch and produced no
  * user-facing tiered result, when what the product needs is a
  * `flagged-ambiguous` the existing three-state display already renders.
  *
  * AND CALIFORNIA NOW DEGRADES TOO. The CA entry has no review record, so it
  * resolves `unavailable` exactly as Texas does. That is the honest application
- * of the gate rather than a regression — the previous behaviour asserted a
+ * of the gate rather than a regression — the previous behavior asserted a
  * California determination on the strength of a rule set nobody had reviewed.
  *
  * WHEN UNAVAILABLE, NO RULE IS EVALUATED. Not evaluated and discarded —

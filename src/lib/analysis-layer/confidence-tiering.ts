@@ -52,7 +52,7 @@ export type RuleClaimType =
  * specific question to put to an attorney.
  *
  * THE DISTINCTION THAT MAKES THIS SAFE. There are three different speech acts
- * here and only the third is the one that needs a licence:
+ * here and only the third is the one that needs a license:
  *
  *   1. "Your document says X."                  — a reading. Always allowed.
  *   2. "Courts generally presume Y in cases     — a general proposition, the

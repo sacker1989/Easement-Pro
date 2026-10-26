@@ -70,7 +70,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
     advisory: {
       generalPosition:
         'California courts generally treat an appurtenant easement — one attached to a ' +
-        'neighbouring parcel rather than to a person — as running with the land indefinitely, ' +
+        'neighboring parcel rather than to a person — as running with the land indefinitely, ' +
         'unless the document that created it says otherwise.',
       askYourAttorney:
         'Does anything in my chain of title limit the duration of this easement, and is the ' +
@@ -142,7 +142,7 @@ export const CA_DURATION_RULE_SET: ReadonlyArray<
     claimType: 'state-doctrine',
     advisory: {
       generalPosition:
-        'An easement in gross is personal to the holder rather than attached to neighbouring ' +
+        'An easement in gross is personal to the holder rather than attached to neighboring ' +
         'land. It is not presumed to run with the land, and may end with the original holder ' +
         'unless the document extends it to heirs and assigns.',
       askYourAttorney:

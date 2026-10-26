@@ -22,7 +22,7 @@ thing: **is there a currently-valid, in-scope UPL review record for this state, 
 licensed in that state.** Nothing else — not a state code comparison, not a feature flag, not
 a disclaimer checkbox — can make Track 1 reachable.
 
-### 1.1 The constraint this spec is organised around
+### 1.1 The constraint this spec is organized around
 
 Unauthorized practice of law is a state licensing question and in many states a criminal one.
 It turns on whether a non-attorney performed a reserved activity for compensation. It does not
@@ -108,7 +108,7 @@ buildable now because the two are separable.
 a valid UPL authorization *and* an implemented state rule set. Phase 4 builds the first and
 formalises the second as a registry that returns `true` only for CA. Phase 3 fills the
 registry. Because gate 2 is closed for all 50 other jurisdictions on the day Phase 4 merges,
-**Phase 4 can merge before Phase 3 with zero user-visible behaviour change**, which is the
+**Phase 4 can merge before Phase 3 with zero user-visible behavior change**, which is the
 point: it can be reviewed and tested on its own.
 
 ---
@@ -165,7 +165,7 @@ be settable by editing a URL — which today it is (`src/app/checkout/page.tsx:2
 ```
 
 Neither gate may be inferred from the other. A state can be legally cleared with no rule set
-(Track 1 stays off — we cannot analyse it) or have a rule set with no legal clearance (Track 1
+(Track 1 stays off — we cannot analyze it) or have a rule set with no legal clearance (Track 1
 stays off — we may not sell it). Both denials degrade identically from the user's point of
 view, and distinctly in the audit record.
 
@@ -179,7 +179,7 @@ export function ruleSetVersionFor(stateCode: string): string | null;
 ```
 
 `analyzeEasement` keeps throwing `UnsupportedStateRuleSetError` for an unregistered state —
-that is correct defensive behaviour and should stay. But the wizard must no longer *rely* on
+that is correct defensive behavior and should stay. But the wizard must no longer *rely* on
 the throw: `buildAdvocacyWizardState` calls `hasRuleSetFor` **before** `analyzeEasement`, so a
 missing rule set produces a clean degradation (§8) rather than an exception surfacing in the
 UI as `error` — which is what `src/app/advocacy/page.tsx` would render today.
@@ -593,7 +593,7 @@ On any failure: throw `Track1AuthorizationLapsedError`, **create no Stripe sessi
 the user to the §8.2 degraded screen with an added plain statement that they have not been
 charged. The test asserting the payment provider was never called is required (§11.5).
 
-### 9.3 Checkpoint 3 — re-validate at fulfilment, after payment
+### 9.3 Checkpoint 3 — re-validate at fulfillment, after payment
 
 Payment succeeding does not authorize delivery. Before
 `buildMaintenanceRequestLetter` runs on the success path (or in the Stripe webhook handler,
@@ -738,7 +738,7 @@ This is the test the phase exists for. It must be exhaustive, not representative
   literal outside `track1-authorization.ts`.
 - Runtime: a hand-rolled object cast through `as unknown as Track1Authorization` and passed to
   `buildCheckoutSession` is rejected by the checkpoint-2 re-validation (§9.2), proving the
-  re-check is real and the brand is not the only defence.
+  re-check is real and the brand is not the only defense.
 
 ### 11.5 Mid-session lapse — required by the phase brief
 
@@ -897,7 +897,7 @@ matrices.
    boundary tests land here.
 4. `rule-set-registry.ts` and the two-gate ordering in `buildAdvocacyWizardState`.
 5. Token propagation: `maintenance-request.ts`, then `build-checkout-session.ts`, then the
-   fulfilment guard. The mid-session and post-payment lapse tests land with each.
+   fulfillment guard. The mid-session and post-payment lapse tests land with each.
 6. Audit record extension.
 7. Route changes and degraded-screen rendering; copy requirement tests.
 8. Structural guard tests (§11.7) last, once the CA comparisons are actually gone.

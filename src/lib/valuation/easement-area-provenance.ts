@@ -1,6 +1,6 @@
 /**
  * Where the encumbered area came from, which is the weakest input in the
- * product and was the least labelled.
+ * product and was the least labeled.
  *
  * EVERY DOLLAR FIGURE IS A PERCENTAGE OF THIS NUMBER. The screening range and
  * the IRWA estimate both multiply a per-square-foot land value by the easement
@@ -69,7 +69,7 @@ export function areaIsEstablished(provenance: EasementAreaProvenance): boolean {
  *
  * ABSENT AND BLANK BOTH MEAN ASSUMED, because an empty field is not an
  * estimate. A value that does not parse is also assumed rather than rejected:
- * the caller is about to fall back to the default for it anyway, and labelling
+ * the caller is about to fall back to the default for it anyway, and labeling
  * the figure is more useful than refusing the report.
  */
 export function easementAreaProvenance(raw: string | undefined): EasementAreaProvenance {

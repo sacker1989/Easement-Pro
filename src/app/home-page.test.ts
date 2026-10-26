@@ -207,7 +207,7 @@ describe('claims the rest of the product has to keep', () => {
     /*
      * THE MAILBOX IS THE STORE, so the prefill is what makes the rule
      * followable. Free-prose requests arrive as "any chance you'll do Travis
-     * County?" and have to be read one at a time; two labelled lines make the
+     * County?" and have to be read one at a time; two labeled lines make the
      * pile countable by eye. See docs/waitlist-triage.md.
      */
     expect(PAGE).toContain('subject=${WAITLIST_SUBJECT}&body=${WAITLIST_BODY}');

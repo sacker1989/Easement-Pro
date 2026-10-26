@@ -99,13 +99,13 @@ export const FL_RULE_SET: StateEasementRuleSet = {
      * 2. The elements are worse, not better. §95.18 requires paying all
      *    outstanding taxes within one year of entry AND filing a return with
      *    the property appraiser within 30 days. Someone who merely drove over
-     *    a neighbour's strip for years did neither. Reading the period off
+     *    a neighbor's strip for years did neither. Reading the period off
      *    this section imports requirements that no prescriptive-easement
      *    claimant could ever meet, which would silently make the doctrine
      *    unavailable rather than merely mis-timed.
      * 3. The number differs from California's. 7 here, 5 there, on
      *    structurally parallel statutes — which is the concrete demonstration
-     *    that a neighbouring state's answer is worth nothing.
+     *    that a neighboring state's answer is worth nothing.
      *
      * No source stating the Florida prescriptive-easement period has been
      * fetched. Null is what that looks like.
@@ -113,12 +113,12 @@ export const FL_RULE_SET: StateEasementRuleSet = {
     researcherReading: null,
     note:
       'Establishes that a SEVEN-year period appears in Fla. Stat. §95.18, for adverse possession ' +
-      'without colour of title. It establishes nothing about prescriptive easements. ' +
+      'without color of title. It establishes nothing about prescriptive easements. ' +
       'NO PROVISIONAL READING IS OFFERED, deliberately — see the comment above this note for the ' +
       'three reasons, of which the second is the sharpest: §95.18 conditions the claim on paying ' +
       'all outstanding taxes within one year of entry and filing a return with the property ' +
       'appraiser within 30 days. Those are the acts of someone claiming to OWN the land. A ' +
-      'prescriptive easement is claimed by someone who concedes the neighbour owns it and asserts ' +
+      'prescriptive easement is claimed by someone who concedes the neighbor owns it and asserts ' +
       'only a right to use it, and such a claimant has never paid those taxes. Importing the ' +
       'element set with the period would not merely mis-time the doctrine, it would make it ' +
       'unsatisfiable. ' +
@@ -152,7 +152,7 @@ export const FL_RULE_SET: StateEasementRuleSet = {
       'the easementByNecessity field below. The two doctrines share the word "necessity" and ' +
       'nothing else: prior use turns on an apparent, continuous use existing at severance, ' +
       'whereas necessity turns on the parcel being landlocked and requires no prior use at all. ' +
-      'A state can recognise one and not the other, on different standards. ' +
+      'A state can recognize one and not the other, on different standards. ' +
       'EXACTLY INVERTED FROM CALIFORNIA, which has a fetched statute for prior use (Civ. Code ' +
       '§1104) and nothing for necessity. The two entries together are the evidence that these ' +
       'had to be separate fields: a merged field would have been half-answered in both states, ' +
@@ -175,9 +175,9 @@ export const FL_RULE_SET: StateEasementRuleSet = {
      * A reading IS offered here, and the reason it is offered in Florida and
      * withheld in California is worth stating: both halves of the type are on
      * the face of the fetched statute. "Recognized, specifically adopted"
-     * answers `recognised`. "Reasonably necessary for the beneficial use"
+     * answers `recognized`. "Reasonably necessary for the beneficial use"
      * answers the standard. California's entry left this null because only
-     * `recognised` had support and a half-filled reading reads as a complete
+     * `recognized` had support and a half-filled reading reads as a complete
      * one.
      */
     researcherReading: { recognised: true, necessityStandard: 'reasonable' },
@@ -196,8 +196,8 @@ export const FL_RULE_SET: StateEasementRuleSet = {
       'elements, a different trigger and — per the fetched text, which mentions utilities and ' +
       'cable service — a different scope of permitted use. ' +
       'WHY THAT MATTERS TO THIS PRODUCT SPECIFICALLY: a homeowner reading a report about their ' +
-      'own burdened parcel is on the receiving end of a neighbour\'s access claim. Which of the ' +
-      'two doctrines the neighbour is asserting changes what the homeowner must show. Counsel ' +
+      'own burdened parcel is on the receiving end of a neighbor\'s access claim. Which of the ' +
+      'two doctrines the neighbor is asserting changes what the homeowner must show. Counsel ' +
       'must confirm the subsection (1) reading AND say whether subsection (2) needs its own ' +
       'field before this state is turned on.',
   },

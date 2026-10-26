@@ -125,7 +125,7 @@ deploy themselves.
 ## Environment variables to set in Vercel
 
 **None.** Set nothing and the free tier works correctly. Every variable that
-exists defaults to the right behaviour on Vercel — one of them must stay unset,
+exists defaults to the right behavior on Vercel — one of them must stay unset,
 and the site origin derives itself from Vercel's own environment.
 
 ### `SITE_URL` — leave it unset unless you add a custom domain

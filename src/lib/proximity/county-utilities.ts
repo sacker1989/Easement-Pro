@@ -46,7 +46,7 @@ export interface CountyUtilitySource {
   readonly layerUrl: string;
   /** Fields worth reading; kept narrow so the payload stays small. */
   readonly outFields: readonly string[];
-  /** Turns one feature's attributes into a phrase a homeowner recognises. */
+  /** Turns one feature's attributes into a phrase a homeowner recognizes. */
   readonly describe: (attributes: Readonly<Record<string, unknown>>) => string;
   /**
    * What kind of thing this layer carries.
@@ -146,7 +146,7 @@ export const COUNTY_UTILITY_SOURCES: Readonly<Record<string, readonly CountyUtil
        * THE CITY OF LOS ANGELES, WHICH THE COUNTY LAYER DOES NOT COVER.
        *
        * The county serves unincorporated areas and contract cities. The City
-       * of LA runs its own sewers and is the largest population centre in the
+       * of LA runs its own sewers and is the largest population center in the
        * county by a wide margin — so the county layer alone left the single
        * biggest group of users in the product's best-covered county with
        * "nothing is mapped". 8321 Faust Ave, the test address used all week,

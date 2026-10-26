@@ -136,7 +136,7 @@ describe('findByAddress', () => {
 
   it('reports ambiguity rather than picking a unit when several parcels share an address', async () => {
     // A condo building yields one AIN per unit. Returning the first would
-    // price an arbitrary neighbour's unit as if it were the user's.
+    // price an arbitrary neighbor's unit as if it were the user's.
     const units = ['1', '2', '3'].map((unit) => ({
       attributes: {
         ...LIVE_ATTRS,

@@ -36,18 +36,18 @@
  *    valuation method. It chooses for outcome rather than for accuracy, and it
  *    is the specific move that turns a screening tool into an advocacy tool
  *    making claims it cannot support.
- * 3. The direction favours our own user, which is the dangerous direction for
+ * 3. The direction favors our own user, which is the dangerous direction for
  *    this product — the same finding recorded against review item 5. A
  *    homeowner who believes they are owed more than they are may reject a fair
  *    offer, or litigate on a premise that does not hold.
  * 4. THE STATED GOAL IS ALREADY MET WITHOUT IT. screening-estimate.ts emits a
- *    RANGE, and the top of that range is the favourable end — 75% of the strip
+ *    RANGE, and the top of that range is the favorable end — 75% of the strip
  *    for a utility easement, not an average. Nothing truncates it. Replacing
  *    the range with a single higher number would make the product's output
  *    weaker for the homeowner, not stronger, because a lone figure invites
  *    reliance that a band does not.
  *
- * What would change behaviour is a decision to wire a percentage table into
+ * What would change behavior is a decision to wire a percentage table into
  * the handoff path at all, which is a different question from which table. It
  * needs the appraiser review recorded at SCREENING-BANDS-UNCITED, not a
  * tie-break rule.

@@ -25,7 +25,7 @@
  * fee--that is, a percentage-of-fee value method." It notes such methods "can
  * lead to 'gross over-valuation'" and that federal courts have rejected them
  * "even if comparable lease transactions are not available" — so the absence
- * of comparables is explicitly NOT a licence to fall back on a capitalisation
+ * of comparables is explicitly NOT a license to fall back on a capitalisation
  * rate applied to fee value.
  *
  * Consequently this module has no default rate, derives no rate, and refuses

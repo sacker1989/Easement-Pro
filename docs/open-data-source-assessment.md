@@ -47,7 +47,7 @@ easements live in deeds and title reports, and that no GIS layer carries them. A
 today confirms it: **LA County publishes no easement or right-of-way service at all**, and San Diego
 publishes exactly one.
 
-Without labelled positives, a "72% likely" score is an invented number wearing a probability's
+Without labeled positives, a "72% likely" score is an invented number wearing a probability's
 clothing — the encumbrance-factor trap again, and worse, because a percentage anchors a reader far
 harder than a dollar range does.
 
@@ -176,7 +176,7 @@ context for a conversation with an appraiser, never as compensation figures.
 
 #### Web Mercator area trap — cost an 8x error before it was caught
 
-Both layers are EPSG:3857, where `Shape__Area` is in **square metres** *and* inflated by
+Both layers are EPSG:3857, where `Shape__Area` is in **square meters** *and* inflated by
 `1/cos²(latitude)`. At Green Cove Springs' latitude that is **1.333x**, verified against `GISACRES`
 on six parcels (measured 1.3380 against a theoretical 1.3331 — a 0.4% match).
 
@@ -191,7 +191,7 @@ areas must come from the geometry service, which returns true values.
 ### The guide supplies the missing bridge
 
 `.claude/agents/easement_analysis_guide.md` Part 3 is the piece that makes this coherent as a
-product. **Plats show easements as labelled dashed lines** — *"15' Utility Easement"* — and a deed's
+product. **Plats show easements as labeled dashed lines** — *"15' Utility Easement"* — and a deed's
 **Exceptions and Reservations** clause lists them with book and page references. That is where the
 certainty lives, and it is reachable by the homeowner for $10–$50 in 1–2 days.
 
@@ -310,7 +310,7 @@ with `benchmark=Public_AR_Current` returned `{x: -118.476, y: 34.083}` for a rea
 Los Angeles address.
 
 **It interpolates along a street's address range — it is not a rooftop geocoder.**
-The point lands on the street segment, which can be tens of metres from the
+The point lands on the street segment, which can be tens of meters from the
 building. That is disclosed to the user along with the matched address, because a
 point near a flood-zone boundary can fall on the wrong side of it.
 

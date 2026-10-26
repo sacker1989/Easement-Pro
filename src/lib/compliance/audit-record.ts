@@ -42,17 +42,17 @@ export interface SendAuditRecord {
   stateTier: StateComplianceEntry['tier'];
   complianceBasis: string | null;
   /**
-   * Whether a counsel UPL review authorised this send, or an accepted risk did.
+   * Whether a counsel UPL review authorized this send, or an accepted risk did.
    *
    * ADDED 2026-10-05, WITH THE GATE THAT MAKES IT ANSWERABLE. The record
    * already carried the tier and the basis, which say what the product
    * CLAIMED. Neither says whether an attorney had actually looked. Those
-   * produce identical behaviour and are the first thing anyone reviewing a
+   * produce identical behavior and are the first thing anyone reviewing a
    * letter months later would want distinguished — and, before this, the
    * record could not distinguish them because nothing consulted the review.
    */
   uplAuthorisation: {
-    /** 'authorised' | the refusal reason that was overridden. */
+    /** 'authorized' | the refusal reason that was overridden. */
     readonly basis: string;
     readonly reviewId: string | null;
     /** The gap id carrying the dated acceptance, when running on one. */
@@ -167,8 +167,8 @@ function buildUplAudit(entry: StateComplianceEntry): SendAuditRecord['uplAuthori
 
   if (!decision.operatingUnderAcceptedRisk) {
     return {
-      basis: 'authorised',
-      reviewId: decision.upl.status === 'authorised' ? decision.upl.review.id : null,
+      basis: 'authorized',
+      reviewId: decision.upl.status === 'authorized' ? decision.upl.review.id : null,
       acceptedUnderGapId: null,
     };
   }

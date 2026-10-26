@@ -77,7 +77,7 @@ export interface TierAssessment {
    *
    * A FLAG RATHER THAN A STRING MATCH ON `basis`. Without it, anything
    * downstream that needs to treat a capped finding differently — a summary
-   * line, a referral package, a renderer — has to recognise the wording,
+   * line, a referral package, a renderer — has to recognize the wording,
    * which breaks the moment the wording is edited. A tier C finding that was
    * capped and one that is genuinely 300 ft away are not the same claim and
    * must stay distinguishable without reading prose.
@@ -173,7 +173,7 @@ export function assessEvidenceTier(
       implication:
         'Worth investigating, not concluding. Recorded utility and drainage easements are commonly ' +
         'written as strips along lot lines, so a feature this close may sit inside one that the ' +
-        'parcel geometry does not show — or may sit entirely on the neighbouring parcel or in the ' +
+        'parcel geometry does not show — or may sit entirely on the neighboring parcel or in the ' +
         'public right of way. The plat will distinguish these; the geometry will not.',
       mayValue: false,
       positionInferred: false,

@@ -3,9 +3,9 @@
  * and at worst.
  *
  * WHY THIS AND NOT A DIRECTORY. A vetted registry needs recruitment before it
- * helps anyone, covers only where someone said yes, and goes stale as licences
+ * helps anyone, covers only where someone said yes, and goes stale as licenses
  * lapse. It also answers a question the homeowner can already answer: every
- * state publishes a licence register.
+ * state publishes a license register.
  *
  * The question they genuinely cannot answer is this one. Most people hire an
  * appraiser once in their life and have no referent for what a good one

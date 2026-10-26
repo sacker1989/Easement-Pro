@@ -76,7 +76,7 @@ averages away precisely the per-parcel dispersion this measurement exposes. Both
 correct; they answer different questions.
 
 The practical consequence is that more San Diego parcels fall out as `discordant`. **That is the
-correct behaviour, not a threshold problem.** Do not widen `CONCORDANCE_RATIO` to raise the pass
+correct behavior, not a threshold problem.** Do not widen `CONCORDANCE_RATIO` to raise the pass
 rate — the disagreement is real and the flag is the product working.
 
 ### A proposed mechanism, and its retraction
@@ -205,7 +205,7 @@ strength while presenting the result as a reconciliation.
 
 Agreement is treated as genuine corroboration rather than the same error twice, because the paths
 fail differently: Path A is parcel-specific and inherits the parcel's own assessment; Path B is
-ZIP-generic and inherits the neighbourhood's. Path B's dominant error term is precisely the
+ZIP-generic and inherits the neighborhood's. Path B's dominant error term is precisely the
 ZIP-median market level (component 2: p90 63.2%, against 21.6% for the share), and Path A does not
 use it at all.
 

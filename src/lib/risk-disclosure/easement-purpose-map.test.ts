@@ -12,7 +12,7 @@ import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-type
 describe('every easement type is covered, not just the five the UI had', () => {
   it('maps all twelve', () => {
     // Seven of these were previously unreachable from the interface and had no
-    // defined behaviour anywhere else. A gap that reads as coverage.
+    // defined behavior anywhere else. A gap that reads as coverage.
     expect(EASEMENT_TYPES).toHaveLength(12);
     for (const type of EASEMENT_TYPES) {
       expect(Object.keys(PURPOSE_BY_EASEMENT_TYPE)).toContain(type);
@@ -119,7 +119,7 @@ describe('the dangerous mappings are the ones to get right', () => {
 describe('unreviewed mappings are marked, not hidden', () => {
   it('names exactly the mappings that have not been reviewed', () => {
     // Same posture as CA_DURATION_RULE_SET and compliance-gaps.ts: an
-    // engineering judgement is labelled as one.
+    // engineering judgement is labeled as one.
     expect([...unreviewedEasementTypes()].sort()).toEqual([
       'conservation',
       'pipeline',

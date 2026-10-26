@@ -286,7 +286,7 @@ export const FIRE_SEVERITY_DISCLOSURE =
  *
  * So the fix is not to invent a hazard the map does not assert. It is to stop
  * being silent, and to say what the map does and does not cover — because a
- * homeowner reading "not in a mapped hazard zone" after their neighbourhood
+ * homeowner reading "not in a mapped hazard zone" after their neighborhood
  * burned deserves to know why those two facts are compatible.
  */
 export interface FireStatusNote {
@@ -302,7 +302,7 @@ const WILDLAND_ONLY =
   'CAL FIRE\u2019s severity zones model WILDLAND fire hazard — terrain, vegetation and weather ' +
   'over decades. They are not a record of what has burned, and they do not model urban ' +
   'conflagration, where wind carries fire from structure to structure through a built-up ' +
-  'neighbourhood. Areas mapped as non-wildland have burned in exactly that way.';
+  'neighborhood. Areas mapped as non-wildland have burned in exactly that way.';
 
 export function buildFireStatusNote(result: FireSeverityResult): FireStatusNote {
   switch (result.kind) {

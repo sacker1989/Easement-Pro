@@ -143,7 +143,7 @@ plus the `summariseTiers(findings, fromRecordedEasements)` line. Rules:
 - **Include `provenanceConfidence(provenance)` alongside the tier.** Tier A + `proximity-inference`
   is `flagged`, and the package must show both. A professional needs to know the tier permitted a
   valuation attempt *and* that provenance never rose above inference.
-- **Tier B and C findings are included, labelled as context.** Tier C's `implication` already says it
+- **Tier B and C findings are included, labeled as context.** Tier C's `implication` already says it
   implies no encumbrance. Omitting them would let a later reader think they were never checked.
 - **State the negative-result asymmetry**, per `spec-proximity-easement-scan.md` §2: finding nothing
   means nothing was found *in the layers queried*, and the layers are incomplete.
@@ -487,7 +487,7 @@ the worked doc uses, and preserves the structure that made the draft defensible:
 - the three withholding asks: partial production, statutory basis for any withholding, and the
   identifier to cite to re-request once the exemption lapses;
 - a fee cap placeholder and a preference for a spreadsheet of term and amount over copies of
-  instruments, which is cheaper to fulfil and therefore likelier to be answered;
+  instruments, which is cheaper to fulfill and therefore likelier to be answered;
 - a narrow ask overall: everything else — parcel identity, owner, encumbered area, ROW certification
   date — is already published.
 

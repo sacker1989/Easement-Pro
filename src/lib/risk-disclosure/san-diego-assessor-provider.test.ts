@@ -177,7 +177,7 @@ describe('classifyVintage — the four measured conditions of use', () => {
 describe('DOCTYPE_MEANINGS — confirmed against the county data dictionary', () => {
   it('records the two codes the valuation logic turns on', () => {
     // SanGIS PARCELS metadata, from the Assessor's Master Property Record.
-    // The behavioural inference was correct on both.
+    // The behavioral inference was correct on both.
     expect(DOCTYPE_MEANINGS['1']).toBe('Grant deed');
     expect(DOCTYPE_MEANINGS['2']).toBe('Quit claim');
   });
@@ -397,7 +397,7 @@ describe('createSanDiegoAssessorProvider', () => {
     if (r.status === 'found') expect(r.valuation.landValue).toBe(266867);
   });
 
-  it('reports ambiguity rather than pricing an arbitrary neighbour', async () => {
+  it('reports ambiguity rather than pricing an arbitrary neighbor', async () => {
     const p = createSanDiegoAssessorProvider({
       fetchImpl: stubFetch({
         features: [{ attributes: LIVE_FULL_TRANSFER_1996 }, { attributes: LIVE_EXCLUDED_2013 }],

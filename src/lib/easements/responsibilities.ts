@@ -36,7 +36,7 @@ import type { EasementType } from './easement-types';
 
 /** Who typically bears a duty. Deliberately coarse — precision needs the document. */
 export type Party =
-  | 'holder' // the utility, agency or neighbouring owner who benefits
+  | 'holder' // the utility, agency or neighboring owner who benefits
   | 'owner' // the homeowner whose land is burdened
   | 'shared'
   | 'depends-on-document';
@@ -101,7 +101,7 @@ const INFRASTRUCTURE_REPAIR: Responsibility = {
     'yard is the utility’s to repair and replace, and that remains true even though the repair ' +
     'happens on your land and inconveniences you.',
   whatWouldChangeIt:
-    'A SHARED or private line — one serving your property together with a neighbour’s, rather ' +
+    'A SHARED or private line — one serving your property together with a neighbor’s, rather ' +
     'than a public main passing through — is a different situation and frequently a shared cost. ' +
     'Which one you have is worth establishing before anything fails.',
 };
@@ -214,10 +214,10 @@ export const RESPONSIBILITIES_BY_TYPE = {
     'Storm drain',
     [SURFACE_UPKEEP, INFRASTRUCTURE_REPAIR, RESTORATION, IMPROVE_UTILITY],
     'Usually modest effect on value. The protection angle matters more: a blocked or undersized ' +
-      'storm drain can put water where it has never been, and drainage disputes between neighbours ' +
+      'storm drain can put water where it has never been, and drainage disputes between neighbors ' +
       'are among the most common property disputes there are.',
     'Watch where water actually goes in the first heavy rain after you notice the easement, and ' +
-      'photograph it. Observed drainage behaviour beats any map.',
+      'photograph it. Observed drainage behavior beats any map.',
   ),
 
   'water-line': record(
@@ -304,7 +304,7 @@ export const RESPONSIBILITIES_BY_TYPE = {
         question: 'Who maintains the strip between my fence and the road?',
         typically: 'shared',
         answer:
-          'Commonly split in a way that surprises people: the agency maintains the travelled way ' +
+          'Commonly split in a way that surprises people: the agency maintains the traveled way ' +
           'and its own infrastructure, while the homeowner is often expected to maintain the ' +
           'parkway, verge or sidewalk frontage — sometimes including liability for its condition.',
         whatWouldChangeIt:
@@ -326,7 +326,7 @@ export const RESPONSIBILITIES_BY_TYPE = {
     [SURFACE_UPKEEP, INFRASTRUCTURE_REPAIR, RESTORATION, IMPROVE_UTILITY],
     'Modest direct effect on value. The real exposure is that blocking or re-routing drainage — ' +
       'even unintentionally, by filling a low spot or adding hardscape — can move water onto a ' +
-      'neighbour and create liability that did not exist before.',
+      'neighbor and create liability that did not exist before.',
     'Do not fill, re-grade or pave within a drainage easement without asking first. It is the ' +
       'cheapest way to avoid the one genuinely expensive mistake available here.',
   ),
@@ -368,7 +368,7 @@ export const RESPONSIBILITIES_BY_TYPE = {
           'things you agree not to do rather than a right for someone else to come and do things, ' +
           'so the land generally stays yours to look after.',
         whatWouldChangeIt:
-          'The holding organisation typically has monitoring rights — an annual visit to confirm ' +
+          'The holding organization typically has monitoring rights — an annual visit to confirm ' +
           'compliance — and specific management obligations are sometimes written in.',
       },
       {
@@ -381,7 +381,7 @@ export const RESPONSIBILITIES_BY_TYPE = {
           'can become, not a transfer of it.',
         whatWouldChangeIt:
           'The permitted-uses section of the instrument is where this lives, and it is specific ' +
-          'rather than general. Two conservation easements on neighbouring parcels can allow ' +
+          'rather than general. Two conservation easements on neighboring parcels can allow ' +
           'quite different things.',
       },
       {

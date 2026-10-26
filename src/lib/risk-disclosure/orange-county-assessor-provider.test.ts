@@ -159,7 +159,7 @@ describe('createOrangeCountyAssessorProvider', () => {
     }
   });
 
-  it('reports ambiguity rather than pricing an arbitrary neighbour', async () => {
+  it('reports ambiguity rather than pricing an arbitrary neighbor', async () => {
     const provider = createOrangeCountyAssessorProvider({
       fetchImpl: stubFetch({
         features: [{ attributes: LIVE_ALAMO_ST }, { attributes: LIVE_HUNTINGTON_AVE }],

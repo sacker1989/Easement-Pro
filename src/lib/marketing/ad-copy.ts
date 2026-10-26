@@ -40,7 +40,7 @@
  *    method, so no wording creates the capability the claim asserts.
  *
  * 3. APPRAISAL IS A LICENSED ACTIVITY. Advertising appraisal services without
- *    a licence is a licensing problem regardless of what the fine print says.
+ *    a license is a licensing problem regardless of what the fine print says.
  *    You cannot disclaim your way into offering a licensed service.
  *
  * THE DEFENSIBLE VERSION OF THE SAME IDEA IS BELOW, and it is a good one. "You

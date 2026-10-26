@@ -9,14 +9,14 @@
  *
  * THE ASYMMETRY IS THE WHOLE POINT, AND ALMOST NOBODY SEES IT.
  *
- * When you are BURDENED by an undocumented arrangement — a neighbour crosses
+ * When you are BURDENED by an undocumented arrangement — a neighbor crosses
  * your land, a utility sits on it with nothing of record — time is broadly on
  * your side. There is nothing recorded for anyone to enforce against you, and
  * the claimant has to establish their right from scratch.
  *
  * When you are BENEFITED by one — your driveway crosses their lot, your
  * drainage outfalls onto theirs, your water line runs through their yard —
- * you are the exposed party. Your neighbour sells, the buyer finds nothing of
+ * you are the exposed party. Your neighbor sells, the buyer finds nothing of
  * record, and you discover that the thing your property depends on was never
  * yours. This is the version that destroys value, and it is the version
  * homeowners worry about least, because the arrangement has worked fine for
@@ -28,7 +28,7 @@
  * before it says another word.
  *
  * WHAT THIS IS NOT. It does not tell anyone they have a claim, that a
- * neighbour must sign anything, or that an existing arrangement is invalid.
+ * neighbor must sign anything, or that an existing arrangement is invalid.
  * Every item is a document worth HAVING, with a path to getting it that
  * usually starts with a conversation. Pursuing anything against an unwilling
  * party is the paid next step and a different product.
@@ -76,7 +76,7 @@ export interface MissingDocument {
 export const TRIGGER_LABEL: Record<Trigger, string> = {
   'when-either-of-you-sells': 'When either of you sells',
   'when-it-fails-or-needs-work': 'When it fails or needs work',
-  'when-the-relationship-changes': 'When the neighbours change',
+  'when-the-relationship-changes': 'When the neighbors change',
   already: 'Already worth doing',
 };
 
@@ -95,7 +95,7 @@ export const BENEFITED_AND_UNRECORDED: MissingDocument = {
     'the right to it.',
   posture: 'benefited',
   whatShouldExist:
-    'A recorded easement in your favour, signed by the owner of the land it crosses, describing ' +
+    'A recorded easement in your favor, signed by the owner of the land it crosses, describing ' +
     'what you may do and where.',
   whyItMatters:
     'This is the exposure homeowners most consistently underestimate, and it runs the opposite way ' +
@@ -103,15 +103,15 @@ export const BENEFITED_AND_UNRECORDED: MissingDocument = {
     'survivable — nothing is recorded for anyone to enforce against you. Being BENEFITED by one ' +
     'means the thing your property relies on is not yours, and it can end.',
   ifYouDoNothing:
-    'Usually nothing, for years. Then the neighbour sells. The new owner’s title search finds no ' +
+    'Usually nothing, for years. Then the neighbor sells. The new owner’s title search finds no ' +
     'easement, they have no relationship with you and no reason to continue the arrangement, and ' +
     'the first you hear of it may be a fence. If what you lose is access to a public road, the ' +
     'effect on your property’s value is not marginal.',
   howToStart:
     'Check your own title documents first — it may already be recorded and simply unknown to you, ' +
-    'which is the common and happy outcome. If it is not, raising it with a neighbour you are ' +
+    'which is the common and happy outcome. If it is not, raising it with a neighbor you are ' +
     'currently on good terms with is both the cheapest moment and the likeliest to succeed. ' +
-    'Neighbours generally agree to write down an arrangement they are already honouring.',
+    'Neighbors generally agree to write down an arrangement they are already honouring.',
   becomesUrgent: 'when-either-of-you-sells',
 };
 
@@ -147,7 +147,7 @@ export const VAGUE_EXISTING_EASEMENT: MissingDocument = {
 const SHARED_MAINTENANCE: MissingDocument = {
   id: 'shared-maintenance',
   situation:
-    'You share a driveway, private road or access way with one or more neighbours, and there is no ' +
+    'You share a driveway, private road or access way with one or more neighbors, and there is no ' +
     'recorded agreement saying who maintains it or who pays.',
   posture: 'mutual',
   whatShouldExist:
@@ -155,7 +155,7 @@ const SHARED_MAINTENANCE: MissingDocument = {
     'decisions get made, and what happens when someone will not pay.',
   whyItMatters:
     'Shared access with no written maintenance terms is among the most reliable sources of ' +
-    'neighbour disputes there is, and the disputes are rarely about the money. They are about the ' +
+    'neighbor disputes there is, and the disputes are rarely about the money. They are about the ' +
     'absence of a rule, which means every repair is renegotiated from nothing.',
   ifYouDoNothing:
     'It works until the surface fails. Then whoever cares most pays, resents it, and the next ' +
@@ -196,16 +196,16 @@ const UTILITY_PRESENT_NO_RECORD: MissingDocument = {
 const LONG_USE_NO_DOCUMENT: MissingDocument = {
   id: 'long-use-no-document',
   situation:
-    'A neighbour has used part of your land for years — a track, a turning area, a path — and ' +
+    'A neighbor has used part of your land for years — a track, a turning area, a path — and ' +
     'nothing was ever written down.',
   posture: 'burdened',
   whatShouldExist:
-    'A written licence, if you are content for the use to continue. A licence is permission that ' +
+    'A written license, if you are content for the use to continue. A license is permission that ' +
     'you can revoke; it is deliberately NOT an easement.',
   whyItMatters:
     'Permission and a right look the same from the outside and are completely different in law. ' +
     'Use that continues without permission can, over enough years, harden into a right you cannot ' +
-    'withdraw. A written licence records that the use is permitted, which is the distinction that ' +
+    'withdraw. A written license records that the use is permitted, which is the distinction that ' +
     'matters later.',
   ifYouDoNothing:
     'The use continues and its character stays unresolved. Whether that is a problem depends on ' +
@@ -236,7 +236,7 @@ const DRAINAGE_UNDERSTANDING: MissingDocument = {
     'someone has standing water and a strong view about whose fault it is.',
   howToStart:
     'Photograph where water actually runs during the next heavy rain, from both sides if you can. ' +
-    'Observed behaviour settles more drainage arguments than any plan does, and it is free.',
+    'Observed behavior settles more drainage arguments than any plan does, and it is free.',
   becomesUrgent: 'when-it-fails-or-needs-work',
 };
 
@@ -268,7 +268,7 @@ const BY_TYPE = {
  *
  * The benefited-and-unrecorded item leads every list. That ordering is the
  * argument of the module header expressed as a sort: the exposure that runs
- * against the homeowner comes before the ones that run in their favour.
+ * against the homeowner comes before the ones that run in their favor.
  */
 export function whatShouldExist(easementType: EasementType): readonly MissingDocument[] {
   return [BENEFITED_AND_UNRECORDED, ...BY_TYPE[easementType]];
@@ -280,7 +280,7 @@ export const THE_QUESTION_TO_ASK =
   'route, a way to the road — and is that written down anywhere?';
 
 export const SHOULD_EXIST_DISCLOSURE =
-  'Nothing here says you have a claim, that a neighbour or utility must sign anything, or that an ' +
+  'Nothing here says you have a claim, that a neighbor or utility must sign anything, or that an ' +
   'existing arrangement is invalid. These are documents worth HAVING, and the path to each of them ' +
   'usually starts with a conversation rather than a lawyer. What this tool cannot tell you is ' +
   'whether any of them already exist for your property — that takes a title search, and your own ' +

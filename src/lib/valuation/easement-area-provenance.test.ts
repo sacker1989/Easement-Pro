@@ -33,7 +33,7 @@ describe('reading the provenance off the query string', () => {
   });
 
   it('treats unusable input as assumed rather than refusing the report', () => {
-    // The caller falls back to the default for these anyway. Labelling the
+    // The caller falls back to the default for these anyway. Labeling the
     // figure is more use to the reader than withholding it.
     for (const raw of ['abc', '0', '-50', 'NaN', 'Infinity']) {
       expect(easementAreaProvenance(raw), `raw: ${raw}`).toBe('assumed-default');
@@ -165,7 +165,7 @@ describe('the assumption is disclosed where the figures are', () => {
   it('no longer promises to record a guess it was not recording', () => {
     // The old copy said "put your best guess; the report will record that you
     // did" — and nothing recorded it. The claim is gone, and the provenance is
-    // the behaviour it described.
+    // the behavior it described.
     expect(REPORT_PAGE).not.toMatch(/will record that you did/);
   });
 });

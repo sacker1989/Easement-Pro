@@ -37,7 +37,7 @@ import { EASEMENT_TYPES } from './easement-types';
  */
 
 export interface WorkedExample {
-  /** The situation, in one sentence a reader recognises. */
+  /** The situation, in one sentence a reader recognizes. */
   readonly situation: string;
   /** What the report puts in front of them. Only things it really produces. */
   readonly whatTheReportShows: string;
@@ -115,7 +115,7 @@ const EXAMPLES = {
       'who pays.',
     whatThatGetsYou:
       'The clearing is scheduled by whoever actually owes it, and you are not quietly absorbing ' +
-      'a duty that belongs to a neighbour, a developer, or an association.',
+      'a duty that belongs to a neighbor, a developer, or an association.',
   },
   'water-line': {
     serves: 'avoid a risk',
@@ -152,7 +152,7 @@ const EXAMPLES = {
   'access-ingress-egress': {
     serves: 'raise a grievance',
     situation:
-      'A shared driveway serves you and two neighbours, the surface is breaking up, and nobody ' +
+      'A shared driveway serves you and two neighbors, the surface is breaking up, and nobody ' +
       'agrees who pays.',
     whatTheReportShows:
       'How maintenance is usually shared on an access easement, that gating or narrowing it ' +
@@ -190,13 +190,13 @@ const EXAMPLES = {
       'the garden.',
     whatTheReportShows:
       'That a drainage easement is a path water is allowed to take, that blocking or re-routing ' +
-      'it is generally restricted, and that doing so can move water onto a neighbour and create ' +
+      'it is generally restricted, and that doing so can move water onto a neighbor and create ' +
       'a liability that did not exist before.',
     whatYouDo:
       'Walk the lot during rain and photograph where the water actually goes before you change ' +
       'the grade, and check the plat for a marked drainage course.',
     whatThatGetsYou:
-      'You avoid creating a liability to a neighbour with a weekend’s landscaping — which is ' +
+      'You avoid creating a liability to a neighbor with a weekend’s landscaping — which is ' +
       'the specific risk of this easement type, and the one owners most often do not know they ' +
       'are taking.',
   },
@@ -237,7 +237,7 @@ const EXAMPLES = {
   prescriptive: {
     serves: 'raise a grievance',
     situation:
-      'A neighbour has been crossing your land for years, there is nothing in writing, and you ' +
+      'A neighbor has been crossing your land for years, there is nothing in writing, and you ' +
       'are starting to wonder whether that use has become a right.',
     whatTheReportShows:
       'That a prescriptive claim rests on use rather than on any document, what the report can ' +

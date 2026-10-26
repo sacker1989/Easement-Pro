@@ -156,7 +156,7 @@ function operatorPagesCheck(
       status: 'met',
       detail: isProduction
         ? `Closed. ${OPERATOR_PAGES_ENV} is not set to 1, so /readiness returns 404.`
-        : 'Open in development, which is the intended behaviour on a local machine.',
+        : 'Open in development, which is the intended behavior on a local machine.',
       fix: null,
     };
   }
@@ -265,11 +265,11 @@ function uplReviewCheck(state: string): ReadinessCheck {
       what: `An attorney licensed in ${state} has given an opinion on the practice-of-law question.`,
       status: 'met',
       detail:
-        decision.upl.status === 'authorised'
+        decision.upl.status === 'authorized'
           ? `Review ${decision.upl.review.id} by ${decision.upl.review.reviewedBy} ` +
             `(bar ${decision.upl.review.barNumber}), given ${decision.upl.review.reviewedOn}, ` +
             `expires ${decision.upl.review.expiresOn}.`
-          : 'Authorised.',
+          : 'Authorized.',
       fix: null,
     };
   }

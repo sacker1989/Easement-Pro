@@ -66,7 +66,7 @@ export const metadata = {
  *
  * THE PREFILL IS THE WHOLE TRICK. Free-prose requests arrive as "any chance
  * you'll do Travis County?" and "we're in 78704" and have to be read one at a
- * time. Two labelled lines make the pile sortable by eye and countable without
+ * time. Two labeled lines make the pile sortable by eye and countable without
  * opening anything, which is the difference between a rule somebody follows
  * and one they abandon in week three. See docs/waitlist-triage.md.
  *
@@ -137,8 +137,8 @@ export default function HomePage() {
             `audience` is a submit button with a value, so each posts the same
             address to the same place and differs only in who the report
             addresses. A dropdown would have made the reader choose before
-            they understood there was a choice; two labelled buttons state the
-            two situations and let them recognise theirs.
+            they understood there was a choice; two labeled buttons state the
+            two situations and let them recognize theirs.
 
             The owner button is first and is the primary, because owners are
             who the product was built for and the overwhelming majority of the
@@ -175,7 +175,7 @@ export default function HomePage() {
             <h3 style={{ marginTop: 0 }}>Maximize your value</h3>
             <p>
               A strip of your land can carry someone else&rsquo;s legal right to use it — a power
-              line, a sewer main, a neighbour&rsquo;s driveway. That right is called an{' '}
+              line, a sewer main, a neighbor&rsquo;s driveway. That right is called an{' '}
               <strong>easement</strong>, and it limits where you can build, what you can plant, and
               what a buyer will pay. Most of it is on the public record and almost nobody looks.
             </p>
@@ -184,7 +184,7 @@ export default function HomePage() {
               The dollar range needs a published land value, and outside the
               counties with live records there is none — the report refuses
               rather than substituting a national average, because land prices
-              vary by more than an order of magnitude between neighbourhoods.
+              vary by more than an order of magnitude between neighborhoods.
               An unconditional promise here would send most visitors looking
               for a figure the product deliberately declines to invent.
             */}
@@ -198,7 +198,7 @@ export default function HomePage() {
           <div className="panel">
             <h3 style={{ marginTop: 0 }}>Protect your home</h3>
             <p>
-              When a utility runs equipment across your neighbourhood, somebody is responsible for
+              When a utility runs equipment across your neighborhood, somebody is responsible for
               keeping it clear and in repair. Often that is the utility, not you — and when it is
               neglected, the risk lands on the people living there rather than the people who owned
               the duty.

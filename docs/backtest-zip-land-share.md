@@ -106,7 +106,7 @@ ground-truth parcels. Per-ZIP breakdowns follow in §4.4.
 `predicted = (parcel's own Roll_LandValue + Roll_ImpValue) × ZIP current-regime share (LOO)`
 compared against the parcel's actual `Roll_LandValue`. Using the parcel's own total eliminates
 market-value error by construction, so what remains is purely the cost of substituting a
-neighbourhood share for the parcel's own.
+neighborhood share for the parcel's own.
 
 | | n | p10 | p25 | **p50** | p75 | p90 | p95 | mean |
 |---|---|---|---|---|---|---|---|---|
@@ -283,7 +283,7 @@ More important than the magnitude is the **bias**. Signed error percentiles:
 The stale-share method is **one-sided**: it understates land value at every percentile shown, by a
 median 28.1%, and at p10 by 46.8%. This is the §3.1 harm quantified end-to-end — the pre-correction
 method would have systematically undercompensated long-held owners, which is precisely the group
-with the strongest easement claims. The corrected method is centred on zero. **§3.2 fixes a bias, not
+with the strongest easement claims. The corrected method is centered on zero. **§3.2 fixes a bias, not
 merely a variance problem, and on that basis it should be kept.**
 
 **The honest caveat:** the improvement is in the middle, not the tail. At p90 the corrected method
@@ -432,7 +432,7 @@ or `Shape.STArea()` missing or zero. Variant (3) rescored on that same 9,464 giv
    `PROVISIONAL_IQR_THRESHOLD = 0.20` sits between the sound band (max 0.185) and the single
    observed failure (0.299), with a test asserting it separates them.
 
-   **The threshold remains provisional and is labelled as such in the source.** It is fitted on
+   **The threshold remains provisional and is labeled as such in the source.** It is fitted on
    16 ZIPs containing exactly *one* failure, which is not enough to locate a boundary — re-fit
    before relying on it outside LA County. The regression test reconstructs 93550's bimodal shape
    from the §7.2 subgroup counts and asserts the gate rejects it; it asserts the decision rather

@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
  * route either has a homeowner's address in its query string or is a developer
  * harness — see robots.ts. Listing one here would contradict the thing
  * robots.ts exists to prevent, and that kind of inconsistency gets resolved in
- * the crawler's favour.
+ * the crawler's favor.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

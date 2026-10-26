@@ -50,7 +50,7 @@ describe('FL_RULE_SET', () => {
     for (const [name, fact] of FACTS) {
       if (fact.citation === null) continue;
       expect(citationIsComplete(fact.citation), `${name} citation is incomplete`).toBe(true);
-      expect(fact.citation.label, `${name} must cite Florida, not a neighbour`).toMatch(
+      expect(fact.citation.label, `${name} must cite Florida, not a neighbor`).toMatch(
         /^Fla\. Stat\./,
       );
     }
@@ -63,7 +63,7 @@ describe('FL_RULE_SET', () => {
       // here. Do not. §95.18 conditions the claim on paying all outstanding
       // taxes within a year of entry and filing a return with the property
       // appraiser — the acts of someone claiming to OWN the land. A
-      // prescriptive-easement claimant concedes the neighbour owns it and has
+      // prescriptive-easement claimant concedes the neighbor owns it and has
       // never paid those taxes, so importing the element set with the number
       // would make the doctrine unsatisfiable rather than merely mis-timed.
       // Only Florida counsel closes this, and the fix is a citation, not a 7.

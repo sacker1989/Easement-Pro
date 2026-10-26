@@ -5,7 +5,7 @@
  * WHY THIS FILE EXISTS. `EASEMENT_TYPES` carries twelve members. The Track 3
  * restriction checklist has rules for five purposes, and the UI dropdown
  * offered five options. Seven types were therefore unreachable from the
- * interface and had no defined behaviour if they arrived from anywhere else —
+ * interface and had no defined behavior if they arrived from anywhere else —
  * not refused, just absent, which is the failure mode this project keeps
  * finding: a gap that reads as coverage.
  *

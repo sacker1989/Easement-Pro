@@ -20,7 +20,7 @@
  *   - The three withholding asks: partial production, statutory basis, and the
  *     identifier to cite once the exemption lapses.
  *   - A fee ceiling and a stated preference for a spreadsheet over copies of
- *     instruments, which is cheaper to fulfil and therefore likelier answered.
+ *     instruments, which is cheaper to fulfill and therefore likelier answered.
  *   - A narrow ask. Parcel identity, owner, encumbered area and certification
  *     date are already published; asking for them again invites a fee dispute.
  */
@@ -122,7 +122,7 @@ export function buildRecordsRequest(
  * Builds from a rule directly, bypassing the registry.
  *
  * Exported because the registry ships exactly one rule, and routing every path
- * through it makes the behaviour that matters most for a SECOND jurisdiction —
+ * through it makes the behavior that matters most for a SECOND jurisdiction —
  * a rule with no severability argument — unreachable from outside. A branch
  * that cannot be exercised is a branch nobody has checked.
  */
@@ -179,7 +179,7 @@ export function buildRequestFromRule(
   lines.push(
     `Under ${rule.statute.cite}, I request copies of records relating to ${options.subjectMatter} ` +
       `parcels shown in the published right-of-way GIS layers ${options.sourceLayers.join(' and ')}` +
-      `${options.sourceOrg ? ` (ArcGIS organisation ${options.sourceOrg})` : ''}.`,
+      `${options.sourceOrg ? ` (ArcGIS organization ${options.sourceOrg})` : ''}.`,
     '',
   );
 

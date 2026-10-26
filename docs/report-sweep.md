@@ -46,7 +46,7 @@ some are explicable. The point is that nothing is examined by chance.
 
 - **Illinois assessed values presented as land prices.** Cook County publishes
   a statutory fraction of market value, and the report multiplied it out and
-  labelled the result "Verified". Fixed; see `shared-lot-tenure.md`'s sibling
+  labeled the result "Verified". Fixed; see `shared-lot-tenure.md`'s sibling
   discussion in `economic-impact.ts`.
 - **A validation error at the bottom of the page.** 648 San Ysidro Blvd
   rendered 21,000 bytes whose only actionable sentence, "city is required",

@@ -35,7 +35,7 @@ export const OPERATOR_PAGES_ENV = 'ENABLE_OPERATOR_PAGES';
 /**
  * True when operator-only pages may be served.
  *
- * Takes `env` rather than reading `process.env` directly so the behaviour is
+ * Takes `env` rather than reading `process.env` directly so the behavior is
  * testable without mutating global state — the same reason
  * `resolveAuditStore` takes one.
  */

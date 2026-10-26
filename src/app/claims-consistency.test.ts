@@ -49,7 +49,7 @@ describe('every page tells the same story about coverage', () => {
       /*
        * The product refuses to price an easement without a published land
        * value. Any page saying national data is used instead is describing a
-       * behaviour that was removed — and promising a substitute that no
+       * behavior that was removed — and promising a substitute that no
        * longer exists is the same defect the removal fixed, one layer out.
        */
       for (const stale of [

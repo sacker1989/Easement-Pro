@@ -180,7 +180,7 @@ describe('the total budget', () => {
 
 describe('the caller stays in control', () => {
   it('does not retry a request the caller aborted', async () => {
-    // A cancelled render is not a transient failure.
+    // A canceled render is not a transient failure.
     const controller = new AbortController();
     const fetchImpl = (async (_u: unknown, init?: RequestInit) => {
       controller.abort();
@@ -237,7 +237,7 @@ describe('caching', () => {
   });
 
   it('never calls clone() on the caching path', () => {
-    // The behavioural test above does NOT have teeth against the real bug:
+    // The behavioral test above does NOT have teeth against the real bug:
     // restoring `response.clone().text()` leaves it passing, because a
     // synthetic Response built from a short string never hits the tee stall
     // that a live multi-record parcel response does. A live probe caught it

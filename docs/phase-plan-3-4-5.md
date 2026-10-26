@@ -42,11 +42,11 @@ This session measured these. They are settled and re-deriving them wastes a phas
 **Why it is not just "add 49 more files."** The CA rule set encodes California substantive law.
 Easement doctrine is state law and genuinely differs — prescriptive periods, whether a quasi-easement
 requires strict or reasonable necessity, recording-act priority (race / notice / race-notice), and
-whether implied easements survive at all in the form CA recognises.
+whether implied easements survive at all in the form CA recognizes.
 
 **Proposed scope**
 - A state rule-set interface with CA as the reference implementation.
-- Per-state: prescriptive period, implied-easement doctrines recognised, recording act type,
+- Per-state: prescriptive period, implied-easement doctrines recognized, recording act type,
   and marketable-title / ancient-mortgage cutoffs where they bear on easement survival.
 - A **hard gate**: no state emits substantive conclusions until its rule set is reviewed by counsel
   for that state, mirroring the existing Tier A/B/C discipline. An unreviewed state returns

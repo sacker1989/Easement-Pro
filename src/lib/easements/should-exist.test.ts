@@ -53,7 +53,7 @@ describe('the asymmetry, which is the point of the module', () => {
   });
 
   it('names the concrete way it goes wrong rather than being ominous', () => {
-    // "The neighbour sells, the buyer finds nothing, the first you hear is a
+    // "The neighbor sells, the buyer finds nothing, the first you hear is a
     // fence" is actionable. "You could lose your rights" is not.
     expect(BENEFITED_AND_UNRECORDED.ifYouDoNothing).toMatch(/sells/i);
     expect(BENEFITED_AND_UNRECORDED.ifYouDoNothing).toMatch(/fence|title search/i);
@@ -110,12 +110,12 @@ describe('it stays on the free side of the line', () => {
     expect(item.howToStart).toMatch(/costs nothing/i);
   });
 
-  it('distinguishes a licence from an easement where it matters', () => {
+  it('distinguishes a license from an easement where it matters', () => {
     // Giving written permission is protective; accidentally granting a right
     // is not. An item that told someone to "write something down" without that
     // distinction would be actively harmful.
     const item = whatShouldExist('prescriptive').find((d) => d.id === 'long-use-no-document')!;
-    expect(item.whatShouldExist).toMatch(/licence/i);
+    expect(item.whatShouldExist).toMatch(/license/i);
     expect(item.whatShouldExist).toMatch(/NOT an easement/);
   });
 });

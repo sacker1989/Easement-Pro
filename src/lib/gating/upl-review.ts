@@ -107,7 +107,7 @@ export interface ProductOwnerDirection {
 export const UPL_REVIEW_MAX_AGE_MONTHS = 24;
 
 export type UplAuthorisation =
-  | { readonly status: 'authorised'; readonly review: UplReviewRecord; readonly scope: UplScope }
+  | { readonly status: 'authorized'; readonly review: UplReviewRecord; readonly scope: UplScope }
   | {
       readonly status: 'refused';
       readonly reason:
@@ -183,7 +183,7 @@ export function resolveUplAuthorisation(
     };
   }
 
-  return { status: 'authorised', review, scope: review.scope };
+  return { status: 'authorized', review, scope: review.scope };
 }
 
 /** Whether an authorisation permits one specific activity. */

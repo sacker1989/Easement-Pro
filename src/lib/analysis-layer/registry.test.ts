@@ -124,7 +124,7 @@ describe('California is registered and still does not clear the gate', () => {
 
   it('leaves easement-by-necessity empty, because the answer was half a shape', () => {
     // A reading WAS offered for this field. The type requires both
-    // `recognised` and a necessity standard; only the first was supplied, and
+    // `recognized` and a necessity standard; only the first was supplied, and
     // a half-filled reading would present as a complete one.
     const fact = CA_RULE_SET.easementByNecessity;
     if (fact.status !== 'unreviewed') throw new Error('expected unreviewed');
@@ -144,7 +144,7 @@ describe('California is registered and still does not clear the gate', () => {
       easementsExcepted: false,
     });
     expect(fact.note).toMatch(/PREFERENCE, NOT A FINDING/);
-    expect(fact.note).toMatch(/FAVOURS OUR OWN USER/);
+    expect(fact.note).toMatch(/FAVORS OUR OWN USER/);
     expect(confirmedValue(fact)).toBeNull();
   });
 

@@ -82,7 +82,7 @@ export const zipHeuristicCountyResolver: CountyResolver = {
      * Cook is unusually tractable — Chicago's 606xx block sits almost entirely
      * inside the county, and the suburban bands cover most of the rest. It
      * misses collar-county edges, which resolve to null and get the
-     * national-benchmark path rather than a neighbouring county's figures.
+     * national-benchmark path rather than a neighboring county's figures.
      */
     if (address.state === 'IL') {
       return inRanges(address.zip, COOK_COUNTY_ZIP_RANGES) ? 'Cook' : null;

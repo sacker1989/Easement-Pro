@@ -110,7 +110,7 @@ describe('Illinois, added with Cook County', () => {
 
   it('returns null for an Illinois ZIP outside the ranges', () => {
     // A collar-county address gets the national-benchmark path rather than a
-    // neighbouring county's figures. Null is the honest answer, not a gap.
+    // neighboring county's figures. Null is the honest answer, not a gap.
     for (const zip of ['60540', '61820', '62701']) {
       expect(resolve(zip), zip).toBeNull();
     }

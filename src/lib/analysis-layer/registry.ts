@@ -153,10 +153,10 @@ export function resolveStateRuleSetAt(stateCode: string, today: string): RuleSet
       reason: 'no-rule-set',
       explanation:
         `No easement rule set exists for ${state}. Easement doctrine is state law and genuinely ` +
-        'differs — prescriptive periods, which implied-easement doctrines are recognised and on ' +
+        'differs — prescriptive periods, which implied-easement doctrines are recognized and on ' +
         'what necessity standard, recording-act priority, and whether a marketable-title act ' +
         'extinguishes ancient interests. None of that transfers from another state, so nothing is ' +
-        'offered here rather than a neighbour\'s answer.',
+        'offered here rather than a neighbor\'s answer.',
     };
   }
 

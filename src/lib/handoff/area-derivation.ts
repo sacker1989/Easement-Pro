@@ -27,7 +27,7 @@ export type AreaDerivation =
    *
    * SPATIAL REFERENCE IS MANDATORY, and this is not bureaucracy. Reading a
    * Web Mercator (EPSG:3857) Shape__Area as square feet understated a real
-   * easement by a factor of about 8: the value is square METRES and is
+   * easement by a factor of about 8: the value is square METERS and is
    * additionally inflated by 1/cos²(latitude), around 1.33x at Florida
    * latitudes. It produced a figure that looked entirely reasonable. A
    * projected system in US survey feet (EPSG:2229 for Los Angeles, 2230 for

@@ -15,7 +15,7 @@ import { DEFAULTS as RESILIENT_DEFAULTS, HOST_OVERRIDES } from '@/lib/net/resili
  * THE OLD VALUE WAS 10_000, which is exactly the resilient layer's PER-ATTEMPT
  * timeout. The two deadlines therefore expired together: the moment attempt
  * one hit ten seconds the provider aborted too, `resilient-fetch` classified
- * it as a caller abort — fatal by design, since a cancelled render is not a
+ * it as a caller abort — fatal by design, since a canceled render is not a
  * transient failure — and attempts two and three never ran. The retry logic,
  * written because Orange County's server was measured returning 503 under
  * modest load, had never once fired.

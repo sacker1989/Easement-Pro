@@ -112,7 +112,7 @@ describe('the real California entry', () => {
   });
 
   it('would bring §6400 back the moment commerce is re-enabled', () => {
-    // No edit to this entry required, which is the point of modelling the
+    // No edit to this entry required, which is the point of modeling the
     // element rather than hand-marking a basis as lapsed.
     expect(operativeBases(ca.basis!, true)).toHaveLength(2);
   });

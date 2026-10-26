@@ -7,7 +7,7 @@
  * product decision is that a homeowner with no figure at all cannot tell
  * whether they are looking at a $500 problem or a $50,000 one, and therefore
  * cannot decide whether to spend $600 on an appraiser to find out. An
- * order-of-magnitude range, labelled as such, is what makes that decision
+ * order-of-magnitude range, labeled as such, is what makes that decision
  * possible.
  *
  * THE DISTINCTION THAT MAKES THIS DEFENSIBLE. Uniform Appraisal Standards
@@ -26,7 +26,7 @@
  *   - It states, in the same block as the number, that this is the method the
  *     controlling standard rejects for appraisals.
  *   - It refuses outright wherever the underlying range does not exist, rather
- *     than substituting a neighbouring one.
+ *     than substituting a neighboring one.
  *
  * THE DENOMINATOR TRAP, WHICH IS THE EASY WAY TO GET THIS BADLY WRONG.
  * `UNCITED_SCREENING_RANGES` carries four bands and they are NOT commensurable:
@@ -75,7 +75,7 @@ interface BandDefinition {
  *
  * A `null` key means no band is offered. That is a real answer, not a gap:
  * four of the twelve types have nothing citable behind them and substituting
- * a neighbouring band would invent the number.
+ * a neighboring band would invent the number.
  */
 export const SCREENING_BAND_BY_TYPE = {
   'utility-overhead': { key: 'utility', denominator: 'strip-land-value' },
@@ -200,7 +200,7 @@ export const THREE_REGIME_DISCLOSURE = {
  *
  * That is the reading this module was already built to, and it is why the
  * design invests in the SHAPE of the output rather than in the wording alone —
- * wording is what a reader skips. The structural defences are: no
+ * wording is what a reader skips. The structural defenses are: no
  * `pointEstimate` field exists for any caller to render, the arithmetic is
  * printed beside the number, the figure is rounded hard so it cannot imply
  * precision, and the page renders it BELOW the not-determined panel by a rule

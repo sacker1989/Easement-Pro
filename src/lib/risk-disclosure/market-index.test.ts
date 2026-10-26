@@ -78,7 +78,7 @@ describe('marketAdjustParcel', () => {
     expect(adjusted!.note).toContain('Proposition 13');
   });
 
-  it('discloses that the result is modelled rather than appraised', () => {
+  it('discloses that the result is modeled rather than appraised', () => {
     const adjusted = marketAdjustParcel(PARCEL, '2001', HPI, 2025);
     expect(adjusted!.note).toContain('not an appraisal');
   });

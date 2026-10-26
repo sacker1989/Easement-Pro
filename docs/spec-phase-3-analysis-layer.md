@@ -110,7 +110,7 @@ identifiers, always qualify: *evidence tier*, *UPL tier*, *confidence tier*. Nev
 
 ### 2.3 `analyzeEasement` throws for a non-CA state; Phase 3 requires it to return `flagged`
 
-Current behaviour:
+Current behavior:
 
 ```ts
 if (state !== 'CA') throw new UnsupportedStateRuleSetError(...)
@@ -124,7 +124,7 @@ render through the existing three-state display.
 `UnsupportedStateRuleSetError` is **retained and narrowed** to genuine programmer error — a state
 code that is not two ASCII letters. The existing test `throws for a state with no implemented rule
 set` is replaced by an assertion that `TX` returns `flagged-ambiguous`. This is a deliberate
-behaviour change and belongs in its own commit with the change stated in the message.
+behavior change and belongs in its own commit with the change stated in the message.
 
 ### 2.4 The only Tier A state in the compliance matrix has never been reviewed
 
@@ -167,7 +167,7 @@ which are California doctrinal outcomes, not neutral vocabulary.
 
 **Required:** hoist the state-neutral parts into a new `duration-facts.ts`, and let each state extend
 the basis union with its own string-literal members rather than forcing every state through
-California's list. A state must be able to say "this doctrine is not recognised here" without
+California's list. A state must be able to say "this doctrine is not recognized here" without
 inheriting a basis value that presumes it is.
 
 ---
@@ -282,7 +282,7 @@ Rules for entries:
 - **A citation URL must be an official primary source** — a state legislature or code-publisher
   domain. Not a law-firm article, not a treatise summary, not a secondary aggregator. Where only a
   secondary source exists, the fact stays `unreviewed` and the note says so.
-- **A doctrine that is not recognised is stated as `recognised: false`, never omitted.** Absence of a
+- **A doctrine that is not recognized is stated as `recognised: false`, never omitted.** Absence of a
   field and a finding of non-recognition are different claims — the same distinction
   `unclassifiedState()` already draws between UNCLASSIFIED and Tier C.
 
@@ -292,7 +292,7 @@ An entry with no `ReviewRecord` covering a field must not:
 
 - carry `status: 'counsel-confirmed'` on that field, under any circumstance;
 - contribute a rule that can return `clear` or `likely-with-caveat`;
-- assert that a doctrine is or is not recognised in that state;
+- assert that a doctrine is or is not recognized in that state;
 - assert a recording-act classification (the §0.1 failure mode);
 - assert that an interest has expired, survived, been extinguished, or runs with the land;
 - assert a prescriptive period, **even where a statute stating a number of years has been fetched** —
@@ -480,7 +480,7 @@ counsel, expire independently, and neither implies the other.
 
 All four combinations occur and all must be representable:
 
-| UPL tier | rule set | product behaviour |
+| UPL tier | rule set | product behavior |
 |---|---|---|
 | A (Track 1 available) | reviewed | full Track 1 with substantive analysis |
 | A | unreviewed | Track 1 available; duration field `flagged`, so `gateWizardField` blocks it per-field |
@@ -491,7 +491,7 @@ Row 2 is the one the current code assumes away. `build-advocacy-wizard-state.ts`
 header: *"Assumes analysis-layer has a rule set for any state this wizard makes available."* Once
 CA's rule set is `unreviewed` (§2.4), that assumption is false for California itself on day one. The
 existing `gateWizardField` already blocks a `flagged-ambiguous` field, so the wizard degrades
-correctly — but the comment is now wrong, and the behaviour must be covered by a test (§7.8).
+correctly — but the comment is now wrong, and the behavior must be covered by a test (§7.8).
 
 **Do not add rule-set fields to `StateComplianceEntry`.** Two matrices, two review lifecycles.
 
@@ -577,7 +577,7 @@ Phase 2 strand-3 item, and Phase 3 surfacing it is a feature of this ordering, n
 
 **PA second.** Berks County is the only jurisdiction in this repo where every input the
 temporary-easement method needs is observed in one place: typed general easements with book, page and
-holding organisation; 156,928 valued parcels; and a NASS county cash rent for the matching land
+holding organization; 156,928 valued parcels; and a NASS county cash rent for the matching land
 class. It is the best available integration test for a non-CA rule set, and the only place the
 analysis layer and the one working valuation path can be exercised on the same parcel.
 
@@ -590,7 +590,7 @@ allowlist.
 
 **KS and WA are test fixtures, not coverage.** Lawrence KS and Lynden WA publish plat-derived
 easements with widths and no assessed values at all, and neither state has a county route. They are
-where geometry-side rule-set behaviour can be exercised. They should not become reviewed states.
+where geometry-side rule-set behavior can be exercised. They should not become reviewed states.
 
 **IL, NV and GA wait.** One recorder-index route each, no parcel API, no easement layer. A reviewed
 rule set there would have nothing to run against until Phase 2 strand 3 closes.
@@ -675,7 +675,7 @@ Iterate every registered state and assert:
 
 - Every existing case in `ca-rule-set.test.ts` passes unchanged against the moved rule array (renames
   aside), asserted by calling `classifyByRules` directly with the CA rules — proving the refactor
-  moved code without changing behaviour.
+  moved code without changing behavior.
 - `analyzeEasement({ state: 'CA', … })` returns `flagged-ambiguous` while CA has no review record.
   This test reads as a regression to anyone who has not read §2.4, so its name must say otherwise —
   e.g. `'CA degrades to flagged until a counsel review record exists — this is the gate working, not
@@ -709,7 +709,7 @@ matching `/probability|likelihood|percent|score/i`.
 - **Any legal classification without counsel review**, including classifications a fetched statute
   appears to support (§0.1).
 - **Setting CA's four legal facts to `counsel-confirmed`.** The sources in §5.3 are evidence for a
-  reviewer. Nothing in this spec authorises promoting them.
+  reviewer. Nothing in this spec authorizes promoting them.
 - **Probability scores, likelihood percentages, or any numeric confidence.** Settled constraint 2.
 - **Any permanent-easement dollar value.** Settled constraint 1; UASFLA §4.6.5 forecloses it.
 - **Upgrading a proximity finding.** Settled constraint 3; `provenanceConfidence` is unchanged.
@@ -739,7 +739,7 @@ matching `/probability|likelihood|percent|score/i`.
 | 4 | `review-record.ts` — `ReviewRecord`, `REVIEW_MAX_AGE_MONTHS`, staleness and digest logic | all five triggers covered by §7.5 |
 | 5 | `state-registry.ts` — one entry, CA, every legal fact `unreviewed` | §7.6 invariants pass |
 | 6 | `rule-sets/ca.ts` — rules moved verbatim + §5.3 citations in `unreviewed` shape | §7.7 regression passes |
-| 7 | `analyze-easement.ts` — degrade instead of throw; `UnsupportedStateRuleSetError` narrowed to malformed state codes | own commit stating the behaviour change; §7.1 and §7.2 pass |
+| 7 | `analyze-easement.ts` — degrade instead of throw; `UnsupportedStateRuleSetError` narrowed to malformed state codes | own commit stating the behavior change; §7.1 and §7.2 pass |
 | 8 | `audit-record.ts` extension — resolution status, reason, review id, rule id | §4.6 |
 | 9 | `scripts/check-citations.ts` — refetch and compare, fail loudly, never auto-write | Node global `fetch`; no Python in this repo |
 | 10 | Test suites per §7 | full suite green; the existing 430 tests still pass |

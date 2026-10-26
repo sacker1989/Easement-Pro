@@ -116,7 +116,7 @@ function declaresUndividedInterest(legalDescription: unknown): boolean {
  * Property Record; https://sdplantatlas.org/pdffiles/sangis_parcels.pdf).
  *
  * This closes the fourth condition of use in docs/validation-sd-docdate.md,
- * which previously recorded these meanings as inferred from behaviour. The
+ * which previously recorded these meanings as inferred from behavior. The
  * inference was correct: '1' is a grant deed and '2' is a quitclaim.
  */
 export const DOCTYPE_MEANINGS: Readonly<Record<string, string>> = {
@@ -135,7 +135,7 @@ export const DOCTYPE_MEANINGS: Readonly<Record<string, string>> = {
  * Grant deed — California's standard full-value transfer instrument, and the
  * only code treated as a reassessment trigger here.
  *
- * The behavioural evidence and the documentation agree. Grant-deed parcels
+ * The behavioral evidence and the documentation agree. Grant-deed parcels
  * carry assessed values 1.5-1.75x above quitclaim parcels at every decade
  * measured, and a quitclaim is the ordinary instrument for exactly the
  * transfers Proposition 13 EXCLUDES from reassessment — between spouses, from
@@ -438,7 +438,7 @@ export function marketAdjustSanDiegoParcel(
       `years before the ${targetYear} index. Under Proposition 13 the assessment does not track ` +
       `the market, so it has been indexed forward by the San Diego County house-price index ` +
       `(${indexRatio.toFixed(2)}x). The vintage is inferred from the county's recorded document ` +
-      `date, not from a published assessment base year. This is a modelled adjustment assuming ` +
+      `date, not from a published assessment base year. This is a modeled adjustment assuming ` +
       `county-median appreciation, not an appraisal or an observed sale price.`,
   };
 }

@@ -87,7 +87,7 @@ cell, measured live 2026-07-27:
 | **spread** | **1.59x** | **1.21x** | **1.64x** |
 
 The drift is systematic, monotonic in direction, and present in every ZIP tested, so it is **not**
-neighbourhood composition — the uncontrolled county-wide run showed the same 1.63x spread, and
+neighborhood composition — the uncontrolled county-wide run showed the same 1.63x spread, and
 controlling for ZIP and use type did not remove it. Older base year means materially *lower* land
 share.
 
@@ -99,7 +99,7 @@ product means undercompensating exactly the owners with the strongest claims.
 
 **Do not use the subject parcel's own land share.** Derive the share from *recently reassessed
 comparables* — parcels in the same ZIP and use type whose base year is within ~2 years, which are the
-only ones whose land/improvement split reflects the current market — and apply that neighbourhood
+only ones whose land/improvement split reflects the current market — and apply that neighborhood
 current-regime share to the subject parcel.
 
 This is a real change in the data flow: the land share becomes a **ZIP-level statistic**, not a
@@ -386,7 +386,7 @@ Every figure must state its chain. Minimum:
 - land share used, and that it came from the county assessment ratio
 - encumbrance factor used, **with citation**
 - whether the parcel's own assessed value corroborates or contradicts the estimate (§8)
-- the standing disclaimer that this is a modelled estimate, not an appraisal
+- the standing disclaimer that this is a modeled estimate, not an appraisal
 
 Reuse `src/lib/compliance/disclaimer-copy.ts` rather than writing new disclaimer text, so the report
 and letter cannot drift apart — the same reason `ORANGE_COUNTY_STALENESS_CAVEAT` is defined once.
@@ -421,7 +421,7 @@ The land-share assumption in §3 is the load-bearing claim. It must be tested, n
 - `src/lib/valuation/market-land-value.ts` — the §3 chain
 - `src/lib/valuation/market-data/` — reduced Redfin/Zillow extract plus loader, with provenance header
 - `src/lib/valuation/encumbrance-factors.ts` — sourced factors, citations inline, unsourced types
-  explicitly modelled as unsourced
+  explicitly modeled as unsourced
 - `src/lib/valuation/value-easement.ts` — §6 calculation
 - Tests for each, following the existing convention: live-observed fixtures, negative cases, and
   assertions that unsourced or low-confidence inputs do **not** produce a confident number

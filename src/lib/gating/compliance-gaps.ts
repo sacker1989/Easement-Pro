@@ -17,7 +17,7 @@
  *
  * This registry is deliberately greppable. `COMPLIANCE_GAPS` is the one place
  * to look for "what are we running without", and each entry names what would
- * close it. Nothing here changes behaviour — the gaps are open, and remain so
+ * close it. Nothing here changes behavior — the gaps are open, and remain so
  * until someone with authority to accept or close them acts.
  */
 
@@ -143,7 +143,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       'the product inside the LDA regime rather than outside it. That regime requires ' +
       'REGISTRATION AND A BOND, which no disclaimer substitutes for. ' +
       'TWO QUESTIONS, EASILY COLLAPSED AND DIFFERENT: (1) is the output "self-help service" ' +
-      'within §6400(d), or does it cross into legal advice, which no registration authorises; ' +
+      'within §6400(d), or does it cross into legal advice, which no registration authorizes; ' +
       '(2) if it is within §6400(d), must this product register. §6401\'s exemption list has not ' +
       'been fetched and is the specific next step. ' +
       'REWRITTEN 2026-10-04 FOR FREE MODE, AND THE QUESTION HAS NARROWED. Everything above is ' +
@@ -181,7 +181,7 @@ export const COMPLIANCE_GAPS: readonly ComplianceGap[] = [
       'costs money and latency; "licensed-pathway" retained means the value is kept as a ' +
       'deliberate conservative placeholder; "unavailable" takes California Track 1 dark, which ' +
       'the product owner declined on 2026-08-22 and nothing since has changed. ' +
-      'ENGINEERING MUST NOT PICK THIS. Changing the value changes gating behaviour, and the ' +
+      'ENGINEERING MUST NOT PICK THIS. Changing the value changes gating behavior, and the ' +
       'reason to change it would be a counsel opinion on §6125 rather than a pivot in the ' +
       'business model. The value was therefore left exactly as it was and the discrepancy ' +
       'recorded here instead.',

@@ -17,7 +17,7 @@ county's own spelling, nothing a homeowner types will do better.
 case, suffix spelled out ("Street" for "ST"), and with the suffix dropped.
 
 The test is **APN equality**, not "found something". A lookup returning the
-neighbour's parcel is worse than one returning nothing, and a found/not-found
+neighbor's parcel is worse than one returning nothing, and a found/not-found
 metric scores it as a success.
 
 ## Result

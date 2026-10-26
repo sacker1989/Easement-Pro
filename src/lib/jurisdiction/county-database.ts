@@ -313,7 +313,7 @@ export const COUNTY_AGENT_ROUTES: readonly CountyAgentRoute[] = [
           'applies or is needed. ' +
           'AREA UNITS — CHECKED, AND NOT WHAT THE SERVICE METADATA IMPLIES. The layer extent ' +
           'advertises wkid 102100 / latestWkid 3857 (Web Mercator), which would make an ' +
-          'ArcGIS-generated Shape__Area square METRES inflated by 1/cos²(latitude), about 1.333x ' +
+          'ArcGIS-generated Shape__Area square METERS inflated by 1/cos²(latitude), about 1.333x ' +
           'at this latitude. But the stored field here is Shape_STAr (single underscore, ' +
           'shapefile-derived from the source projection) and it is ALREADY SQUARE FEET: verified ' +
           'against GISACRES x 43,560 on four parcels — 66,571 vs 66,571, 229,692 vs 229,692, ' +

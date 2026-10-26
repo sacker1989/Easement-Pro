@@ -206,7 +206,7 @@ describe('every parcel gets a fire answer, not only hazard-zone ones', () => {
      * Altadena as NonWildland and the Eaton Fire destroyed it in January
      * 2025, because FHSZ models wildland fire and that was an urban
      * conflagration. A homeowner reading "not in a mapped hazard zone" after
-     * their neighbourhood burned is owed that explanation, and it has to
+     * their neighborhood burned is owed that explanation, and it has to
      * travel with the reassuring outcomes as much as the alarming ones.
      */
     const results = [

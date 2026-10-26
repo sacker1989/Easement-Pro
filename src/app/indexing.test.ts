@@ -91,7 +91,7 @@ describe('sitemap', () => {
      * DERIVED FROM THE FILESYSTEM RATHER THAN A HARDCODED COUNT, which is what
      * this used to be. A sitemap listing a parameterised route would
      * contradict robots.ts, and that kind of inconsistency gets resolved in
-     * the crawler's favour. Checking the count only caught that by accident,
+     * the crawler's favor. Checking the count only caught that by accident,
      * and stopped catching anything the moment a second legitimate page was
      * added.
      */

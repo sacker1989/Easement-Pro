@@ -95,7 +95,7 @@ describe('the federal transmission layer', () => {
     ).toBe('345kV overhead electricity transmission line (COMMONWEALTH EDISON CO)');
   });
 
-  it('says overhead or underground, which is the fact a neighbour cares about', () => {
+  it('says overhead or underground, which is the fact a neighbor cares about', () => {
     expect(hifld!.describe({ TYPE: 'AC; OVERHEAD' })).toMatch(/overhead/);
     expect(hifld!.describe({ TYPE: 'AC; UNDERGROUND' })).toMatch(/underground/);
     // Neither, rather than a guess, when the column says neither.

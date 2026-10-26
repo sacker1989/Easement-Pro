@@ -109,7 +109,7 @@ describe('the estimate itself', () => {
   });
 
   it('gives a lower figure for a buried line than an overhead one', () => {
-    // The mapping has to produce a difference a homeowner would recognise:
+    // The mapping has to produce a difference a homeowner would recognize:
     // a line overhead across the yard is worse than one along the boundary.
     const overhead = estimate('utility-overhead');
     const buried = estimate('utility-underground');

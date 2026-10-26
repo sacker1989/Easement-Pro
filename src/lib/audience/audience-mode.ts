@@ -86,7 +86,7 @@ const BUYER: AudienceCopy = {
       'listed, by document number. Nothing in this report replaces it, and it is the single thing ' +
       'most worth doing.',
     'Read the seller disclosures for anything about shared driveways, utility access, drainage, or ' +
-      'a neighbour crossing the land. A disclosure that mentions an arrangement with nothing ' +
+      'a neighbor crossing the land. A disclosure that mentions an arrangement with nothing ' +
       'recorded behind it is worth asking about.',
     'Ask the seller or their agent, in writing, what they know about anyone else having a right to ' +
       'use the land. Written answers before closing are worth more than recollections after it.',

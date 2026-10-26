@@ -34,7 +34,7 @@ describe('classifyDataCoverage', () => {
   });
 
   it('does not claim verification for an LA County address with no assessor record', () => {
-    // Regression: this previously returned tier 'clear' labelled "Verified
+    // Regression: this previously returned tier 'clear' labeled "Verified
     // against LA County reference data" while every figure came from the
     // national placeholder — asserting verification that never happened.
     const result = classifyDataCoverage({ isLaCounty: true });
@@ -142,7 +142,7 @@ describe('buildEconomicImpactEstimate', () => {
     expect(result.methodology).toContain('market-indexed');
   });
 
-  it('grades a modelled price as likely-with-caveat, never clear', () => {
+  it('grades a modeled price as likely-with-caveat, never clear', () => {
     // 'clear' gates direct assertion in a paid letter; an indexed figure is a
     // model output and must not be asserted that way.
     const result = buildEconomicImpactEstimate({
@@ -331,7 +331,7 @@ describe('the variance band does not claim to be a measurement', () => {
   });
 
   it('still produces the band, which is doing real work', () => {
-    // The point is the labelling, not removing the range: a band invites less
+    // The point is the labeling, not removing the range: a band invites less
     // reliance than a single number, which is why it is there.
     const result = buildEconomicImpactEstimate({
       lotAreaSqFt: 10000,

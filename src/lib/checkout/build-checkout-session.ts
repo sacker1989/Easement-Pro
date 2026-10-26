@@ -38,7 +38,7 @@ export async function buildCheckoutSession(
   // FIRST, before anything else in the function. The page-level guard is the
   // one users meet; this is the one that holds when a route is added, a test
   // fixture calls in directly, or someone wires a new surface and forgets.
-  // Defence in depth is warranted here because the failure mode is charging a
+  // Defense in depth is warranted here because the failure mode is charging a
   // card during a period when charging is the specific thing being avoided.
   assertCommerceEnabled('create a checkout session');
 

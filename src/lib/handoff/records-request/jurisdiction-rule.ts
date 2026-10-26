@@ -100,7 +100,7 @@ export interface RecordsRequestJurisdictionRule {
    * everywhere but Florida — and null is also the right answer for states that
    * genuinely have no such requirement.
    *
-   * Modelled on the rule rather than in the builder because this is precisely
+   * Modeled on the rule rather than in the builder because this is precisely
    * the kind of provision that does not travel: it is a precondition to
    * RECOVERING FEES, not to filing, and a state without it would have a user
    * sending a document that accomplishes nothing.

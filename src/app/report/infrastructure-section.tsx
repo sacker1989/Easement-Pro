@@ -44,7 +44,7 @@ export interface InfrastructureSectionProps {
   readonly idQuery: { readonly field: string; readonly value: string };
   readonly county: string;
   readonly state: string;
-  /** Fallback centre if the county returns no outline. */
+  /** Fallback center if the county returns no outline. */
   readonly lat: number;
   readonly lon: number;
   /** How the rest of the report refers to the land. */
@@ -62,7 +62,7 @@ interface ScanOutcome {
 async function scan(props: InfrastructureSectionProps): Promise<ScanOutcome | null> {
   try {
     /*
-     * GEOMETRY FIRST. The search is centred on the parcel rather than the
+     * GEOMETRY FIRST. The search is centered on the parcel rather than the
      * geocoded address, so the radius means what the copy says; and without a
      * ring there is no boundary to measure against, so the Overpass call is
      * skipped entirely rather than paid for and discarded.

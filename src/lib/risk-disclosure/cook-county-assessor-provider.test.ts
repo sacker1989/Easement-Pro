@@ -92,7 +92,7 @@ describe('findByAddress', () => {
 
   it('reports ambiguity rather than picking the first condo unit', async () => {
     // Chicago is dense with condo buildings where one street address yields one
-    // PIN per unit. First-match would price an arbitrary neighbour's unit and
+    // PIN per unit. First-match would price an arbitrary neighbor's unit and
     // present it as the user's own.
     const p = createCookCountyAssessorProvider({
       fetchImpl: stub([

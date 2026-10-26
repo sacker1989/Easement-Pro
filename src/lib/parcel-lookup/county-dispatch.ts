@@ -209,7 +209,7 @@ export interface CountyDispatchOptions {
  * did — gives every request a private cache that is empty on arrival and
  * discarded on return, so the cache never records a hit and the per-host
  * concurrency gate never sees the concurrency it exists to limit. Both of the
- * behaviours the Orange County 503 finding called for were silently inert.
+ * behaviors the Orange County 503 finding called for were silently inert.
  *
  * Lazy rather than eager because `createResilientFetch` throws in a browser,
  * and a module-level call would run during any accidental client import.
@@ -236,7 +236,7 @@ export function getSharedFetch(): typeof fetch {
  * THE GAP THIS CLOSES is an embarrassing one. `county-parcel` was declared in
  * UpstreamService the day the outcome log was written, and used nowhere. The
  * county lookup is the slowest upstream, the only one with per-county
- * behaviour, and the one that silently returned service-error for every San
+ * behavior, and the one that silently returned service-error for every San
  * Diego address until 2026-10-11 — and it was the single service production
  * was not watching. The fallback to national benchmarks is quiet by design,
  * so nothing surfaced until somebody measured by hand.

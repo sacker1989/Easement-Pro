@@ -157,7 +157,7 @@ interface OverpassElement {
   readonly tags?: Readonly<Record<string, string>>;
 }
 
-/** Maps OSM tags to a category and a phrase a homeowner would recognise. */
+/** Maps OSM tags to a category and a phrase a homeowner would recognize. */
 function classify(tags: Readonly<Record<string, string>>): {
   category: InfrastructureCategory;
   label: string;

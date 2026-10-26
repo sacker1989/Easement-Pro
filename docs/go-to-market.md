@@ -32,7 +32,7 @@ Three regimes bear on the copy, not one:
 | FTC Act §5 | Deceptive or unsubstantiated advertising claims | Substantiation must exist *before* the claim runs |
 | State appraisal licensing | Holding out as providing valuation services | Varies by state; California is not permissive |
 | LDA registration — Cal. Bus. & Prof. Code §6400 et seq. | Providing or **offering** self-help service **for compensation** | Registration and bonding. **Free mode removes the compensation element, so this no longer applies** |
-| UPL — Cal. Bus. & Prof. Code §6125 / §6126 | Practising law without a licence, **payment irrelevant** | Misdemeanour. Free mode does **not** touch this, and it is now the live question |
+| UPL — Cal. Bus. & Prof. Code §6125 / §6126 | Practising law without a license, **payment irrelevant** | Misdemeanour. Free mode does **not** touch this, and it is now the live question |
 
 The marketing therefore has to say something true. There is something true and it is worth having:
 **the product answers "what can I do with my land, and what does the record actually say" faster
@@ -41,7 +41,7 @@ something.**
 
 **The §6400 / §6125 split is the most important line in this table and it is new.** Free mode
 removes the compensation element from the LDA definition, which takes registration and bonding off
-the table. It does nothing to §6125, which prohibits practising law without a licence whether or not
+the table. It does nothing to §6125, which prohibits practising law without a license whether or not
 anyone pays. So the copy constraint has not relaxed — it has moved. The question is no longer "may we
 sell this" but "is what we produce the practice of law at all", and every claim in section 5 is now
 judged against that rather than against a licensing question that free mode already answered.
@@ -280,7 +280,7 @@ correct answer looks like.
 | 9 | `drainage` | "Can I build a shed in the swale?" | All restricted including landscaping; flow named as the reason |
 | 10 | `slope` | "Can I terrace this hillside?" | All restricted, with an explicit statement that no slope rules have been researched |
 | 11 | `conservation` | "Can I clear brush on my own land?" | All restricted **and** a statement that the footprint framing does not fit — whole-parcel instrument controls |
-| 12 | `prescriptive` | "The neighbour has crossed my lot for years — can I block it?" | All restricted; no instrument exists; existence itself is contested and goes to an attorney |
+| 12 | `prescriptive` | "The neighbor has crossed my lot for years — can I block it?" | All restricted; no instrument exists; existence itself is contested and goes to an attorney |
 
 **Cross-cutting cases** the funnel must also survive:
 
@@ -289,7 +289,7 @@ correct answer looks like.
 - **Service outage** — Orange County has returned 503 under load. Must degrade to national
   benchmarks with a notice, not error out.
 - **Ambiguous address** — a multi-unit match must ask which parcel, never price an arbitrary
-  neighbour.
+  neighbor.
 - **Every path** — the open-questions panel appears, and no dollar figure appears above it.
 
 ---

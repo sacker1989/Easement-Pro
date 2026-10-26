@@ -99,7 +99,7 @@ export const CA_RULE_SET: StateEasementRuleSet = {
     note:
       'The statute states a standard of OBVIOUS AND PERMANENT USE. Re-verified against the live ' +
       'text: the word "necessity" does not appear in §1104 at all. PROVISIONAL READING (product ' +
-      'owner, 2026-08-22, NOT counsel): recognised, reasonable necessity. ' +
+      'owner, 2026-08-22, NOT counsel): recognized, reasonable necessity. ' +
       'WHAT REMAINS OPEN: the standard is not on the face of the statute, so it rests on case law ' +
       'this project has not fetched. It also matters which way it is wrong — "reasonable" is the ' +
       'more permissive reading, so an error here finds easements that a strict standard would ' +
@@ -115,7 +115,7 @@ export const CA_RULE_SET: StateEasementRuleSet = {
     citation: null,
     // Left null ON PURPOSE, and the reason is itself the finding. A reading was
     // offered on 2026-08-22 and it does not fit this type — see the note. A
-    // researcherReading must carry BOTH `recognised` and a necessity standard,
+    // researcherReading must carry BOTH `recognized` and a necessity standard,
     // and no standard was supplied, because the answer given was about a
     // different doctrine. Filling half the shape by picking a standard would
     // hide that.
@@ -144,7 +144,7 @@ export const CA_RULE_SET: StateEasementRuleSet = {
       'which classically turns on unity of ownership, severance, and necessity existing AT ' +
       'severance. So `recognised: true` is a sound provisional position. ' +
       'STILL OPEN, AND IT IS NOW EXACTLY ONE FIELD: strict or reasonable necessity. This type ' +
-      'requires both `recognised` and a standard, so researcherReading stays null until the second ' +
+      'requires both `recognized` and a standard, so researcherReading stays null until the second ' +
       'half exists — a half-filled reading would read as a complete one. In many states the two ' +
       'doctrines take DIFFERENT standards, so the "reasonable" recorded above for prior use ' +
       'cannot simply be carried across.',
@@ -209,7 +209,7 @@ export const CA_RULE_SET: StateEasementRuleSet = {
       'Whether the Act in fact excepts easements is a question about what the statute says, and no ' +
       'section addressing exceptions has been fetched. The two are not interchangeable, and this ' +
       'field is the one where the difference is most consequential. ' +
-      'FLAG 2, THE DIRECTION FAVOURS OUR OWN USER, WHICH IS THE DANGEROUS DIRECTION HERE. This ' +
+      'FLAG 2, THE DIRECTION FAVORS OUR OWN USER, WHICH IS THE DANGEROUS DIRECTION HERE. This ' +
       'product serves the BURDENED owner. "Not excepted" means an old recorded easement is wiped ' +
       'once the root-of-title period runs — the outcome the homeowner wants. If that is wrong, the ' +
       'product tells someone a burden on their land has lapsed when it has not, and the ways they ' +

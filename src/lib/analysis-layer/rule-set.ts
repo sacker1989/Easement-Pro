@@ -4,7 +4,7 @@
  * THE FIELDS ARE CHOSEN BECAUSE THEY GENUINELY DIFFER BY STATE. Easement
  * doctrine is state law: prescriptive periods vary, implied easement from
  * prior use and easement by necessity are DISTINCT doctrines that some states
- * recognise on different necessity standards, recording acts come in three
+ * recognize on different necessity standards, recording acts come in three
  * regimes that change who wins a priority contest, and marketable-title acts
  * extinguish ancient interests — except where easements are excepted, which is
  * usually the decisive nuance.
@@ -13,7 +13,7 @@
  * merging them is the single most inviting mistake here. They share the word
  * "necessity" and nothing else: prior use turns on an apparent, continuous use
  * existing at severance, whereas necessity turns on landlocking and needs no
- * prior use at all. A state can recognise one and not the other, and can apply
+ * prior use at all. A state can recognize one and not the other, and can apply
  * strict necessity to one and reasonable necessity to the other.
  */
 

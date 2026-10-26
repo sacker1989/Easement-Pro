@@ -10,7 +10,7 @@ import type { AssessorParcelValuation } from './la-county-assessor-provider';
  *
  *   market ≈ assessed × (HPI_latest / HPI_baseYear)
  *
- * This is a modelled estimate, not an appraisal and not a market observation.
+ * This is a modeled estimate, not an appraisal and not a market observation.
  * It assumes the parcel appreciated in line with the county median, which is
  * false for any individual property to some unknown degree. Treat the output
  * as an order-of-magnitude correction to a figure that is otherwise known to
@@ -121,7 +121,7 @@ export function marketAdjustParcel(
     `Assessed land value reflects a ${baseYear} base year, ${indexed.yearsStale} years ` +
     `before the ${targetYear} index. Under Proposition 13 the assessment does not track ` +
     `the market, so it has been indexed forward by the LA County house-price index ` +
-    `(${multiple}x). This is a modelled adjustment assuming county-median appreciation, ` +
+    `(${multiple}x). This is a modeled adjustment assuming county-median appreciation, ` +
     `not an appraisal or an observed sale price.`;
 
   return {

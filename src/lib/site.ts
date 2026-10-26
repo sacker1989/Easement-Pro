@@ -22,7 +22,7 @@
  * both baked in whatever the environment held when the BUILD ran — exactly the
  * trap that dropping `NEXT_PUBLIC_` was meant to remove, reintroduced one
  * layer down. They now carry `export const dynamic = 'force-dynamic'`, and
- * REMOVING THAT SILENTLY RESTORES THE OLD BEHAVIOUR. Verified against a real
+ * REMOVING THAT SILENTLY RESTORES THE OLD BEHAVIOR. Verified against a real
  * production server: one build, three environments, three different origins.
  *
  * AND ON VERCEL, CHANGING THE VARIABLE STILL NEEDS A REDEPLOY. Environment

@@ -166,7 +166,7 @@ function measuredArea(n: number | undefined): number | null {
 const POSTURE_LABEL: Record<Posture, string> = {
   burdened: 'SOMETHING CROSSES YOUR LAND',
   benefited: 'YOU ARE THE EXPOSED PARTY',
-  mutual: 'SHARED WITH A NEIGHBOUR',
+  mutual: 'SHARED WITH A NEIGHBOR',
 };
 
 const PARTY_LABEL: Record<Party, string> = {
@@ -707,7 +707,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    * through the site and got a full report with national-benchmark dollar
    * figures and no error anywhere on the page. Nothing was wrong with any
    * component: the county correctly found no parcel, the benchmarks
-   * correctly applied, and the sum of two correct behaviours was a confident
+   * correctly applied, and the sum of two correct behaviors was a confident
    * document about a place that is not real.
    *
    * TWO SOURCES MUST BOTH FAIL, which is the part worth keeping. The Census
@@ -986,7 +986,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             <select name="legalCharacter" defaultValue={legalCharacter}>
               <option value="unknown">I don&rsquo;t know</option>
               <option value="appurtenant">
-                A neighbouring property (appurtenant — it goes with their land)
+                A neighboring property (appurtenant — it goes with their land)
               </option>
               <option value="in-gross">
                 A company or person (in gross — e.g. a utility, not tied to land)
@@ -1202,7 +1202,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
               to roughly $
               {Math.round(report.economicImpact.marketAdjustment.indexed.indexedValue).toLocaleString()}{' '}
               in {report.economicImpact.marketAdjustment.indexed.indexedToYear} terms. This is a
-              modelled estimate, not an appraisal.
+              modeled estimate, not an appraisal.
             </p>
           )}
         </>
@@ -1385,7 +1385,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             and "Very High" a mile north — so the fix is not to invent a
             hazard the map does not assert. It is to say what the map says,
             and to say what it does not cover, which is the part that
-            reconciles "not in a mapped zone" with a neighbourhood that
+            reconciles "not in a mapped zone" with a neighborhood that
             burned.
 
             Suppressed when the rich panel already rendered, so a hazard-zone

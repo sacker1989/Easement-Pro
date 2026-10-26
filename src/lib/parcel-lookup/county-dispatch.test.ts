@@ -188,7 +188,7 @@ describe('all three counties are reachable', () => {
 });
 
 describe('ambiguity is reported, never resolved by guessing', () => {
-  it('returns candidates rather than pricing an arbitrary neighbour', async () => {
+  it('returns candidates rather than pricing an arbitrary neighbor', async () => {
     const r = await lookupParcel(address('Orange County', { street: '2100 W Huntington' }), {
       fetchImpl: stubFetch({
         features: [{ attributes: OC_ATTRS }, { attributes: { ...OC_ATTRS, AssessmentNo: '071-334-15' } }],
@@ -231,7 +231,7 @@ describe('the lookup is on the record, because once it was not', () => {
    * San Diego then returned service-error for every address for an unknown
    * stretch, the fallback to national benchmarks did its job quietly, and the
    * only reason anybody found out was a hand-run latency measurement. The
-   * slowest upstream, the only one with per-county behaviour, was the one
+   * slowest upstream, the only one with per-county behavior, was the one
    * upstream production was not watching.
    */
   function capture(): { lines: string[]; restore: () => void } {

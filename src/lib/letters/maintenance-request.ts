@@ -26,7 +26,7 @@ import { type Letter, renderLetterAsPlainText } from './letter';
  * `state !== 'CA'`. The matrix in src/config/state-tiers.ts already encoded
  * exactly that, so the hardcode was a second source of truth that happened to
  * agree — and the failure mode of a second source of truth is that adding a
- * state to the matrix silently does nothing. BEHAVIOUR IS UNCHANGED TODAY:
+ * state to the matrix silently does nothing. BEHAVIOR IS UNCHANGED TODAY:
  * California is still the only entry, so the same states are refused. What
  * changed is that adding the next one is a data edit.
  */
