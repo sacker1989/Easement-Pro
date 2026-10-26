@@ -657,6 +657,43 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     return `/report?${q}`;
   })();
 
+  /*
+   * THE ADDRESS PROBABLY DOES NOT EXIST, and saying so beats a confident
+   * report about nowhere.
+   *
+   * A production sweep on 2026-10-21 put "99999 Zzzqqq Ln, Xyz, CA 00000"
+   * through the site and got a full report with national-benchmark dollar
+   * figures and no error anywhere on the page. Nothing was wrong with any
+   * component: the county correctly found no parcel, the benchmarks
+   * correctly applied, and the sum of two correct behaviours was a confident
+   * document about a place that is not real.
+   *
+   * TWO SOURCES MUST BOTH FAIL, which is the part worth keeping. The Census
+   * geocoder interpolates along published address ranges and genuinely
+   * misses real places — new construction, rural routes, recently annexed
+   * streets. Blocking on it alone would turn away people whose addresses are
+   * fine. And the county is the stronger witness: if it matched a parcel,
+   * the address exists whatever Census thinks.
+   *
+   * So this fires only when the geocoder found nothing AND no county parcel
+   * matched. Either one alone is a miss; both together is an address.
+   *
+   * Verified against the negative case: Census returns 0 matches for the
+   * nonsense address and 1 for 3375 Marengo Ave, Altadena.
+   */
+  const geocodeMissed = geocoded !== null && geocoded.kind === 'no-match';
+  /*
+   * NOT JUST 'not-found'. The nonsense address from the sweep — ZIP 00000 —
+   * resolves to 'unsupported-county', because no county owns that ZIP. A
+   * check keyed on 'not-found' alone never fired for the exact input that
+   * prompted it, which is how a guard passes its own test and misses its own
+   * case. What matters is that NO county confirmed the address, however the
+   * dispatch describes the reason.
+   */
+  const parcelConfirmed = lookup?.status === 'found' || lookup?.status === 'ambiguous';
+  const addressLooksUnreal = submitted && geocodeMissed && !parcelConfirmed;
+
+
   return (
     <main>
       {/*
@@ -688,6 +725,49 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         whether you have one,{' '}
         <Link href={`/learn/${easementType}`}>the guide for this type</Link> covers how to find out.
       </p>
+      {/*
+        THE COVERAGE NOTICE SITS HERE, NOT 300 LINES DOWN.
+
+        It used to render below the summary block, on the reasoning that a
+        notice describes the report that follows and so belongs beside it.
+        That is true and it was still too low: a production sweep on
+        2026-10-21 found parcel data returned for two of nine addresses, and
+        the seven failures read as ordinary reports because the one sentence
+        saying the figures were national benchmarks was below the fold.
+
+        A reader who never scrolls to it treats a benchmark figure as their
+        county's own number. That is the difference between a report that
+        degraded honestly and one that quietly made something up, and it
+        cannot depend on scroll depth.
+      */}
+      {/*
+        WE COULD NOT FIND THIS ADDRESS AT ALL — shown instead of the coverage
+        notice, because "figures below use national benchmarks" is the wrong
+        thing to say about a place that may not exist. See addressLooksUnreal.
+      */}
+      {addressLooksUnreal && (
+        <div className="notice notice-warn" role="alert">
+          <p style={{ marginTop: 0 }}>
+            <strong>We couldn&rsquo;t find that address.</strong> Neither the national address
+            index nor any county assessor we cover has a record matching{' '}
+            <strong>
+              {street}, {city} {zip}
+            </strong>
+            .
+          </p>
+          <p style={{ marginBottom: 0 }}>
+            Check the street number, spelling and ZIP and{' '}
+            <a href="#address">try again</a>. Everything below is general information about{' '}
+            {headlinePhrase(easementType)} — <strong>none of the figures describe this
+            address</strong>, because we found nothing to describe.
+          </p>
+        </div>
+      )}
+      {!addressLooksUnreal && lookupNotice && (
+        <p className="notice notice-warn" role="status">
+          {lookupNotice}
+        </p>
+      )}
       <p className="lede">{copy.standfirst}</p>
       <p className="lede">
         This reads public parcel, assessment and infrastructure records and reports what they say:
@@ -750,7 +830,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
       */}
       {error && <p role="alert">{error}</p>}
 
-      <form>
+      <form id="address">
         <input type="hidden" name="submitted" value="1" />
         <fieldset>
           <legend>Property address</legend>
@@ -982,14 +1062,6 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           </p>
         </div>
       )}
-
-      {/*
-        The notice stays here, unlike the error above it. A notice describes
-        the report that follows — "no parcel matched, so figures below use
-        national benchmarks" — so it belongs beside that report rather than
-        beside the form.
-      */}
-      {lookupNotice && <p role="status">{lookupNotice}</p>}
 
       {lookup?.status === 'ambiguous' && (
         <>

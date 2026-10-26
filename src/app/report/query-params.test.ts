@@ -168,18 +168,50 @@ describe('a request that fails validation says so where the reader is looking', 
    */
   it('renders the error above the form, not below it', () => {
     const alertAt = PAGE_CODE.indexOf('{error && <p role="alert">');
-    const formAt = PAGE_CODE.indexOf('<form>');
+    // The form carries id="address" so the not-found state can link back to
+    // it ("check the spelling and try again").
+    const formAt = PAGE_CODE.indexOf('<form id="address">');
     expect(alertAt).toBeGreaterThan(-1);
     expect(formAt).toBeGreaterThan(-1);
     expect(alertAt).toBeLessThan(formAt);
   });
 
-  it('keeps the lookup notice beside the report it describes', () => {
-    // A notice is about the figures below it ("no parcel matched, so figures
-    // below use national benchmarks"), so it does not move with the error.
-    const noticeAt = PAGE_CODE.indexOf('{lookupNotice && <p role="status">');
-    const formAt = PAGE_CODE.indexOf('<form>');
-    expect(noticeAt).toBeGreaterThan(formAt);
+  it('puts the coverage notice ABOVE the form, where it gets read', () => {
+    /*
+     * REVERSED ON 2026-10-25, and the old reasoning is worth keeping: a
+     * notice describes the figures below it, so it belonged beside them
+     * rather than beside the form.
+     *
+     * It was still too low. A production sweep on 2026-10-21 returned parcel
+     * data for two of nine addresses, and the seven failures read as ordinary
+     * reports — the sentence saying the figures were national benchmarks
+     * rendered below the fold. A reader who never scrolls to it treats a
+     * benchmark as their county's own number, which is the difference between
+     * degrading honestly and quietly making something up. That cannot depend
+     * on scroll depth.
+     */
+    const noticeAt = PAGE_CODE.indexOf('{!addressLooksUnreal && lookupNotice && (');
+    const formAt = PAGE_CODE.indexOf('<form id="address">');
+    expect(noticeAt).toBeGreaterThan(-1);
+    expect(noticeAt).toBeLessThan(formAt);
+  });
+
+  it('replaces the coverage notice entirely when the address is not real', () => {
+    // "Figures below use national benchmarks" is the wrong thing to say about
+    // a place that may not exist. The two states are mutually exclusive.
+    expect(PAGE_CODE).toContain('{addressLooksUnreal && (');
+    expect(PAGE_CODE).toContain('{!addressLooksUnreal && lookupNotice && (');
+  });
+
+  it('requires BOTH sources to miss before calling an address unreal', () => {
+    /*
+     * The Census geocoder interpolates along published address ranges and
+     * genuinely misses real places — new construction, rural routes, recently
+     * annexed streets. Blocking on it alone turns away people whose addresses
+     * are fine. The county is the stronger witness: a matched parcel means the
+     * address exists whatever Census thinks.
+     */
+    expect(PAGE_CODE).toMatch(/geocodeMissed && !parcelConfirmed/);
   });
 
   it('renders the error exactly once', () => {
