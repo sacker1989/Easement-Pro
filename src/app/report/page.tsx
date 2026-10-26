@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { resolveAddress, zipHeuristicCountyResolver } from '@/lib/parcel-resolution';
 import { Suspense } from 'react';
 import { audienceCopy, BUYER_DECISION_WARNING, resolveAudience } from '@/lib/audience/audience-mode';
@@ -12,7 +13,7 @@ import {
   InvalidRiskDisclosureInputError,
 } from '@/lib/risk-disclosure';
 import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclosure';
-import { mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
+import { headlinePhrase, mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
 import { LANDSCAPING_ACCESS_CONDITION } from '@/lib/risk-disclosure/restriction-checklist';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
@@ -658,7 +659,35 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
 
   return (
     <main>
-      <h1>What an easement on {copy.propertyPhrase} means</h1>
+      {/*
+        THE HEADLINE USED TO PRESUME THE EASEMENT EXISTS.
+        "What an easement on your property means" asserts there is one. The
+        tool cannot establish that and never tries: the visitor picks a type
+        from a dropdown — defaulted to overhead utility — and everything below
+        explains that type. A live test ran nine addresses and not one report
+        named a recorded easement, a holder or an instrument, because there is
+        no code path that could.
+
+        The report's own open-questions list already conceded it at item five
+        ("Whether an easement encumbers this parcel at all… resolved by: title
+        company"), which is the right admission in the wrong place: a reader
+        who believes the headline has no reason to scroll to the caveat that
+        withdraws it.
+
+        So the headline is now CONDITIONAL and names the type the reader chose,
+        and the premise line directly under it says whose claim this is. That
+        is also what makes the rest of the page honest rather than merely
+        hedged — everything downstream genuinely is "what this type means".
+      */}
+      <h1>What {headlinePhrase(easementType)} would mean for {copy.propertyPhrase}</h1>
+      <p role="note">
+        <strong>You chose {headlinePhrase(easementType)}.</strong> This report
+        explains what that kind of easement means — it does not check whether one is recorded
+        against {copy.propertyPhrase}, and it has read no deed, plat or title report. Establishing
+        that an easement exists takes a title search. If you are not sure which kind you have, or
+        whether you have one,{' '}
+        <Link href={`/learn/${easementType}`}>the guide for this type</Link> covers how to find out.
+      </p>
       <p className="lede">{copy.standfirst}</p>
       <p className="lede">
         This reads public parcel, assessment and infrastructure records and reports what they say:

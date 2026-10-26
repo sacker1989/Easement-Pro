@@ -194,3 +194,39 @@ export function conservativelyRestrictedTypes(): readonly EasementType[] {
     (t) => PURPOSE_BY_EASEMENT_TYPE[t].purpose === 'unknown',
   );
 }
+
+/**
+ * The noun phrase for the report headline, article included.
+ *
+ * SEPARATE FROM `label`, WHICH IS A DROPDOWN OPTION AND READS LIKE ONE. The
+ * labels carry disambiguating parentheticals that are right in a picker and
+ * wrong in a sentence: "What a prescriptive (established by use, no recorded
+ * document) would mean for your property." Two of them are not even noun
+ * phrases on their own — "Drainage" and "Prescriptive" need the word easement
+ * supplied.
+ *
+ * Deriving the article with a vowel test and stripping the parenthetical was
+ * the alternative, and it produces the right answer for ten of twelve and
+ * garbage for the two that matter most to read well.
+ *
+ * `satisfies` so a thirteenth type fails to compile here, the same discipline
+ * the map above uses.
+ */
+export const HEADLINE_PHRASE_BY_TYPE = {
+  'utility-overhead': 'an overhead utility easement',
+  'utility-underground': 'an underground utility easement',
+  sewer: 'a sewer easement',
+  'storm-drain': 'a storm drain easement',
+  'water-line': 'a water line easement',
+  pipeline: 'a pipeline easement',
+  'access-ingress-egress': 'an access easement',
+  'public-right-of-way': 'a public right of way',
+  drainage: 'a drainage easement',
+  slope: 'a slope easement',
+  conservation: 'a conservation easement',
+  prescriptive: 'a prescriptive easement',
+} satisfies Record<EasementType, string>;
+
+export function headlinePhrase(type: EasementType): string {
+  return HEADLINE_PHRASE_BY_TYPE[type];
+}

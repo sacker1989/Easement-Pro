@@ -102,7 +102,21 @@ export const GUIDE_BY_TYPE = {
       'Look up: poles, wires, and transformers on or near your lot are the visible clue.',
       'Check your title report or deed — a recorded utility easement names the holder and the strip.',
       'Ask your electric utility which lines cross your parcel and how wide their clearance corridor is.',
-      'Run the free SafeHomeValue report on your address — it flags overhead-utility easements.',
+      /*
+       * THIS LINE USED TO SAY the report "flags overhead-utility easements".
+       * It does not and never did. The visitor picks an easement type from a
+       * dropdown and the report explains that type; nothing in the pipeline
+       * reads a recorded instrument or names a holder. Putting a detection
+       * claim in the HOW TO CHECK list was the worst possible place for it,
+       * because that list is read by someone trying to establish whether they
+       * have an easement at all — exactly the question the tool cannot answer.
+       *
+       * The three items above it are the real answers. This one now says what
+       * the report is actually for, which is the step after those.
+       */
+      'Once you know which easement you have, the free SafeHomeValue report explains what it ' +
+        'means for your property — what is restricted, who maintains it, and a rough sense of ' +
+        'the money. It does not search for easements; it has read no documents for your parcel.',
     ],
     howToRequestMaintenance: [
       'Identify the utility — your electric bill, or the name stenciled on the poles.',
