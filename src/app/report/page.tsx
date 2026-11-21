@@ -18,6 +18,12 @@ import {
   LANDSCAPING_ACCESS_CONDITION,
   WATER_LINE_COVER_CONDITION,
 } from '@/lib/risk-disclosure/restriction-checklist';
+import {
+  RECORDS_DISCLOSURE,
+  RECORDS_HEADLINE,
+  recordsFor,
+  TRIGGER_LABEL as RECORD_TRIGGER_LABEL,
+} from '@/lib/easements/records-to-keep';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
   screeningEstimate,
@@ -1968,6 +1974,54 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           <p role="note">
             <strong>{audience === 'buyer' ? 'The clock: ' : 'On timing: '}</strong>
             {copy.timingNote}
+          </p>
+
+          {/*
+            RECORDS COME BEFORE THE REMEDY PLAN, deliberately.
+
+            Every step in the plan below eventually reaches a title company, a
+            utility, an attorney or an appraiser. This one is a phone camera
+            and a folder. It is the only part of the report a homeowner can
+            finish today, it costs nothing, and it is worth more than any of
+            the paid steps if the thing it protects against happens.
+
+            It was also the most scattered thing in the product: "photograph
+            the easement area, dated" appeared in responsibilities.ts,
+            should-exist.ts and the guides — four places, none of them a step,
+            none saying what the photograph is FOR. Altadena is what makes
+            that concrete; the records that mattered afterwards were the ones
+            taken before.
+          */}
+          <h2>What you can do yourself, today, for nothing</h2>
+          <p className="lede">{RECORDS_HEADLINE}</p>
+          {(['before-anything', 'before-work', 'after-an-event', 'at-sale'] as const).map(
+            (trigger) => {
+              const items = recordsFor(trigger);
+              if (items.length === 0) return null;
+              return (
+                <div className="panel" key={trigger}>
+                  <h3 style={{ marginTop: 0 }}>
+                    <span className="badge badge-ok" style={{ marginRight: '0.5rem' }}>
+                      {RECORD_TRIGGER_LABEL[trigger]}
+                    </span>
+                  </h3>
+                  {items.map((r) => (
+                    <div key={r.id} style={{ marginBottom: '1.1rem' }}>
+                      <strong>{r.what}</strong>
+                      <br />
+                      <small>{r.whyItMatters}</small>
+                      <br />
+                      <small className="muted">
+                        <strong>How:</strong> {r.how}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              );
+            },
+          )}
+          <p className="muted">
+            <small>{RECORDS_DISCLOSURE}</small>
           </p>
 
           {remedy && (
