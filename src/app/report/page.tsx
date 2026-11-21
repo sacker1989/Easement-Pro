@@ -14,7 +14,10 @@ import {
 } from '@/lib/risk-disclosure';
 import type { AssessorParcelValuation, EasementPurpose } from '@/lib/risk-disclosure';
 import { headlinePhrase, mapEasementTypeToPurpose } from '@/lib/risk-disclosure/easement-purpose-map';
-import { LANDSCAPING_ACCESS_CONDITION } from '@/lib/risk-disclosure/restriction-checklist';
+import {
+  LANDSCAPING_ACCESS_CONDITION,
+  WATER_LINE_COVER_CONDITION,
+} from '@/lib/risk-disclosure/restriction-checklist';
 import { EASEMENT_TYPES, type EasementType } from '@/lib/easements/easement-types';
 import {
   screeningEstimate,
@@ -1247,6 +1250,20 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           ) && (
             <p role="note">
               <strong>{LANDSCAPING_ACCESS_CONDITION}</strong>
+            </p>
+          )}
+          {/*
+            WATER IS A UTILITY EASEMENT PLUS ONE RULE THE ROW HAS NO CELL FOR.
+            Confirmed 2026-11-21 against LADWP, San Diego and LVVWD standards:
+            the structural cells match, and all three also bar changing the
+            grade or the depth of cover over the main. An overhead conductor
+            does not care how deep the garden is, so the shared utility row
+            never had to say it. Keyed on the type rather than the purpose,
+            because this is true of buried water pipe specifically.
+          */}
+          {easementType === 'water-line' && (
+            <p role="note">
+              <strong>{WATER_LINE_COVER_CONDITION}</strong>
             </p>
           )}
           <p className="muted">

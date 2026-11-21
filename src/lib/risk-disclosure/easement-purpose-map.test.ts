@@ -126,7 +126,8 @@ describe('unreviewed mappings are marked, not hidden', () => {
       'prescriptive',
       'public-right-of-way',
       'slope',
-      'water-line',
+      // water-line left this list on 2026-11-21, closed against LADWP, San
+      // Diego and LVVWD published standards rather than an opinion.
     ]);
   });
 
@@ -143,15 +144,29 @@ describe('unreviewed mappings are marked, not hidden', () => {
     }
   });
 
-  it('keeps water-line marked despite a recorded position', () => {
-    // `reviewed` means checked by someone qualified in the domain. A
-    // product-owner position is not that, and flipping the flag would silence
-    // the user-facing marker on the wrong kind of confirmation.
+  it('marks water-line reviewed, against published utility standards', () => {
+    /*
+     * FLIPPED 2026-11-21, and the old reasoning was right at the time: a
+     * product-owner position is not domain review, and flipping the flag on
+     * one would have silenced the user-facing marker on the wrong kind of
+     * confirmation.
+     *
+     * What closed it was published standards rather than an opinion — LADWP's
+     * 2025 Design Standards, San Diego's Water Facility Design Guidelines and
+     * the Las Vegas Valley Water District easement form all restrict
+     * structures, fencing and planting over a main, which is the utility row.
+     *
+     * The same reading showed the mapping was INCOMPLETE rather than wrong:
+     * all three also bar changing grade or depth of cover, which the generic
+     * utility row has no cell for. See WATER_LINE_COVER_CONDITION.
+     */
     const m = mapEasementTypeToPurpose('water-line');
-    expect(m.reviewed).toBe(false);
-    expect(m.note).toMatch(/POSITION RECORDED/);
-    expect(m.note).toMatch(/STILL OPEN/);
+    expect(m.reviewed).toBe(true);
     expect(m.purpose).toBe('utility');
+    expect(m.note).toMatch(/LADWP/);
+    expect(m.note).toMatch(/depth of soil over the pipe|depth of cover|grade/i);
+    // It must still say the reader's own document can be stricter.
+    expect(m.note).toMatch(/control|stricter/i);
   });
 
   it('keeps reviewed and conservatively-restricted as separate ideas', () => {
@@ -159,7 +174,9 @@ describe('unreviewed mappings are marked, not hidden', () => {
     // `unknown` on purpose because conservative IS the correct answer there.
     // Collapsing the two would lose the distinction between "we have not
     // checked" and "we checked and the answer is: refuse to guess".
-    expect(unreviewedEasementTypes()).toContain('water-line');
+    // water-line is now REVIEWED and still maps to a real row, which keeps
+    // it a useful contrast: reviewed-and-mapped vs unreviewed-and-refused.
+    expect(unreviewedEasementTypes()).not.toContain('water-line');
     expect(conservativelyRestrictedTypes()).not.toContain('water-line');
     expect(unreviewedEasementTypes()).toContain('pipeline');
     expect(conservativelyRestrictedTypes()).toContain('pipeline');

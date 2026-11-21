@@ -40,6 +40,42 @@ export const LANDSCAPING_ACCESS_CONDITION =
   'blocks it, or would have to be dug up to reach what is buried there is not "landscaping" for ' +
   'this purpose — including plants that are small now and will not stay that way.';
 
+/**
+ * The condition the generic utility row cannot carry, for buried water mains.
+ *
+ * WHY THE UTILITY ROW IS NOT ENOUGH ON ITS OWN. Mapping water-line to
+ * `utility` is correct and was confirmed on 2026-11-21 against LADWP, City of
+ * San Diego and Las Vegas Valley Water District standards — fencing,
+ * additions and pools are restricted under all of them, exactly as the row
+ * says.
+ *
+ * What those standards add is a restriction the row has no cell for. LADWP's
+ * grantor may not "modify grading ... or reduce or increase the depth of
+ * cover over the main". Northwest Rural's may not "diminish or substantially
+ * add to the ground cover". A buried pressurised pipe is the one utility
+ * where moving soil is itself the hazard — too little cover and a pipe is
+ * exposed to frost and load, too much and it cannot be reached. An overhead
+ * conductor does not care how deep the garden is, which is why the generic
+ * row never needed to say it.
+ *
+ * San Diego also sets planting distance by MATURE SIZE rather than root
+ * depth: anything maturing over 3 ft must stand 10 ft off the main, or use a
+ * root barrier. That is stricter than "shallow-rooted plants are generally
+ * permitted" and is the specific way the permissive landscaping cell misleads
+ * on water.
+ *
+ * Stated once and rendered beside the checklist, like
+ * LANDSCAPING_ACCESS_CONDITION, rather than edited into a rationale where the
+ * next person to touch that cell will drop it.
+ */
+export const WATER_LINE_COVER_CONDITION =
+  'For a buried water main there is one more rule that catches people out: you generally may ' +
+  'not change the depth of soil over the pipe, in either direction, and you may not re-grade ' +
+  'the easement. Raising a bed, cutting a slope or adding fill counts, even where planting ' +
+  'itself would be fine. Utilities also commonly set planting distance by a plant’s MATURE ' +
+  'size rather than its roots — one standard requires anything growing over 3 ft to stand 10 ft ' +
+  'back from the main, or sit in a planter or behind a root barrier.';
+
 export type RestrictedActivity = 'fencing' | 'additions' | 'pool' | 'landscaping';
 
 export type EasementPurpose = 'utility' | 'drainage' | 'access' | 'sewer' | 'unknown';

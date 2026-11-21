@@ -90,20 +90,55 @@ export const PURPOSE_BY_EASEMENT_TYPE = {
   },
   'water-line': {
     purpose: 'utility',
-    // Left false deliberately. `reviewed` means "checked by someone qualified
-    // in this domain", and a product-owner position is not that — flipping it
-    // would silence the user-facing marker on the strength of the wrong kind
-    // of confirmation, and the flag stops meaning anything the first time it
-    // is set loosely. This is one step from closing, not closed.
-    reviewed: false,
+    /*
+     * CLOSED 2026-11-21 against published utility standards, not a phone call.
+     *
+     * The open question was whether a potable water main is governed as a
+     * UTILITY easement rather than a sewer one. It is, and the sources are
+     * public and consistent across three jurisdictions:
+     *
+     *   LADWP Design Standards and Installation Requirements (2025): where a
+     *   facility cannot go in a public street the water facility requires an
+     *   easement, and the grantor "shall not modify grading, construct
+     *   surface improvements or structures, plant trees, reduce capacity or
+     *   alter path of existing surface drainage, park vehicles or store
+     *   materials directly over the main, or reduce or increase the depth of
+     *   cover over the main".
+     *
+     *   City of San Diego Water Facility Design Guidelines (2021): easement
+     *   width keyed to pipe size, 15 ft minimum for mains 16 inches and
+     *   under; trees or shrubs maturing over 3 ft must stand at least 10 ft
+     *   from a water main, or use root barriers or above-ground planters.
+     *
+     *   Las Vegas Valley Water District non-exclusive easement form: no
+     *   buildings, structures, walls, fences, pavers, trees or other
+     *   vegetation on the easement.
+     *
+     * CONFIRMED, AND ALSO PARTLY WRONG, which is why this note is long. The
+     * structural cells match the utility row exactly — fencing, additions and
+     * pools are restricted under every standard above. What does NOT match is
+     * the permissive landscaping cell and its silence on ground level: these
+     * deeds forbid changing grading and the depth of cover over the main, and
+     * a buried pressurised pipe is the one utility where re-grading a garden
+     * is itself the hazard. The generic utility row never had to say that,
+     * because an overhead conductor does not care how deep your soil is.
+     *
+     * So the mapping stands and the row needed a water-specific condition.
+     * See WATER_LINE_COVER_CONDITION, rendered beside the checklist the way
+     * LANDSCAPING_ACCESS_CONDITION is.
+     */
+    reviewed: true,
     label: 'Water line',
     note:
-      'Treated as a utility easement. POSITION RECORDED 2026-08-22 (product owner, not an ' +
-      'engineer): a potable water main IS governed as a utility easement rather than a sewer one. ' +
-      'That is consistent with the physical reason the sewer row is stricter — sewer lines leak ' +
-      'nutrients and have joints that roots actively seek, which a pressurised potable main does ' +
-      'not. STILL OPEN: confirmation from a water provider or civil engineer, since local setback ' +
-      'or cross-connection rules can still be stricter than the utility row.',
+      'Treated as a utility easement, confirmed 2026-11-21 against LADWP, City of San Diego and ' +
+      'Las Vegas Valley Water District published standards. A pressurised potable main is not a ' +
+      'sewer: it does not leak nutrients and has no joints that roots actively seek, which is the ' +
+      'physical reason the sewer row is stricter. Structures, fencing and pools are restricted ' +
+      'here as under any utility easement. ' +
+      'WHAT IS SPECIFIC TO WATER: these easements also bar changing the grade or the depth of ' +
+      'soil over the pipe, and set planting distances by mature size rather than by root depth. ' +
+      'Your own recorded easement and your utility’s standards control, and both can be ' +
+      'stricter than this.',
   },
   pipeline: {
     purpose: 'unknown',
