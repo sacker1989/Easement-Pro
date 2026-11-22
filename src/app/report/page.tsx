@@ -41,6 +41,7 @@ import {
   easementAreaProvenance,
 } from '@/lib/valuation/easement-area-provenance';
 import { buildRemedyPlan, COST_TIER_LABEL, type RemedyPlan } from '@/lib/advocacy/remedy-plan';
+import { surfaceReadiness } from '@/lib/deployment/surfaces';
 import {
   buildValuationEstimate,
   STRIP_ONLY_WARNING,
@@ -743,6 +744,27 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
    */
   const parcelConfirmed = lookup?.status === 'found' || lookup?.status === 'ambiguous';
   const addressLooksUnreal = submitted && geocodeMissed && !parcelConfirmed;
+
+  /*
+   * WHETHER THE LETTER GENERATOR ACTUALLY WORKS HERE, asked before linking to
+   * it. Verified against live production on 2026-11-21: /advocacy loads and
+   * answers "This letter was not generated", because an artefact surface needs
+   * a durable audit store and a file path on a serverless host is not one.
+   *
+   * A link to that is worse than no link. The feature was invisible before,
+   * which was a shame; a visible button that returns "that is a fault on our
+   * side" is a different and worse thing, and it is what shipping this link
+   * ungated would have produced.
+   *
+   * surfaceReadiness ALREADY ANSWERS THIS — the durable-store condition, the
+   * state gate and the commerce gate in one place — so this asks it rather
+   * than re-deriving any of them. /report still depends on no audit module to
+   * produce the ANALYSIS, which is the property readiness.ts is protecting:
+   * every section below renders identically either way. What changes is one
+   * link.
+   */
+  const letterToolWorks =
+    surfaceReadiness(state).find((s) => s.id === 'advocacy')?.works === true;
 
 
   return (
@@ -2023,6 +2045,69 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
           <p className="muted">
             <small>{RECORDS_DISCLOSURE}</small>
           </p>
+
+          {/* THE LETTER TOOL, LINKED — 2026-11-21.
+
+              It was built, tested, deployed and linked from nowhere. The only
+              route to it was typing /advocacy into the address bar, so in
+              practice no homeowner had ever reached it. Everything worked and
+              nobody could get there, which is the kind of failure a green
+              suite will never report.
+
+              PLACED AFTER THE RECORDS LIST, deliberately. The records cost
+              nothing and need nobody; the letter costs postage and involves
+              another party. Free first, per the instruction that the records
+              guidance is paramount.
+
+              THE ADDRESS IS PASSED AND THE EASEMENT TYPE IS NOT. /advocacy
+              takes four easement types (appurtenant, in-gross, prescriptive,
+              unknown) and this report works in twelve (water-line, sewer,
+              drainage ...). They are different vocabularies answering
+              different questions, so forwarding one into the other would
+              prefill a wrong answer that reads like a confirmed one. The
+              homeowner picks it there. Both routes are noindexed and
+              robots-disallowed; the address in the query string is the same
+              exposure /report already carries. */}
+          <section>
+            <h2>If you think it needs maintaining, write to whoever owns it</h2>
+            <p>
+              Where infrastructure on an easement is not being maintained, the holder — usually a
+              utility or an agency — is generally the one responsible for maintaining it. Asking in
+              writing is the step that creates a record of what you asked and when, which is the
+              part that is hard to recreate later.
+            </p>
+            {/* THE ADVICE DOES NOT DEPEND ON THE GENERATOR. A homeowner can
+                write this letter on a sheet of paper and the valuable part —
+                send it so you can prove it arrived, keep the receipt with a
+                copy — is free and needs no software at all. So the guidance
+                renders either way and only the link is conditional. */}
+            <p>
+              Send it so that you can show it arrived: any US post office will do certified mail
+              with a return receipt for a few dollars. Keep a copy of what you signed, keep the
+              receipt and signature card with that copy, and write down the date you sent it and
+              what came back — including when nothing does.
+            </p>
+            {letterToolWorks ? (
+              <p>
+                <a
+                  href={`/advocacy?${new URLSearchParams({ street, city, state, zip }).toString()}`}
+                >
+                  Write a maintenance request letter
+                </a>{' '}
+                — free, and it fills in your address from this report. You print it, sign it and
+                send it yourself; nothing is sent on your behalf.
+              </p>
+            ) : (
+              <p className="muted">
+                <small>
+                  Our letter builder is temporarily unavailable, so write your own — it does not
+                  have to sound legal to work. Say where the easement is, what needs maintaining,
+                  and ask for a timeline. The record you keep around it matters more than the
+                  wording.
+                </small>
+              </p>
+            )}
+          </section>
 
           {remedy && (
             <>

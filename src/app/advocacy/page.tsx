@@ -12,6 +12,14 @@ import {
   renderLetterAsPlainText,
 } from '@/lib/letters';
 import { normalizeAddress } from '@/lib/parcel-resolution';
+import {
+  LETTER_DISCLOSURE,
+  LETTER_HEADLINE,
+  LETTER_STEPS,
+  STAGE_LABEL,
+  stepsFor,
+  type LetterStage,
+} from '@/lib/easements/sending-the-letter';
 
 /**
  * NOINDEX, AS A HEADER RATHER THAN ONLY A ROBOTS.TXT LINE.
@@ -152,7 +160,22 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
 
   return (
     <main>
-      <h1>Track 1 — Advocacy Wizard</h1>
+      {/* HOMEOWNER-FACING AS OF 2026-11-21, because it is now linked from the
+          report. Until then this page was reachable only by typing /advocacy
+          into the address bar, so the only people who ever saw it were the
+          ones who built it — and it read like it: "Track 1 — Advocacy
+          Wizard", a "Run wizard" button, and a checkbox asking a homeowner
+          whether their document contains a condition subsequent.
+
+          The internal names are still correct and still used in the audit
+          records and the gating layer. They just are not what you put in
+          front of someone who came here from a report about their house. */}
+      <h1>Write a maintenance request letter</h1>
+      <p className="lede">
+        This produces a letter you can print, sign and send to the utility or agency responsible for
+        the easement, asking them to maintain it. You send it yourself — nothing is sent on your
+        behalf. It is free.
+      </p>
       <form>
         <input type="hidden" name="submitted" value="1" />
         <fieldset>
@@ -196,7 +219,8 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
           </label>
           <label>
             <input type="checkbox" name="hasPerpetualLanguage" defaultChecked={hasPerpetualLanguage} />
-            Document contains perpetual language
+            My easement document says it lasts forever — &ldquo;perpetual&rdquo;, &ldquo;in
+            perpetuity&rdquo;, or similar
           </label>
           <label>
             <input
@@ -204,10 +228,16 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
               name="hasTermOrConditionSubsequent"
               defaultChecked={hasTermOrConditionSubsequent}
             />
-            Document contains a specific term or condition subsequent
+            My easement document gives it an end date, or says it ends if something happens
           </label>
+          <p className="muted">
+            <small>
+              Leave both unchecked if you have not read the document or cannot find it. The letter
+              still works; it just will not refer to how long the easement lasts.
+            </small>
+          </p>
         </fieldset>
-        <button type="submit">Run wizard</button>
+        <button type="submit">Write my letter</button>
       </form>
 
       {auditBlocked && <p role="alert">{auditBlocked}</p>}
@@ -220,24 +250,86 @@ export default async function AdvocacyPage({ searchParams }: AdvocacyPageProps) 
 
       {unavailableMessage && (
         <>
-          <h2>Track 1 not available</h2>
+          <h2>Not available for your state</h2>
           <p>{unavailableMessage}</p>
         </>
       )}
 
       {fallbackLetterText && (
         <>
-          <h2>Duration field blocked — Track 2 fallback offered instead</h2>
+          {/* The duration finding was not confident enough to assert, so this
+              asks the holder for their document instead of telling them what
+              it says. Internally Track 2; to the reader it is just the letter
+              that fits what is actually known. */}
+          <h2>Your letter — a request for the easement document</h2>
+          <p>
+            Your answers did not establish how long the easement lasts, so rather than assert
+            something uncertain, this letter asks the holder for a copy of the document itself. That
+            is the stronger request anyway: it gets you the thing every other question depends on.
+          </p>
           <pre>{fallbackLetterText}</pre>
         </>
       )}
 
       {letterText && (
         <>
-          <h2>Maintenance Request Letter (Track 1)</h2>
+          <h2>Your maintenance request letter</h2>
           <pre>{letterText}</pre>
         </>
       )}
+
+      {(letterText || fallbackLetterText) && <WhatToDoWithIt />}
     </main>
+  );
+}
+
+/**
+ * What to do with the letter, rendered beneath it.
+ *
+ * WHY IT IS HERE AND NOT IN A GUIDE. Before this, the page produced a letter
+ * in a <pre> and stopped. The letter's value is almost entirely in the record
+ * it leaves — how it was sent, what was kept, whether anyone replied — and
+ * none of that was said anywhere the person holding the letter would see it.
+ * A reader who has just been handed a letter is the only reader who will act
+ * on instructions for sending one.
+ */
+function WhatToDoWithIt() {
+  // Stage order comes from the data rather than a second list here, so adding
+  // a step cannot leave it rendered in the wrong place or not at all.
+  const stages = [...new Set(LETTER_STEPS.map((s) => s.stage))] as LetterStage[];
+  return (
+    <section>
+      <h2>What to do with it</h2>
+      <p className="lede">{LETTER_HEADLINE}</p>
+      {stages.map((stage) => (
+        <div className="panel" key={stage}>
+          <h3 style={{ marginTop: 0 }}>
+            <span className="badge badge-ok" style={{ marginRight: '0.5rem' }}>
+              {STAGE_LABEL[stage]}
+            </span>
+          </h3>
+          {stepsFor(stage).map((s) => (
+            <div key={s.id} style={{ marginBottom: '1.1rem' }}>
+              <strong>{s.what}</strong>
+              {s.costsMoney && (
+                <>
+                  {' '}
+                  <span className="badge">costs a few dollars</span>
+                </>
+              )}
+              <br />
+              <small>{s.whyItMatters}</small>
+              <br />
+              <small className="muted">
+                <strong>How:</strong> {s.how}
+              </small>
+            </div>
+          ))}
+        </div>
+      ))}
+      <p className="muted">
+        <small>{LETTER_DISCLOSURE}</small>
+      </p>
+    </section>
   );
 }
